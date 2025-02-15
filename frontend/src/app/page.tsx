@@ -1,11 +1,12 @@
 "use client";
 import { HomeBackGround } from "@/components/HomeBackground";
+import { VideoSection } from "@/components/VideoSection";
 
 export default function Home() {
   return (
     <div className="">
       <HomeBackGround />
-      <div>next section</div>
+      <VideoSection />
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { TextRevealEffect } from "./ui/text-reveal-card";
 import { TextGenerateEffect } from "./ui/text-generate-effect";
 import { Button } from "./ui/moving-border";
 import { ColourfulText } from "./ui/colourful-text";
+import Link from "next/link";
 
 const words = "Select, Bid, and Win Big with Solana-Powered Social Influence";
 
@@ -56,13 +57,15 @@ export function HomeBackGround() {
 
       {/* Button placed here without disrupting other elements */}
       <div className="mt-8">
-        <Button
-          borderRadius="1.75rem"
-          className="rounded-3xl bg-white text-black border-neutral-200"
-          borderClassName="bg-gradient-to-r from-pink-500 to-purple-500"
-        >
-          Create Team
-        </Button>
+        <Link href={"/teams"}>
+          <Button
+            borderRadius="1.75rem"
+            className="rounded-3xl bg-white text-black border-neutral-200"
+            borderClassName="bg-gradient-to-r from-pink-500 to-purple-500"
+          >
+            Create Team
+          </Button>
+        </Link>
       </div>
     </LampContainer>
   );
