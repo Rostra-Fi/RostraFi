@@ -31,7 +31,7 @@ export function InfluencersTeamSection() {
   useOutsideClick(ref, () => setActive(null));
 
   return (
-    <div className="pl-8 md:pl-16 lg:pl-24">
+    <div className="pl-8 md:pl-16 lg:pl-24 ">
       <AnimatePresence>
         {active && typeof active === "object" && (
           <motion.div
@@ -164,6 +164,7 @@ export function InfluencersTeamSection() {
     </div>
   );
 }
+
 export const CloseIcon = () => {
   return (
     <motion.svg
@@ -221,6 +222,7 @@ const cards = [
       );
     },
   },
+
   {
     description: "Babbu Maan",
     title: "Mitran Di Chhatri",

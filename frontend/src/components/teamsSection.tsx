@@ -7,9 +7,9 @@ interface SparklesPreviewProps {
 
 export function TeamSection({ teamSectionName }: SparklesPreviewProps) {
   return (
-    <div className="h-48 w-full flex flex-col items-start overflow-hidden rounded-md bg-black relative">
+    <div className="h-28 w-full flex flex-col items-start overflow-hidden rounded-md bg-black relative">
       {/* Text with underline gradients and sparkles background */}
-      <div className="relative inline-block ml-4 mt-8">
+      <div className="relative inline-block ml-4 mt-8 ">
         {/* Sparkles contained to text area */}
         <div className="absolute -inset-4">
           <SparklesCore
