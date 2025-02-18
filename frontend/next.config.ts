@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
         hostname: "assets.aceternity.com",
       },
       { hostname: "images.unsplash.com" },
+      { hostname: "ui.aceternity.com" },
       {
         protocol: "https",
         hostname: "**.gstatic.com",
