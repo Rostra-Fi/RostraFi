@@ -4,9 +4,8 @@ import { motion } from "framer-motion";
 import { LampContainer } from "./ui/lamp";
 import { TextRevealEffect } from "./ui/text-reveal-card";
 import { TextGenerateEffect } from "./ui/text-generate-effect";
-import { Button } from "./ui/moving-border";
 import { ColourfulText } from "./ui/colourful-text";
-import Link from "next/link";
+import PlatformCard from "./Cards";
 
 const words = "Select, Bid, and Win Big with Solana-Powered Social Influence";
 
@@ -21,7 +20,7 @@ export function HomeBackGround() {
           duration: 0.8,
           ease: "easeInOut",
         }}
-        className="mt-20 text-center text-5xl font-bold tracking-tight md:text-8xl"
+        className="mt-44 text-center text-5xl font-bold tracking-tight md:text-8xl"
       >
         <div className="flex flex-col items-center space-y-2">
           <div className="flex items-center space-x-4">
@@ -56,16 +55,25 @@ export function HomeBackGround() {
       </motion.span>
 
       {/* Button placed here without disrupting other elements */}
-      <div className="mt-8">
-        <Link href={"/teams"}>
-          <Button
-            borderRadius="1.75rem"
-            className="rounded-3xl bg-white text-black border-neutral-200"
-            borderClassName="bg-gradient-to-r from-pink-500 to-purple-500"
-          >
-            Create Team
-          </Button>
-        </Link>
+      <div className="flex flex-wrap gap-6 justify-center mt-8">
+        <PlatformCard
+          platform="Twitter"
+          image="https://media.istockphoto.com/id/1649927045/photo/social-media-social-media-marketing-engagement-post-structure.jpg?s=1024x1024&w=is&k=20&c=L_qdR5o6diw78hc7dSE4SML5tiNPoYVJihGKSe_2cTw="
+          icon="https://img.freepik.com/premium-vector/twitter-new-x-logo-design-vector_1340851-70.jpg"
+          timeRemaining={1380}
+        />
+        <PlatformCard
+          platform="Instagram"
+          image="https://cdn.pixabay.com/photo/2016/06/22/22/13/instagram-1474233_1280.jpg"
+          icon="https://img.freepik.com/premium-vector/instagram-logo_976174-11.jpg"
+          timeRemaining={1260}
+        />
+        <PlatformCard
+          platform="TikTok"
+          image="https://cdn.pixabay.com/photo/2020/04/19/15/14/tiktok-5064078_1280.jpg"
+          icon="https://img.freepik.com/free-psd/tiktok-logo-icon-psd-editable_314999-3664.jpg?t=st=1740029719~exp=1740033319~hmac=b6b603c1eb0a766430f5072a197612c50143d0db8e8d78412c83ff21fd3b85c9&w=740"
+          timeRemaining={1440}
+        />
       </div>
     </LampContainer>
   );

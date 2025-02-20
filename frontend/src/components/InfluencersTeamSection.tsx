@@ -4,21 +4,39 @@ import React, { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useOutsideClick } from "@/hooks/use-outside-click";
 
-export function InfluencersTeamSection() {
-  const [active, setActive] = useState<(typeof cards)[number] | boolean | null>(
-    null
-  );
+interface Card {
+  title: string;
+  description: string;
+  src: string;
+  content: () => React.ReactNode | string;
+}
+
+type SelectionState = {
+  isPending: boolean;
+  isSelected: boolean;
+};
+
+interface SelectionMap {
+  [key: string]: SelectionState;
+}
+
+export function InfluencersTeamSection(): JSX.Element {
+  const [active, setActive] = useState<Card | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<Card[]>([]);
+  const [selectionStates, setSelectionStates] = useState<SelectionMap>({});
   const ref = useRef<HTMLDivElement>(null);
   const id = useId();
 
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        setActive(false);
-      }
-    }
+  const isTeamFull = selectedTeam.length >= 4;
 
-    if (active && typeof active === "object") {
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setActive(null);
+      }
+    };
+
+    if (active) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "auto";
@@ -30,10 +48,52 @@ export function InfluencersTeamSection() {
 
   useOutsideClick(ref, () => setActive(null));
 
+  const handleTeamSelection = (card: Card) => {
+    const currentState = selectionStates[card.title] || {
+      isPending: false,
+      isSelected: false,
+    };
+
+    if (currentState.isSelected) {
+      // Remove from team
+      setSelectedTeam(
+        selectedTeam.filter((member) => member.title !== card.title)
+      );
+      setSelectionStates({
+        ...selectionStates,
+        [card.title]: { isPending: false, isSelected: false },
+      });
+    } else {
+      // Start selection process
+      setSelectionStates({
+        ...selectionStates,
+        [card.title]: { isPending: true, isSelected: false },
+      });
+
+      // Animate and then add to team after delay
+      setTimeout(() => {
+        if (!isTeamFull) {
+          setSelectedTeam([...selectedTeam, card]);
+          setSelectionStates({
+            ...selectionStates,
+            [card.title]: { isPending: false, isSelected: true },
+          });
+        }
+      }, 800);
+    }
+  };
+
+  const getCardState = (card: Card): SelectionState => {
+    return (
+      selectionStates[card.title] || { isPending: false, isSelected: false }
+    );
+  };
+
   return (
-    <div className="pl-8 md:pl-16 lg:pl-24 ">
+    <div className="pl-8 md:pl-16 lg:pl-24">
+      {/* Overlay */}
       <AnimatePresence>
-        {active && typeof active === "object" && (
+        {active && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -42,23 +102,23 @@ export function InfluencersTeamSection() {
           />
         )}
       </AnimatePresence>
+
+      {/* Expanded Card View */}
       <AnimatePresence>
-        {active && typeof active === "object" ? (
+        {active && (
           <div className="fixed left-8 md:left-16 lg:left-24 top-0 flex items-start z-[100] p-4 h-full">
             <motion.button
-              key={`button-${active.title}-${id}`}
+              key={`close-${active.title}-${id}`}
               layout
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{
-                opacity: 0,
-                transition: { duration: 0.05 },
-              }}
+              exit={{ opacity: 0, transition: { duration: 0.05 } }}
               className="flex absolute top-2 right-2 lg:hidden items-center justify-center bg-white rounded-full h-6 w-6"
               onClick={() => setActive(null)}
             >
               <CloseIcon />
             </motion.button>
+
             <motion.div
               layoutId={`card-${active.title}-${id}`}
               ref={ref}
@@ -75,8 +135,8 @@ export function InfluencersTeamSection() {
                 />
               </motion.div>
 
-              <div>
-                <div className="flex justify-between items-start p-4">
+              <div className="p-4">
+                <div className="flex justify-between items-start">
                   <div>
                     <motion.h3
                       layoutId={`title-${active.title}-${id}`}
@@ -92,22 +152,57 @@ export function InfluencersTeamSection() {
                     </motion.p>
                   </div>
 
-                  <motion.a
+                  <motion.button
                     layoutId={`button-${active.title}-${id}`}
-                    href={active.ctaLink}
-                    target="_blank"
-                    className="px-4 py-3 text-sm rounded-full font-bold bg-green-500 text-white"
+                    onClick={() => {
+                      if (!isTeamFull || getCardState(active).isSelected) {
+                        handleTeamSelection(active);
+                        setTimeout(() => setActive(null), 800);
+                      }
+                    }}
+                    className={`relative px-4 py-3 text-sm rounded-full font-bold 
+                      ${
+                        getCardState(active).isSelected
+                          ? "bg-red-500 text-white"
+                          : getCardState(active).isPending
+                          ? "bg-yellow-500 text-white"
+                          : "bg-green-500 text-white"
+                      } 
+                      ${
+                        isTeamFull && !getCardState(active).isSelected
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
+                      }`}
+                    disabled={isTeamFull && !getCardState(active).isSelected}
                   >
-                    {active.ctaText}
-                  </motion.a>
+                    {getCardState(active).isSelected
+                      ? "Remove from Team"
+                      : getCardState(active).isPending
+                      ? "Adding to Team..."
+                      : "Add to Team"}
+
+                    {getCardState(active).isPending && (
+                      <motion.div
+                        className="absolute inset-0 rounded-full bg-yellow-500 opacity-20"
+                        animate={{
+                          scale: [1, 1.2, 1],
+                        }}
+                        transition={{
+                          duration: 1,
+                          repeat: Infinity,
+                        }}
+                      />
+                    )}
+                  </motion.button>
                 </div>
-                <div className="pt-4 relative px-4">
+
+                <div className="pt-4 relative">
                   <motion.div
                     layout
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="text-neutral-600 text-xs md:text-sm lg:text-base h-40 md:h-fit pb-10 flex flex-col items-start gap-4 overflow-auto dark:text-neutral-400 [mask:linear-gradient(to_bottom,white,white,transparent)] [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch]"
+                    className="text-neutral-600 text-xs md:text-sm lg:text-base h-40 md:h-fit pb-10 flex flex-col items-start gap-4 overflow-auto dark:text-neutral-400 [mask:linear-gradient(to_bottom,white,white,transparent)]"
                   >
                     {typeof active.content === "function"
                       ? active.content()
@@ -117,50 +212,101 @@ export function InfluencersTeamSection() {
               </div>
             </motion.div>
           </div>
-        ) : null}
+        )}
       </AnimatePresence>
-      <ul className="max-w-2xl w-full gap-4">
-        {cards.map((card) => (
-          <motion.div
-            layoutId={`card-${card.title}-${id}`}
-            key={`card-${card.title}-${id}`}
-            onClick={() => setActive(card)}
-            className="p-4 flex flex-col md:flex-row justify-between items-center hover:bg-neutral-50 dark:hover:bg-neutral-800 rounded-xl cursor-pointer"
-          >
-            <div className="flex gap-4 flex-col md:flex-row">
-              <motion.div layoutId={`image-${card.title}-${id}`}>
-                <Image
-                  width={100}
-                  height={100}
-                  src={card.src}
-                  alt={card.title}
-                  className="h-40 w-40 md:h-14 md:w-14 rounded-lg object-cover object-top"
-                />
-              </motion.div>
-              <div>
-                <motion.h3
-                  layoutId={`title-${card.title}-${id}`}
-                  className="font-medium text-neutral-800 dark:text-neutral-200 text-center md:text-left"
-                >
-                  {card.title}
-                </motion.h3>
-                <motion.p
-                  layoutId={`description-${card.description}-${id}`}
-                  className="text-neutral-600 dark:text-neutral-400 text-center md:text-left"
-                >
-                  {card.description}
-                </motion.p>
-              </div>
-            </div>
-            <motion.button
-              layoutId={`button-${card.title}-${id}`}
-              className="px-4 py-2 text-sm rounded-full font-bold bg-gray-100 hover:bg-green-500 hover:text-white text-black mt-4 md:mt-0"
+
+      {/* Team List */}
+      <div
+        className={`transition-colors duration-300 ${
+          isTeamFull ? "bg-neutral-100 dark:bg-neutral-800" : ""
+        } rounded-xl p-4`}
+      >
+        <div className="mb-4">
+          <p className="text-neutral-600 dark:text-neutral-400">
+            Selected Team Members: {selectedTeam.length}/4
+          </p>
+        </div>
+
+        <ul className="max-w-2xl w-full gap-4">
+          {cards.map((card) => (
+            <motion.div
+              layoutId={`card-${card.title}-${id}`}
+              key={`card-${card.title}-${id}`}
+              onClick={() =>
+                !isTeamFull || getCardState(card).isSelected
+                  ? setActive(card)
+                  : null
+              }
+              className={`p-4 flex flex-col md:flex-row justify-between items-center rounded-xl cursor-pointer 
+                ${
+                  getCardState(card).isSelected
+                    ? "bg-green-50 dark:bg-green-900"
+                    : "hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                } 
+                ${
+                  isTeamFull && !getCardState(card).isSelected
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }`}
             >
-              {card.ctaText}
-            </motion.button>
-          </motion.div>
-        ))}
-      </ul>
+              <div className="flex gap-4 flex-col md:flex-row">
+                <motion.div layoutId={`image-${card.title}-${id}`}>
+                  <Image
+                    width={100}
+                    height={100}
+                    src={card.src}
+                    alt={card.title}
+                    className="h-40 w-40 md:h-14 md:w-14 rounded-lg object-cover object-top"
+                  />
+                </motion.div>
+
+                <div>
+                  <motion.h3
+                    layoutId={`title-${card.title}-${id}`}
+                    className="font-medium text-neutral-800 dark:text-neutral-200 text-center md:text-left"
+                  >
+                    {card.title}
+                  </motion.h3>
+                  <motion.p
+                    layoutId={`description-${card.description}-${id}`}
+                    className="text-neutral-600 dark:text-neutral-400 text-center md:text-left"
+                  >
+                    {card.description}
+                  </motion.p>
+                </div>
+              </div>
+
+              <motion.button
+                layoutId={`button-${card.title}-${id}`}
+                className={`px-4 py-2 text-sm rounded-full font-bold mt-4 md:mt-0
+                  ${
+                    getCardState(card).isSelected
+                      ? "bg-red-500 text-white"
+                      : "bg-gray-100 hover:bg-green-500 hover:text-white text-black"
+                  }
+                  ${
+                    isTeamFull && !getCardState(card).isSelected
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isTeamFull || getCardState(card).isSelected) {
+                    if (getCardState(card).isSelected) {
+                      handleTeamSelection(card);
+                    } else {
+                      setActive(card);
+                    }
+                  }
+                }}
+                disabled={isTeamFull && !getCardState(card).isSelected}
+              >
+                {getCardState(card).isSelected ? "Remove" : "Select"}
+              </motion.button>
+            </motion.div>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
