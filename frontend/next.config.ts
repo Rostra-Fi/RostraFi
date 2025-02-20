@@ -10,6 +10,9 @@ const nextConfig: NextConfig = {
       },
       { hostname: "images.unsplash.com" },
       { hostname: "ui.aceternity.com" },
+      { hostname: "img.freepik.com" },
+      { hostname: "media.istockphoto.com" },
+      { hostname: "cdn.pixabay.com" },
       {
         protocol: "https",
         hostname: "**.gstatic.com",
