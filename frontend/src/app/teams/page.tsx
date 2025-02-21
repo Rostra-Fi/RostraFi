@@ -1,3 +1,4 @@
+"use client";
 import GlowingContainer from "@/components/GlowingContainer";
 import { InfluencersTeamSection } from "@/components/InfluencersTeamSection";
 import { RulesModel } from "@/components/RulesModel";
@@ -5,9 +6,20 @@ import { TeamsHeader } from "@/components/TeamsHeader";
 import { TeamSection } from "@/components/teamsSection";
 import { ColourfulText } from "@/components/ui/colourful-text";
 import { Cover } from "@/components/ui/cover";
+import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
+import { saveTeams } from "@/store/teamsSlice";
 import React from "react";
 
-function page() {
+function Page() {
+  const dispatch = useAppDispatch();
+  const { teams, loading, success, error, successMessage, errorMessage } =
+    useAppSelector((state) => state.teams);
+
+  console.log(teams);
+
+  // const handleSaveTeams = () => {
+  //   dispatch(saveTeams(teams));
+  // };
   return (
     <div className="bg-black mb-6">
       <TeamsHeader />
@@ -28,35 +40,35 @@ function page() {
       <div className="flex justify-start flex-col w-full mt-10">
         <TeamSection teamSectionName="Premium Diamond" />
         <GlowingContainer>
-          <InfluencersTeamSection />
+          <InfluencersTeamSection sectionName="Premium Diamond" />
         </GlowingContainer>
       </div>
 
       <div className="flex justify-start flex-col w-full mt-10">
         <TeamSection teamSectionName="Premium Gold" />
         <GlowingContainer>
-          <InfluencersTeamSection />
+          <InfluencersTeamSection sectionName="Premium Gold" />
         </GlowingContainer>
       </div>
 
       <div className="flex justify-start flex-col w-full mt-10">
         <TeamSection teamSectionName="Premium Silver" />
         <GlowingContainer>
-          <InfluencersTeamSection />
+          <InfluencersTeamSection sectionName="Premium Silver" />
         </GlowingContainer>
       </div>
 
       <div className="flex justify-start flex-col w-full mt-10">
         <TeamSection teamSectionName="Premium Bronze" />
         <GlowingContainer>
-          <InfluencersTeamSection />
+          <InfluencersTeamSection sectionName="Premium Bronze" />
         </GlowingContainer>
       </div>
 
       <div className="flex justify-start flex-col w-full mt-10">
         <TeamSection teamSectionName="Others" />
         <GlowingContainer>
-          <InfluencersTeamSection />
+          <InfluencersTeamSection sectionName="Others" />
         </GlowingContainer>
       </div>
       <RulesModel />
@@ -64,4 +76,4 @@ function page() {
   );
 }
 
-export default page;
+export default Page;
