@@ -7,6 +7,7 @@ export default function Home() {
   return (
     <div className="">
       <HomeBackGround />
+
       <VideoSection />
       <FeaturesSectionDemo />
     </div>

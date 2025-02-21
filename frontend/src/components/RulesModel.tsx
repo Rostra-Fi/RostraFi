@@ -68,7 +68,7 @@ export function RulesModel() {
             📜
           </div>
         </ModalTrigger>
-        <ModalBody className="p-0">
+        <ModalBody className="p-0 md:max-w-[70%]">
           <ModalContent className="w-[80vw] h-[80vh] max-w-4xl max-h-[80vh] p-0">
             <div className="w-full h-full overflow-hidden">
               <StickyScroll

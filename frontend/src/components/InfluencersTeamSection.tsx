@@ -3,6 +3,8 @@ import Image from "next/image";
 import React, { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useOutsideClick } from "@/hooks/use-outside-click";
+import { setTeams } from "@/store/teamsSlice";
+import { useDispatch } from "react-redux";
 
 interface Card {
   title: string;
@@ -20,7 +22,13 @@ interface SelectionMap {
   [key: string]: SelectionState;
 }
 
-export function InfluencersTeamSection(): JSX.Element {
+interface InfluencersTeamSectionProps {
+  sectionName: string;
+}
+
+export function InfluencersTeamSection({
+  sectionName,
+}: InfluencersTeamSectionProps) {
   const [active, setActive] = useState<Card | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Card[]>([]);
   const [selectionStates, setSelectionStates] = useState<SelectionMap>({});
@@ -28,6 +36,16 @@ export function InfluencersTeamSection(): JSX.Element {
   const id = useId();
 
   const isTeamFull = selectedTeam.length >= 4;
+  const dispatch = useDispatch();
+
+  const handleTeamUpdate = (selectedTeam: Card[]) => {
+    dispatch(
+      setTeams({
+        sectionName,
+        selectedTeam,
+      })
+    );
+  };
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -48,6 +66,41 @@ export function InfluencersTeamSection(): JSX.Element {
 
   useOutsideClick(ref, () => setActive(null));
 
+  // const handleTeamSelection = (card: Card) => {
+  //   const currentState = selectionStates[card.title] || {
+  //     isPending: false,
+  //     isSelected: false,
+  //   };
+
+  //   if (currentState.isSelected) {
+  //     // Remove from team
+  //     setSelectedTeam(
+  //       selectedTeam.filter((member) => member.title !== card.title)
+  //     );
+  //     setSelectionStates({
+  //       ...selectionStates,
+  //       [card.title]: { isPending: false, isSelected: false },
+  //     });
+  //   } else {
+  //     // Start selection process
+  //     setSelectionStates({
+  //       ...selectionStates,
+  //       [card.title]: { isPending: true, isSelected: false },
+  //     });
+
+  //     // Animate and then add to team after delay
+  //     setTimeout(() => {
+  //       if (!isTeamFull) {
+  //         setSelectedTeam([...selectedTeam, card]);
+  //         setSelectionStates({
+  //           ...selectionStates,
+  //           [card.title]: { isPending: false, isSelected: true },
+  //         });
+  //       }
+  //     }, 800);
+  //   }
+  // };
+
   const handleTeamSelection = (card: Card) => {
     const currentState = selectionStates[card.title] || {
       isPending: false,
@@ -56,13 +109,16 @@ export function InfluencersTeamSection(): JSX.Element {
 
     if (currentState.isSelected) {
       // Remove from team
-      setSelectedTeam(
-        selectedTeam.filter((member) => member.title !== card.title)
+      const updatedTeam = selectedTeam.filter(
+        (member) => member.title !== card.title
       );
+      setSelectedTeam(updatedTeam);
       setSelectionStates({
         ...selectionStates,
         [card.title]: { isPending: false, isSelected: false },
       });
+      // Update the team in the store
+      handleTeamUpdate(updatedTeam);
     } else {
       // Start selection process
       setSelectionStates({
@@ -73,11 +129,14 @@ export function InfluencersTeamSection(): JSX.Element {
       // Animate and then add to team after delay
       setTimeout(() => {
         if (!isTeamFull) {
-          setSelectedTeam([...selectedTeam, card]);
+          const updatedTeam = [...selectedTeam, card];
+          setSelectedTeam(updatedTeam);
           setSelectionStates({
             ...selectionStates,
             [card.title]: { isPending: false, isSelected: true },
           });
+          // Update the team in the store
+          handleTeamUpdate(updatedTeam);
         }
       }, 800);
     }
