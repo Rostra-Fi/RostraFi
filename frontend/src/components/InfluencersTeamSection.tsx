@@ -32,7 +32,7 @@ export function InfluencersTeamSection({
   const [active, setActive] = useState<Card | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Card[]>([]);
   const [selectionStates, setSelectionStates] = useState<SelectionMap>({});
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null!);
   const id = useId();
 
   const isTeamFull = selectedTeam.length >= 4;
