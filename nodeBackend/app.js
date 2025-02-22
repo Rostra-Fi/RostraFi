@@ -12,6 +12,8 @@ const globalErrorHandler = require('./controllers/errorController');
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
+const sectionRouter = require('./routes/sectionRoutes');
+const userTeamRouter = require('./routes/userTeamRoutes');
 
 const app = express();
 
@@ -85,6 +87,8 @@ app.use((req, res, next) => {
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
+app.use('/api/v1/sections', sectionRouter);
+app.use('/api/v1/userTeams', userTeamRouter);
 
 //Implimenting a route handler that was not cached by any of other route handlers like above route handlers
 //all middlewares function are executed in the order they are in the code

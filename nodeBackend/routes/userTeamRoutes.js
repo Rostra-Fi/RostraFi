@@ -1,0 +1,29 @@
+const express = require('express');
+const userTeamController = require('../controllers/userTeamController');
+const { validate, schemas } = require('../utils/validate');
+const rateLimit = require('express-rate-limit');
+const { RATE_LIMIT } = require('../utils/constants');
+
+const router = express.Router();
+
+// Apply rate limiting
+const limiter = rateLimit(RATE_LIMIT);
+router.use(limiter);
+
+router.post(
+  '/',
+  validate(schemas.createUserTeam),
+  userTeamController.createUserTeam,
+);
+
+router.get('/:userId', userTeamController.getUserTeams);
+
+router.patch(
+  '/:teamId',
+  validate(schemas.updateUserTeam),
+  userTeamController.updateUserTeam,
+);
+
+router.delete('/:userId/:teamId', userTeamController.deleteUserTeam);
+
+module.exports = router;
