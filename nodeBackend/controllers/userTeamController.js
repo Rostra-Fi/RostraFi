@@ -3,13 +3,15 @@ const Section = require('../models/section');
 const AppError = require('../utils/appError');
 const logger = require('../config/logger');
 const { MAX_TEAMS_PER_SECTION } = require('../utils/constants');
+const { mongoose } = require('mongoose');
 
 exports.createUserTeam = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const { userId, teamName, section } = req.body;
+    const { userId, teamName, sections } = req.body;
+    console.log(sections);
 
     // Check existing team name for user
     const existingTeam = await UserTeam.findOne({
@@ -19,53 +21,64 @@ exports.createUserTeam = async (req, res, next) => {
     }).session(session);
 
     if (existingTeam) {
-      next(new AppError('Team name already exists for this user', 400));
+      throw new AppError('Team name already exists for this user', 400);
     }
 
-    // Validate section with populated teams
-    const existingSection = await Section.findById(section.sectionId)
-      .populate('teams')
-      .session(session);
+    // Validate all sections and their teams
+    const validatedSections = await Promise.all(
+      sections.map(async (section) => {
+        const existingSection = await Section.findById(section.sectionId)
+          .populate('teams')
+          .session(session);
 
-    if (!existingSection) {
-      next(new AppError('Section not found', 400));
-    }
+        if (!existingSection) {
+          throw new AppError(`Section not found: ${section.sectionId}`, 400);
+        }
 
-    if (existingSection.name !== section.name) {
-      next(new AppError('Section name does not match', 400));
-    }
+        if (existingSection.name !== section.name) {
+          throw new AppError(
+            `Section name does not match for: ${section.sectionId}`,
+            400,
+          );
+        }
 
-    // Validate selected teams exist in section
-    const validTeamIds = new Set(
-      existingSection.teams.map((team) => team._id.toString()),
+        // Validate selected teams exist in section
+        const validTeamIds = new Set(
+          existingSection.teams.map((team) => team._id.toString()),
+        );
+
+        const invalidTeams = section.selectedTeams.filter(
+          (teamId) => !validTeamIds.has(teamId.toString()),
+        );
+
+        if (invalidTeams.length > 0) {
+          throw new AppError(
+            `Some selected teams do not belong to section: ${section.sectionId}`,
+            400,
+          );
+        }
+
+        return {
+          name: existingSection.name,
+          sectionId: existingSection._id,
+          selectedTeams: section.selectedTeams,
+        };
+      }),
     );
-    const invalidTeams = section.selectedTeams.filter(
-      (teamId) => !validTeamIds.has(teamId.toString()),
-    );
 
-    if (invalidTeams.length > 0) {
-      next(
-        new AppError('Some selected teams do not belong to this section', 400),
-      );
-    }
-
-    // Create user team
+    // Create user team with validated sections
     const userTeam = new UserTeam({
       userId,
       teamName,
-      section: {
-        name: existingSection.name,
-        sectionId: existingSection._id,
-        selectedTeams: section.selectedTeams,
-      },
+      sections: validatedSections,
     });
 
     await userTeam.save({ session });
 
     // Populate and prepare response
     const populatedTeam = await UserTeam.findById(userTeam._id)
-      .populate('section.sectionId')
-      .populate('section.selectedTeams')
+      .populate('sections.sectionId')
+      .populate('sections.selectedTeams')
       .session(session);
 
     await session.commitTransaction();
@@ -73,7 +86,7 @@ exports.createUserTeam = async (req, res, next) => {
     logger.info('User team created successfully', {
       userId,
       teamId: userTeam._id,
-      sectionId: section.sectionId,
+      sections: validatedSections.map((s) => s.sectionId),
     });
 
     res.status(201).json({
@@ -81,6 +94,7 @@ exports.createUserTeam = async (req, res, next) => {
       data: populatedTeam,
     });
   } catch (error) {
+    console.log(error);
     await session.abortTransaction();
     next(error);
   } finally {
@@ -91,27 +105,22 @@ exports.createUserTeam = async (req, res, next) => {
 exports.getUserTeams = async (req, res, next) => {
   try {
     const { userId } = req.params;
-    const { page = 1, limit = 10, sort = '-createdAt' } = req.query;
 
-    const options = {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      sort,
-      populate: [
-        { path: 'section.sectionId' },
-        { path: 'section.selectedTeams' },
-      ],
-    };
-
-    const query = {
+    const teams = await UserTeam.find({
       userId,
       isActive: true,
-    };
+    }).populate([
+      {
+        path: 'sections.sectionId',
+        select: ' _id ',
+      },
+      {
+        path: 'sections.selectedTeams',
+      },
+    ]);
 
-    const teams = await UserTeam.paginate(query, options);
-
-    if (teams.docs.length === 0) {
-      throw new ApiError(404, 'No teams found for this user');
+    if (!teams.length) {
+      throw new AppError('No teams found for this user', 404);
     }
 
     res.status(200).json({

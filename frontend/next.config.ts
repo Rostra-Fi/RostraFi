@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
       { hostname: "img.freepik.com" },
       { hostname: "media.istockphoto.com" },
       { hostname: "cdn.pixabay.com" },
+      { hostname: "upload.wikimedia.org" },
       {
         protocol: "https",
         hostname: "**.gstatic.com",

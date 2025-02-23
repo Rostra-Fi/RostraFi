@@ -1,14 +1,8 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { Card, TeamState } from "../types/team.types";
+import { TeamState, Team, Section, TeamAPIPayload } from "../types/team.types";
 
 const initialState: TeamState = {
-  teams: {
-    "Premium Diamond": [],
-    "Premium Gold": [],
-    "Premium Silver": [],
-    "Premium Bronze": [],
-    Others: [],
-  },
+  teams: { sections: [] },
   loading: false,
   isError: false,
   success: false,
@@ -18,7 +12,8 @@ const initialState: TeamState = {
 
 interface SetTeamsPayload {
   sectionName: string;
-  selectedTeam: Card[];
+  sectionId: string;
+  selectedTeam: Team[];
 }
 
 export const teamsSlice = createSlice({
@@ -26,9 +21,26 @@ export const teamsSlice = createSlice({
   initialState,
   reducers: {
     setTeams: (state, action: PayloadAction<SetTeamsPayload>) => {
-      const { sectionName, selectedTeam } = action.payload;
-      state.teams[sectionName] = selectedTeam;
+      const { sectionName, sectionId, selectedTeam } = action.payload;
+
+      // Find if section already exists
+      const existingSection = state.teams.sections.find(
+        (section) => section.sectionId === sectionId
+      );
+
+      if (existingSection) {
+        // Update existing section's teams
+        existingSection.selectedTeams = selectedTeam;
+      } else {
+        // Add new section with correct format
+        state.teams.sections.push({
+          name: sectionName,
+          sectionId,
+          selectedTeams: selectedTeam,
+        });
+      }
     },
+
     setSuccess: (state, action: PayloadAction<string>) => {
       state.success = true;
       state.successMessage = action.payload;
@@ -49,6 +61,8 @@ export const teamsSlice = createSlice({
       state.isError = false;
       state.successMessage = "";
       state.errorMessage = "";
+      state.teams = { sections: [] };
+      state.loading = false;
     },
   },
 });
@@ -56,25 +70,49 @@ export const teamsSlice = createSlice({
 export const { setTeams, setError, setLoading, setSuccess, resetStatus } =
   teamsSlice.actions;
 
-// Thunk for saving teams
+const formatTeamsForAPI = (sections: Section[]): TeamAPIPayload => {
+  return {
+    sections: sections.map((section) => ({
+      name: section.name,
+      sectionId: section.sectionId,
+      selectedTeams: section.selectedTeams.map((team) => team._id),
+    })),
+  };
+};
+
 export const saveTeams =
-  (teams: TeamState["teams"]) => async (dispatch: any) => {
+  (teamData: {
+    userId: string;
+    teamName: string;
+    teams: { sections: Section[] };
+  }) =>
+  async (dispatch: any) => {
     try {
       dispatch(setLoading(true));
-      const response = await fetch("/api/teams", {
+
+      const formattedTeams = formatTeamsForAPI(teamData.teams.sections);
+
+      const response = await fetch("http://127.0.0.1:3001/api/v1/userTeams", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(teams),
+        body: JSON.stringify({
+          userId: teamData.userId,
+          teamName: teamData.teamName,
+          sections: formattedTeams.sections,
+        }),
       });
+
       const data = await response.json();
+      console.log(data);
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to save teams");
       }
 
       dispatch(setSuccess("Teams saved successfully"));
+
       return data;
     } catch (error) {
       if (error instanceof Error) {
