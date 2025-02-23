@@ -7,7 +7,6 @@ const UserTeamSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      index: true,
     },
     teamName: {
       type: String,
@@ -16,24 +15,27 @@ const UserTeamSchema = new mongoose.Schema(
       minlength: 3,
       maxlength: 50,
     },
-    section: {
-      name: {
-        type: String,
-        required: true,
-        trim: true,
-      },
-      sectionId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Section',
-        required: true,
-      },
-      selectedTeams: [
-        {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'Team',
+    // Changed to array of sections
+    sections: [
+      {
+        name: {
+          type: String,
+          required: true,
+          trim: true,
         },
-      ],
-    },
+        sectionId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Section',
+          required: true,
+        },
+        selectedTeams: [
+          {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Team',
+          },
+        ],
+      },
+    ],
     isActive: {
       type: Boolean,
       default: true,
@@ -46,21 +48,29 @@ const UserTeamSchema = new mongoose.Schema(
   },
 );
 
-// Indexes for better query performance
-UserTeamSchema.index({ userId: 1, 'section.sectionId': 1 });
+// Updated indexes for better query performance
+UserTeamSchema.index({ userId: 1 });
+UserTeamSchema.index({ 'sections.sectionId': 1 });
 UserTeamSchema.index({ createdAt: 1 });
 
-// Validate maximum teams
-UserTeamSchema.path('section.selectedTeams').validate(function (teams) {
-  return teams.length <= MAX_TEAMS_PER_SECTION;
+// Validate maximum teams per section
+UserTeamSchema.path('sections').validate(function (sections) {
+  return sections.every(
+    (section) => section.selectedTeams.length <= MAX_TEAMS_PER_SECTION,
+  );
 }, `Maximum ${MAX_TEAMS_PER_SECTION} teams allowed per section`);
 
-// Virtual for total followers
+// Virtual for total followers across all sections
 UserTeamSchema.virtual('totalFollowers').get(function () {
-  return this.section.selectedTeams.reduce(
-    (sum, team) => sum + (team.followers || 0),
-    0,
-  );
+  return this.sections.reduce((total, section) => {
+    return (
+      total +
+      section.selectedTeams.reduce(
+        (sum, team) => sum + (team.followers || 0),
+        0,
+      )
+    );
+  }, 0);
 });
 
 const UserTeam = mongoose.model('UserTeam', UserTeamSchema);

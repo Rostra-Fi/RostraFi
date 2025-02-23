@@ -1,9 +1,10 @@
 import React from "react";
 import { SparklesCore } from "./ui/sparkles";
 
-interface SparklesPreviewProps {
+type SparklesPreviewProps = {
   teamSectionName: string;
-}
+  teamsSectionId: string;
+};
 
 export function TeamSection({ teamSectionName }: SparklesPreviewProps) {
   return (

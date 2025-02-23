@@ -6,15 +6,20 @@ const schemas = {
   createUserTeam: Joi.object({
     userId: Joi.string().required().trim(),
     teamName: Joi.string().required().trim().min(3).max(50),
-    section: Joi.object({
-      name: Joi.string().required().trim(),
-      sectionId: Joi.string()
-        .required()
-        .regex(/^[0-9a-fA-F]{24}$/),
-      selectedTeams: Joi.array()
-        .items(Joi.string().regex(/^[0-9a-fA-F]{24}$/))
-        .max(MAX_TEAMS_PER_SECTION),
-    }).required(),
+    sections: Joi.array()
+      .items(
+        Joi.object({
+          name: Joi.string().required().trim(),
+          sectionId: Joi.string()
+            .required()
+            .regex(/^[0-9a-fA-F]{24}$/),
+          selectedTeams: Joi.array()
+            .items(Joi.string().regex(/^[0-9a-fA-F]{24}$/))
+            .max(MAX_TEAMS_PER_SECTION),
+        }),
+      )
+      .required(),
+    isActive: Joi.boolean().default(true),
   }),
 };
 
