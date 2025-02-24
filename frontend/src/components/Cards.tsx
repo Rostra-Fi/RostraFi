@@ -17,7 +17,7 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
   image,
   icon,
   timeRemaining,
-  href = "/teams",
+  href = "twitterTeams",
 }) => {
   const formatTimeRemaining = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
