@@ -75,11 +75,6 @@ export function SelectedTeamsOverview() {
     (state: RootState) => state.teams
   );
 
-  console.log(success);
-  console.log(showSuccess);
-
-  console.log(teams);
-
   const totalSelectedTeams =
     teams.sections?.reduce(
       (total, section) => total + section.selectedTeams.length,
@@ -145,30 +140,6 @@ export function SelectedTeamsOverview() {
       return () => clearTimeout(timer);
     }
   }, [success, router]);
-
-  // const handleCreateTeam = async () => {
-  //   if (!teamName.trim()) {
-  //     alert("Please enter a team name");
-  //     return;
-  //   }
-
-  //   if (totalSelectedTeams === 0) {
-  //     alert("Please select at least one team member");
-  //     return;
-  //   }
-
-  //   setIsCreating(true);
-  //   try {
-  //     const userId = localStorage.getItem("UserId") || "";
-
-  //     dispatch(saveTeams({ userId, teamName, teams }));
-  //     if (success) {
-  //     }
-  //     setTeamName("");
-  //   } finally {
-  //     setIsCreating(false);
-  //   }
-  // };
 
   const resetTeams = () => {
     dispatch(resetStatus());
