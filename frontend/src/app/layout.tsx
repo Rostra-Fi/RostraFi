@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import { ReduxProvider } from "@/providers/ReduxProvider";
 import AppWalletProvider from "../components/AppWalletProvider";
 import { Toaster } from "react-hot-toast";
+import { Toaster as ToasterAll } from "@/components/ui/toaster";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,8 +34,9 @@ export default function RootLayout({
       >
         <AppWalletProvider>
           <ReduxProvider>
-            <Navbar />
+            {/* <Navbar /> */}
             {children}
+            <ToasterAll />
             <Toaster position="top-center" />
           </ReduxProvider>
         </AppWalletProvider>

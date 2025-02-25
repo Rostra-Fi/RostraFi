@@ -1,14 +1,19 @@
 import React from "react";
 import { CardBody, CardContainer, CardItem } from "./ui/3d-card";
 import Image from "next/image";
-import Link from "next/link";
 import { Clock } from "lucide-react";
+import { useAppSelector, useAppDispatch } from "@/hooks/reduxHooks";
+import { useToast } from "@/hooks/use-toast";
+import { Tournament } from "@/store/tournamentSlice";
+import { useRouter } from "next/navigation";
+import { setCurrentTournament } from "@/store/userSlice";
 
 interface PlatformCardProps {
-  platform: "Twitter" | "Instagram" | "TikTok";
+  platform: string;
   image: string;
   icon: string;
   timeRemaining: number;
+  tournamentData: Tournament;
   href?: string;
 }
 
@@ -17,13 +22,21 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
   image,
   icon,
   timeRemaining,
+  tournamentData,
   href = "twitterTeams",
 }) => {
+  const { toast } = useToast();
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+
   const formatTimeRemaining = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}h ${mins}m`;
   };
+
+  const { userId, userWalletAddress } = useAppSelector((state) => state.user);
+  console.log(userId, userWalletAddress);
 
   const getPlatformStyles = (
     platform: string
@@ -54,6 +67,28 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
   };
 
   const platformStyles = getPlatformStyles(platform);
+
+  // New function to handle action dispatch and routing
+  const handleCreateTeam = (e: React.MouseEvent) => {
+    e.preventDefault();
+
+    if (!userWalletAddress) {
+      toast({
+        variant: "destructive",
+        title: "Wallet not connected",
+        description: "Please connect your wallet to create a team.",
+      });
+      return;
+    }
+
+    // Dispatch action to store selected tournament data before navigation
+    dispatch(setCurrentTournament(tournamentData._id));
+
+    // You can add additional dispatches or async operations here
+
+    // After dispatching the action(s), navigate to the destination route
+    router.push(href);
+  };
 
   return (
     <CardContainer className="inter-var">
@@ -111,8 +146,8 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
         <div className="flex justify-center mt-4">
           <CardItem
             translateZ={20}
-            as={Link}
-            href={href}
+            as="button"
+            onClick={handleCreateTeam}
             className={`px-6 py-1.5 rounded-lg ${platformStyles.background} ${platformStyles.text} text-sm font-bold hover:opacity-90 transition-opacity`}
           >
             Create Team

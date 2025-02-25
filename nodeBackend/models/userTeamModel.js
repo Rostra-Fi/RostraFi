@@ -8,6 +8,11 @@ const UserTeamSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    walletUserId: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'WalletUser',
+      required: true,
+    },
     teamName: {
       type: String,
       required: true,

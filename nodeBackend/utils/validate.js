@@ -1,4 +1,5 @@
 const Joi = require('joi');
+const bs58 = require('bs58');
 const AppError = require('../utils/appError');
 const { MAX_TEAMS_PER_SECTION } = require('../utils/constants');
 
@@ -34,7 +35,23 @@ const validate = (schema) => (req, res, next) => {
   next();
 };
 
+const isValidSolanaAddress = (address) => {
+  try {
+    // Solana addresses are base58 encoded and 32 bytes long
+    if (!address || typeof address !== 'string') return false;
+
+    // Check if the address is valid base58
+    const decoded = bs58.decode(address);
+
+    // Solana addresses are 32 bytes
+    return decoded.length === 32;
+  } catch (error) {
+    return false;
+  }
+};
+
 module.exports = {
   schemas,
   validate,
+  isValidSolanaAddress,
 };

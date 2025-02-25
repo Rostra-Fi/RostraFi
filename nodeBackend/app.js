@@ -15,6 +15,8 @@ const userRouter = require('./routes/userRoutes');
 const reviewRouter = require('./routes/reviewRoutes');
 const sectionRouter = require('./routes/sectionRoutes');
 const userTeamRouter = require('./routes/userTeamRoutes');
+const walletUserRouter = require('./routes/walletUserRoutes');
+const tournamentRouter = require('./routes/tournamentRoutes');
 
 const app = express();
 
@@ -89,9 +91,11 @@ app.use((req, res, next) => {
 //This router(tourRouter,userRouter,reviewRouter) that we are specifieng below are middleware that we mount upon this path so whenever there is a request in this route first it will go url then call the middleware function
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/walletUser', walletUserRouter);
 app.use('/api/v1/reviews', reviewRouter);
 app.use('/api/v1/sections', sectionRouter);
 app.use('/api/v1/userTeams', userTeamRouter);
+app.use('/api/v1/compitition', tournamentRouter);
 
 //Implimenting a route handler that was not cached by any of other route handlers like above route handlers
 //all middlewares function are executed in the order they are in the code

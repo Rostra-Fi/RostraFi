@@ -9,6 +9,7 @@ import { Section } from "../../types/team.types";
 import { SelectedTeamsOverview } from "@/components/SelectedTeamsOverview";
 import { AuroraBack } from "@/components/aroraBack";
 import AnimatedScrollButton from "@/components/AnimatedScrollButton";
+import SolanaNavbar from "@/components/SolanaBar";
 
 async function fetchTeamsData(): Promise<Section[]> {
   try {
@@ -30,6 +31,7 @@ export default async function Page() {
 
   return (
     <div className="bg-black mb-6">
+      <SolanaNavbar />
       <TeamsHeader />
       <AnimatedScrollButton />
       <AuroraBack />

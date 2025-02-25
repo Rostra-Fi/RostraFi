@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import {
   Modal,
@@ -6,8 +7,11 @@ import {
   ModalTrigger,
 } from "./ui/animated-modal";
 import PlatformCard from "./Cards";
+import { useAppSelector } from "@/hooks/reduxHooks";
 
 export function TournamentModal() {
+  const { tournaments, loading } = useAppSelector((state) => state.tournaments);
+
   return (
     <div>
       <Modal>
@@ -37,30 +41,39 @@ export function TournamentModal() {
               <div className="flex-1 overflow-y-auto scrollbar-thumb-gray-600 scrollbar-track-gray-900">
                 <div className="px-4 pt-4 pb-8">
                   <div className="flex flex-wrap justify-center gap-6 items-start">
-                    <div className="transform hover:-translate-y-2 transition-transform duration-300">
-                      <PlatformCard
-                        platform="Twitter"
-                        image="https://media.istockphoto.com/id/1649927045/photo/social-media-social-media-marketing-engagement-post-structure.jpg?s=1024x1024&w=is&k=20&c=L_qdR5o6diw78hc7dSE4SML5tiNPoYVJihGKSe_2cTw="
-                        icon="https://img.freepik.com/premium-vector/twitter-new-x-logo-design-vector_1340851-70.jpg"
-                        timeRemaining={1380}
-                      />
-                    </div>
-                    <div className="transform hover:-translate-y-2 transition-transform duration-300">
-                      <PlatformCard
-                        platform="Instagram"
-                        image="https://cdn.pixabay.com/photo/2016/06/22/22/13/instagram-1474233_1280.jpg"
-                        icon="https://img.freepik.com/premium-vector/instagram-logo_976174-11.jpg"
-                        timeRemaining={1260}
-                      />
-                    </div>
-                    <div className="transform hover:-translate-y-2 transition-transform duration-300">
-                      <PlatformCard
-                        platform="TikTok"
-                        image="https://cdn.pixabay.com/photo/2020/04/19/15/14/tiktok-5064078_1280.jpg"
-                        icon="https://img.freepik.com/free-psd/tiktok-logo-icon-psd-editable_314999-3664.jpg"
-                        timeRemaining={1440}
-                      />
-                    </div>
+                    {loading ? (
+                      <div className="text-white">Loading tournaments...</div>
+                    ) : tournaments.length > 0 ? (
+                      tournaments.map((tournament) => {
+                        // Calculate time remaining in minutes
+                        const endDate = new Date(tournament.endDate);
+                        const now = new Date();
+                        const diffMs = endDate.getTime() - now.getTime();
+                        const timeRemaining = Math.max(
+                          0,
+                          Math.floor(diffMs / (1000 * 60))
+                        );
+
+                        return (
+                          <div
+                            key={tournament._id}
+                            className="transform hover:-translate-y-2 transition-transform duration-300"
+                          >
+                            <PlatformCard
+                              platform={tournament.platform}
+                              image={tournament.image}
+                              icon={tournament.icon}
+                              timeRemaining={timeRemaining}
+                              tournamentData={tournament}
+                            />
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-white">
+                        No active tournaments found
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
