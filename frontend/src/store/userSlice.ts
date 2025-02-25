@@ -1,10 +1,36 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-const initialState = {
+interface TournamentPoint {
+  tournamentId: string;
+  points: number;
+  createdAt: string;
+}
+
+interface UserState {
+  userWalletAddress: string;
+  userId: string;
+  currentTournament: string;
+  points: number;
+  tournamentPoints: TournamentPoint[];
+  isActive: boolean;
+  lastActivity: string;
+  createdAt: string;
+  updatedAt: string;
+  isError: boolean;
+  error: string;
+  loading: boolean;
+}
+
+const initialState: UserState = {
   userWalletAddress: "",
   userId: "",
   currentTournament: "",
   points: 0,
+  tournamentPoints: [],
+  isActive: true,
+  lastActivity: "",
+  createdAt: "",
+  updatedAt: "",
   isError: false,
   error: "",
   loading: false,
@@ -19,13 +45,40 @@ export const userSlice = createSlice({
     },
     setUserWalletAddress: (state, action: PayloadAction<string>) => {
       state.userWalletAddress = action.payload;
-      console.log(action.payload);
     },
     setCurrentTournament: (state, action: PayloadAction<string>) => {
       state.currentTournament = action.payload;
     },
     setUserPoints: (state, action: PayloadAction<number>) => {
       state.points = action.payload;
+    },
+    setUserData: (state, action: PayloadAction<any>) => {
+      const userData = action.payload;
+      state.userId = userData._id;
+      state.userWalletAddress = userData.walletAddress;
+      state.points = userData.points;
+      state.tournamentPoints = userData.tournamentPoints || [];
+      state.isActive = userData.isActive;
+      state.lastActivity = userData.lastActivity;
+      state.createdAt = userData.createdAt;
+      state.updatedAt = userData.updatedAt;
+    },
+    updateTournamentPoints: (state, action: PayloadAction<TournamentPoint>) => {
+      const { tournamentId, points } = action.payload;
+      const existingTournamentIndex = state.tournamentPoints.findIndex(
+        (tp) => tp.tournamentId === tournamentId
+      );
+
+      if (existingTournamentIndex >= 0) {
+        // Update existing tournament points
+        state.tournamentPoints[existingTournamentIndex].points = points;
+      } else {
+        // Add new tournament points
+        state.tournamentPoints.push(action.payload);
+      }
+    },
+    setTournamentPoints: (state, action: PayloadAction<TournamentPoint[]>) => {
+      state.tournamentPoints = action.payload;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
@@ -42,6 +95,11 @@ export const userSlice = createSlice({
       state.userId = "";
       state.userWalletAddress = "";
       state.points = 0;
+      state.tournamentPoints = [];
+      state.isActive = true;
+      state.lastActivity = "";
+      state.createdAt = "";
+      state.updatedAt = "";
       state.isError = false;
       state.error = "";
       state.loading = false;
@@ -52,12 +110,15 @@ export const userSlice = createSlice({
 export const {
   setUserId,
   setUserPoints,
+  setUserData,
   setError,
   resetError,
   logoutUser,
   setLoading,
   setUserWalletAddress,
   setCurrentTournament,
+  updateTournamentPoints,
+  setTournamentPoints,
 } = userSlice.actions;
 
 export const userWalletConnect = (userId: string) => async (dispatch: any) => {
@@ -77,12 +138,13 @@ export const userWalletConnect = (userId: string) => async (dispatch: any) => {
     console.log(data);
 
     if (!response.ok) {
-      throw new Error(data.message || "Failed to save teams");
+      throw new Error(data.message || "Failed to connect wallet");
     }
 
-    dispatch(setUserWalletAddress(data.data.walletAddress));
-    dispatch(setUserId(data.data._id));
-    return data.walletAddress;
+    // Use the new setUserData action to set all user data at once
+    dispatch(setUserData(data.data));
+
+    return data.data.walletAddress;
   } catch (e) {
     if (e instanceof Error) {
       dispatch(setError(e.message));
@@ -92,6 +154,17 @@ export const userWalletConnect = (userId: string) => async (dispatch: any) => {
   } finally {
     dispatch(setLoading(false));
   }
+};
+
+// Function to get tournament-specific points
+export const getTournamentPoints = (
+  state: { user: UserState },
+  tournamentId: string
+): number => {
+  const tournamentPoint = state.user.tournamentPoints.find(
+    (tp) => tp.tournamentId === tournamentId
+  );
+  return tournamentPoint ? tournamentPoint.points : 0;
 };
 
 export default userSlice.reducer;

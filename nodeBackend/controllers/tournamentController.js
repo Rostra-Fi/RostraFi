@@ -126,9 +126,11 @@ exports.getTournamentById = async (req, res) => {
 
 // Record a user visit to a tournament
 exports.visitTournament = async (req, res) => {
+  let session = null;
+
   try {
     const { tournamentId } = req.params;
-    const { walletAddress } = req.body;
+    const { walletAddress, userId } = req.body;
 
     if (!walletAddress) {
       return res.status(400).json({
@@ -144,51 +146,83 @@ exports.visitTournament = async (req, res) => {
       });
     }
 
-    // Start session for transaction
-    const session = await mongoose.startSession();
+    // First check if user already visited tournament without transaction
+    const tournament = await Tournament.findById(tournamentId);
+
+    if (!tournament) {
+      return res.status(404).json({
+        success: false,
+        message: 'Tournament not found',
+      });
+    }
+
+    // Check if tournament is active and ongoing
+    if (!tournament.isActive) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tournament is not active',
+      });
+    }
+
+    const now = new Date();
+    if (now < tournament.startDate || now > tournament.endDate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tournament is not ongoing',
+      });
+    }
+
+    // Find the user
+    const user = await WalletUser.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Check if user has already visited - outside of transaction
+    if (tournament.hasVisited(user._id)) {
+      // Already visited, no need for transaction
+      const tournamentPoints = user.getTournamentPoints(tournament._id);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Already visited this tournament',
+        isFirstVisit: false,
+        tournamentPoints,
+        data: tournament,
+      });
+    }
+
+    // Only start a transaction if we need to record a new visit
+    session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      // Get the tournament
-      const tournament =
-        await Tournament.findById(tournamentId).session(session);
+      // Use findOneAndUpdate with filters that ensure atomic operation
+      const updatedTournament = await Tournament.findOneAndUpdate(
+        {
+          _id: tournamentId,
+          visited: { $ne: user._id }, // Ensure we only update if user hasn't visited
+        },
+        {
+          $addToSet: { visited: user._id },
+        },
+        {
+          session,
+          new: true, // Return updated document
+          runValidators: true,
+        },
+      );
 
-      if (!tournament) {
+      // If no document was updated, it means someone else already added this user
+      if (!updatedTournament) {
+        // Release transaction resources
         await session.abortTransaction();
         session.endSession();
-        return res.status(404).json({
-          success: false,
-          message: 'Tournament not found',
-        });
-      }
-
-      // Check if tournament is active and ongoing
-      if (!tournament.isActive) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(400).json({
-          success: false,
-          message: 'Tournament is not active',
-        });
-      }
-
-      const now = new Date();
-      if (now < tournament.startDate || now > tournament.endDate) {
-        await session.abortTransaction();
-        session.endSession();
-        return res.status(400).json({
-          success: false,
-          message: 'Tournament is not ongoing',
-        });
-      }
-
-      // Find or create the wallet user
-      const user = await WalletUser.findOrCreateWallet(walletAddress);
-
-      // Check if user has already visited
-      if (tournament.hasVisited(user._id)) {
-        await session.abortTransaction();
-        session.endSession();
+        session = null;
 
         // Check if they already have points for this tournament
         const tournamentPoints = user.getTournamentPoints(tournament._id);
@@ -202,32 +236,70 @@ exports.visitTournament = async (req, res) => {
         });
       }
 
-      // Add user to visited array
-      tournament.addVisitor(user._id);
-      await tournament.save({ session });
+      // Add tournament points with retry logic (3 attempts)
+      let pointsAdded = false;
+      let attempts = 0;
+      let error;
 
-      // Award tournament-specific points for first visit
-      await user.addTournamentPoints(tournament._id, tournament.pointsForVisit);
+      while (!pointsAdded && attempts < 3) {
+        try {
+          attempts++;
+          // Award tournament-specific points for first visit
+          await user.addTournamentPoints(
+            tournament._id,
+            tournament.pointsForVisit,
+          );
+          pointsAdded = true;
+        } catch (e) {
+          error = e;
+          // Small delay before retry
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      }
 
+      if (!pointsAdded) {
+        // If all attempts failed, abort transaction
+        await session.abortTransaction();
+        session.endSession();
+        session = null;
+        throw (
+          error ||
+          new Error('Failed to add tournament points after multiple attempts')
+        );
+      }
+
+      // Commit the transaction
       await session.commitTransaction();
       session.endSession();
+      session = null;
 
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'First visit recorded! Points awarded!',
         isFirstVisit: true,
         pointsAwarded: tournament.pointsForVisit,
-        data: tournament,
+        data: updatedTournament,
       });
     } catch (error) {
-      await session.abortTransaction();
-      session.endSession();
+      if (session) {
+        await session.abortTransaction();
+        session.endSession();
+      }
       throw error;
     }
   } catch (error) {
-    res.status(500).json({
+    if (session) {
+      try {
+        await session.abortTransaction();
+        session.endSession();
+      } catch (sessionError) {
+        console.error('Error aborting transaction:', sessionError);
+      }
+    }
+
+    return res.status(500).json({
       success: false,
-      message: error.message,
+      message: `Caused by :: ${error.message}`,
     });
   }
 };

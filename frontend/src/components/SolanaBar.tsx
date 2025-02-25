@@ -8,50 +8,63 @@ import {
 } from "../components/ui/animated-modal";
 import { Wallet } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
+import { getTournamentPoints } from "@/store/userSlice";
 
 const SolanaNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [balance, setBalance] = useState("0.000");
-  const [points, setPoints] = useState(25);
+  //   const [points, setPoints] = useState(25);
   const dispatch = useAppDispatch();
-  const { userId, currentTournament } = useAppSelector((state) => state.user);
+  const { userId, userWalletAddress, currentTournament } = useAppSelector(
+    (state) => state.user
+  );
   console.log(userId, currentTournament);
 
-  useEffect(() => {
-    const isVisited = async () => {
-      try {
-        const response = await fetch(
-          `http://127.0.0.1:3001/api/v1/compitition/tournaments/${tournamentId}/visit`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              userId,
-            }),
-          }
-        );
+  const points = useAppSelector((state) =>
+    getTournamentPoints(state, currentTournament)
+  );
 
-        const data = await response.json();
-        console.log(data);
+  //   useEffect(() => {
+  //     const isVisited = async () => {
+  //       const tournamentId = currentTournament;
+  //       if (!tournamentId) return; // Add guard clause
 
-        if (!response.ok) {
-          throw new Error(data.message || "Failed to record tournament visit");
-        }
+  //       try {
+  //         const response = await fetch(
+  //           `http://127.0.0.1:3001/api/v1/compitition/tournaments/${tournamentId}/visit`,
+  //           {
+  //             method: "POST",
+  //             headers: {
+  //               "Content-Type": "application/json",
+  //             },
+  //             body: JSON.stringify({
+  //               walletAddress: userWalletAddress,
+  //               userId: userId,
+  //             }),
+  //           }
+  //         );
 
-        return data;
-      } catch (e) {
-        if (e instanceof Error) {
-          console.log(e.message);
-        } else {
-          console.log("An unknown error occurred");
-        }
-      }
-    };
+  //         const data = await response.json();
+  //         console.log(data);
 
-    isVisited();
-  }, [userId]);
+  //         if (!response.ok) {
+  //           throw new Error(data.message || "Failed to record tournament visit");
+  //         }
+
+  //         return data;
+  //       } catch (e) {
+  //         if (e.name === "AbortError") {
+  //           console.log("Request was aborted");
+  //         } else if (e instanceof Error) {
+  //           console.log(e.message);
+  //         } else {
+  //           console.log("An unknown error occurred");
+  //         }
+  //       }
+  //     };
+
+  //     isVisited();
+  //   }, [currentTournament, userWalletAddress, userId]);
 
   useEffect(() => {
     const handleScroll = () => {

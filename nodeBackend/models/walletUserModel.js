@@ -90,7 +90,7 @@ userWalletSchema.methods.addTournamentPoints = function (
   );
 
   if (existingPointIndex >= 0) {
-    // Update existing tournament points
+    // FIX: Use += instead of === for updating points
     this.tournamentPoints[existingPointIndex].points += pointsToAdd;
   } else {
     // Add new tournament points entry
