@@ -1,17 +1,28 @@
 const UserTeam = require('../models/userTeamModel');
 const Section = require('../models/section');
+const WalletUser = require('../models/walletUserModel');
 const AppError = require('../utils/appError');
 const logger = require('../config/logger');
 const { MAX_TEAMS_PER_SECTION } = require('../utils/constants');
-const { mongoose } = require('mongoose');
+const mongoose = require('mongoose');
 
 exports.createUserTeam = async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
-    const { userId, teamName, sections } = req.body;
-    console.log(sections);
+    const { userId, teamName, sections, walletUserId, tournamentId } = req.body;
+
+    // Check if tournament exists
+    if (!tournamentId) {
+      return next(new AppError('Invalid tournament ID', 400));
+    }
+
+    // Check if wallet user exists
+    const walletUser = await WalletUser.findById(walletUserId).session(session);
+    if (!walletUser) {
+      return next(new AppError('Wallet user not found', 404));
+    }
 
     // Check existing team name for user
     const existingTeam = await UserTeam.findOne({
@@ -21,7 +32,7 @@ exports.createUserTeam = async (req, res, next) => {
     }).session(session);
 
     if (existingTeam) {
-      throw new AppError('Team name already exists for this user', 400);
+      return next(new AppError('Team name already exists for this user', 400));
     }
 
     // Validate all sections and their teams
@@ -32,13 +43,17 @@ exports.createUserTeam = async (req, res, next) => {
           .session(session);
 
         if (!existingSection) {
-          throw new AppError(`Section not found: ${section.sectionId}`, 400);
+          return next(
+            new AppError(`Section not found: ${section.sectionId}`, 400),
+          );
         }
 
         if (existingSection.name !== section.name) {
-          throw new AppError(
-            `Section name does not match for: ${section.sectionId}`,
-            400,
+          return next(
+            new AppError(
+              `Section name does not match for: ${section.sectionId}`,
+              400,
+            ),
           );
         }
 
@@ -68,12 +83,19 @@ exports.createUserTeam = async (req, res, next) => {
 
     // Create user team with validated sections
     const userTeam = new UserTeam({
+      walletUserId,
       userId,
       teamName,
       sections: validatedSections,
+      tournamentId, // Associate team with tournament if provided
     });
 
     await userTeam.save({ session });
+
+    // Reset tournament points if tournament ID is provided
+    if (tournamentId) {
+      await walletUser.resetTournamentPoints(tournamentId);
+    }
 
     // Populate and prepare response
     const populatedTeam = await UserTeam.findById(userTeam._id)
@@ -84,9 +106,11 @@ exports.createUserTeam = async (req, res, next) => {
     await session.commitTransaction();
 
     logger.info('User team created successfully', {
+      walletUserId,
       userId,
       teamId: userTeam._id,
       sections: validatedSections.map((s) => s.sectionId),
+      tournamentId,
     });
 
     res.status(201).json({
@@ -104,7 +128,13 @@ exports.createUserTeam = async (req, res, next) => {
 
 exports.getUserTeams = async (req, res, next) => {
   try {
-    const { userId } = req.params;
+    const { userId, walletUserId } = req.params;
+
+    // Check if wallet user exists
+    const walletUser = await WalletUser.findById(walletUserId);
+    if (!walletUser) {
+      return next(new AppError('Wallet user not found', 404));
+    }
 
     const teams = await UserTeam.find({
       userId,
@@ -112,7 +142,7 @@ exports.getUserTeams = async (req, res, next) => {
     }).populate([
       {
         path: 'sections.sectionId',
-        select: ' _id ',
+        select: '_id name', // Added name to selection
       },
       {
         path: 'sections.selectedTeams',
@@ -120,7 +150,7 @@ exports.getUserTeams = async (req, res, next) => {
     ]);
 
     if (!teams.length) {
-      throw new AppError('No teams found for this user', 404);
+      return next(new AppError('No teams found for this user', 404));
     }
 
     res.status(200).json({
@@ -138,48 +168,91 @@ exports.updateUserTeam = async (req, res, next) => {
 
   try {
     const { teamId } = req.params;
-    const { selectedTeams } = req.body;
+    const { userId, sections, walletUserId } = req.body;
+
+    // Check if wallet user exists
+    const walletUser = await WalletUser.findById(walletUserId).session(session);
+    if (!walletUser) {
+      return next(new AppError('Wallet user not found', 404));
+    }
 
     const userTeam = await UserTeam.findOne({
       _id: teamId,
-      userId: req.body.userId,
+      userId,
       isActive: true,
     }).session(session);
 
     if (!userTeam) {
-      next(new AppError('Team not found or unauthorized', 404));
+      return next(new AppError('Team not found or unauthorized', 404));
     }
 
-    // Validate selected teams
-    const section = await Section.findById(userTeam.section.sectionId)
-      .populate('teams')
-      .session(session);
+    // For each section in the request, validate and update
+    if (sections && sections.length > 0) {
+      // Validate all sections and their teams
+      const validatedSections = await Promise.all(
+        sections.map(async (section) => {
+          const existingSection = await Section.findById(section.sectionId)
+            .populate('teams')
+            .session(session);
 
-    const validTeamIds = new Set(
-      section.teams.map((team) => team._id.toString()),
-    );
-    const invalidTeams = selectedTeams.filter(
-      (teamId) => !validTeamIds.has(teamId.toString()),
-    );
+          if (!existingSection) {
+            return next(
+              new AppError(`Section not found: ${section.sectionId}`, 400),
+            );
+          }
 
-    if (invalidTeams.length > 0) {
-      next(
-        new AppError('Some selected teams do not belong to this section', 400),
+          if (existingSection.name !== section.name) {
+            return next(
+              new AppError(
+                `Section name does not match for: ${section.sectionId}`,
+                400,
+              ),
+            );
+          }
+
+          // Validate selected teams exist in section
+          const validTeamIds = new Set(
+            existingSection.teams.map((team) => team._id.toString()),
+          );
+
+          const invalidTeams = section.selectedTeams.filter(
+            (teamId) => !validTeamIds.has(teamId.toString()),
+          );
+
+          if (invalidTeams.length > 0) {
+            return next(
+              new AppError(
+                `Some selected teams do not belong to section: ${section.sectionId}`,
+                400,
+              ),
+            );
+          }
+
+          return {
+            name: existingSection.name,
+            sectionId: existingSection._id,
+            selectedTeams: section.selectedTeams,
+          };
+        }),
       );
+
+      userTeam.sections = validatedSections;
+    } else if (req.body.teamName) {
+      // If only team name is being updated
+      userTeam.teamName = req.body.teamName;
     }
 
-    userTeam.section.selectedTeams = selectedTeams;
     await userTeam.save({ session });
 
     const updatedTeam = await UserTeam.findById(teamId)
-      .populate('section.sectionId')
-      .populate('section.selectedTeams')
+      .populate('sections.sectionId')
+      .populate('sections.selectedTeams')
       .session(session);
 
     await session.commitTransaction();
 
     logger.info('User team updated successfully', {
-      userId: req.body.userId,
+      userId,
       teamId,
     });
 
@@ -197,7 +270,13 @@ exports.updateUserTeam = async (req, res, next) => {
 
 exports.deleteUserTeam = async (req, res, next) => {
   try {
-    const { userId, teamId } = req.params;
+    const { userId, teamId, walletUserId } = req.params;
+
+    // Check if wallet user exists
+    const walletUser = await WalletUser.findById(walletUserId);
+    if (!walletUser) {
+      return next(new AppError('Wallet user not found', 404));
+    }
 
     // Soft delete
     const deletedTeam = await UserTeam.findOneAndUpdate(
@@ -207,7 +286,7 @@ exports.deleteUserTeam = async (req, res, next) => {
     );
 
     if (!deletedTeam) {
-      next(new AppError('Team not found or unauthorized', 404));
+      return next(new AppError('Team not found or unauthorized', 404));
     }
 
     logger.info('User team deleted successfully', { userId, teamId });

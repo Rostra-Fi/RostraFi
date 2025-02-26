@@ -1,3 +1,4 @@
+"use client";
 import React from "react";
 import { GridBackgroundDemo } from "./ui/gridBackgorund";
 

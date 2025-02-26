@@ -25,6 +25,12 @@ const TeamSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
+    points: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: 0,
+    },
   },
   { timestamps: true },
 );

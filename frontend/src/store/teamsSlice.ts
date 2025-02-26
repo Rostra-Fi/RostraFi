@@ -84,6 +84,8 @@ export const saveTeams =
   (teamData: {
     userId: string;
     teamName: string;
+    walletUserId: string;
+    tournamentId: string;
     teams: { sections: Section[] };
   }) =>
   async (dispatch: any) => {
@@ -100,6 +102,8 @@ export const saveTeams =
         body: JSON.stringify({
           userId: teamData.userId,
           teamName: teamData.teamName,
+          walletUserId: teamData.walletUserId,
+          tournamentId: teamData.tournamentId,
           sections: formattedTeams.sections,
         }),
       });

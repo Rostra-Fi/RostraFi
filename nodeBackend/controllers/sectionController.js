@@ -21,7 +21,7 @@ exports.createSection = async (req, res, next) => {
 exports.addTeamToSection = async (req, res, next) => {
   try {
     const { sectionId } = req.params;
-    const { name, image, followers, description, audio } = req.body;
+    const { name, image, followers, description, audio, points } = req.body;
 
     if (!name || !image || !description || !audio) {
       next(new AppError('All fields are required', 400));
@@ -30,7 +30,14 @@ exports.addTeamToSection = async (req, res, next) => {
     const section = await Section.findById(sectionId);
     if (!section) next(new AppError('Section not found', 400));
 
-    const team = new Team({ name, image, followers, description, audio });
+    const team = new Team({
+      name,
+      image,
+      followers,
+      description,
+      audio,
+      points,
+    });
     await team.save();
 
     section.teams.push(team._id);

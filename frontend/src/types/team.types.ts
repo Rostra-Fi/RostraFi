@@ -23,6 +23,7 @@ export interface Team {
   image: string;
   description: string;
   followers: number;
+  points: number;
 }
 
 export interface Section {
