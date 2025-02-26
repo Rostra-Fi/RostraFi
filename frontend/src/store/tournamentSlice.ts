@@ -25,6 +25,7 @@ interface TournamentState {
   tournaments: Tournament[];
   selectedTournament: Tournament | null;
   count: number;
+  isParticiapated: boolean;
   isError: boolean;
   error: string;
   loading: boolean;
@@ -34,6 +35,7 @@ const initialState: TournamentState = {
   tournaments: [],
   selectedTournament: null,
   count: 0,
+  isParticiapated: false,
   isError: false,
   error: "",
   loading: false,
@@ -51,6 +53,9 @@ export const tournamentSlice = createSlice({
     },
     setSelectedTournament: (state, action: PayloadAction<Tournament>) => {
       state.selectedTournament = action.payload;
+    },
+    setIsParticipated: (state, action: PayloadAction<boolean>) => {
+      state.isParticiapated = action.payload;
     },
     addToVisited: (state, action: PayloadAction<string>) => {
       if (state.selectedTournament) {
@@ -110,6 +115,7 @@ export const tournamentSlice = createSlice({
       state.isError = false;
       state.error = "";
       state.loading = false;
+      state.isParticiapated = false;
     },
   },
 });
@@ -124,13 +130,14 @@ export const {
   setError,
   resetError,
   resetTournamentState,
+  setIsParticipated,
 } = tournamentSlice.actions;
 
 export const fetchTournaments = () => async (dispatch: any) => {
   try {
     dispatch(setLoading(true));
     const response = await fetch(
-      "http://127.0.0.1:3001/api/v1/compitition/tournaments",
+      "http://127.0.0.1:3001/api/v1/compitition/tournaments?active=true",
       {
         method: "GET",
         headers: {
@@ -231,29 +238,36 @@ export const visitTournament =
   };
 
 export const participateInTournament =
-  (tournamentId: string, userId: string) => async (dispatch: any) => {
+  (tournamentId: string, walletAddress: string) => async (dispatch: any) => {
     try {
       dispatch(setLoading(true));
       const response = await fetch(
-        `http://127.0.0.1:3001/api/v1/tournaments/${tournamentId}/participate`,
+        `http://127.0.0.1:3001/api/v1/compitition/tournaments/${tournamentId}/participate`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            userId,
+            walletAddress,
           }),
         }
       );
 
       const data = await response.json();
+      console.log(data);
 
       if (!response.ok) {
         throw new Error(data.message || "Failed to participate in tournament");
       }
 
-      dispatch(addToParticipated(userId));
+      if (data.success) {
+        dispatch(setIsParticipated(true));
+      } else {
+        dispatch(setIsParticipated(false));
+      }
+
+      // dispatch(addToParticipated(userId));
       return data;
     } catch (e) {
       if (e instanceof Error) {

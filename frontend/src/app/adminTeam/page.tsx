@@ -8,6 +8,7 @@ import {
   Settings,
   ChevronRight,
 } from "lucide-react";
+import Image from "next/image";
 
 interface Team {
   id: string;
@@ -15,6 +16,7 @@ interface Team {
   image: string;
   description: string;
   audio: string;
+  points: string;
 }
 
 interface Section {
@@ -30,6 +32,7 @@ export default function AdminDashboard() {
   const [teamImage, setTeamImage] = useState("");
   const [teamDescription, setTeamDescription] = useState("");
   const [teamAudio, setTeamAudio] = useState("");
+  const [teamPoints, setTeamPoints] = useState("");
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -101,6 +104,7 @@ export default function AdminDashboard() {
             image: teamImage,
             description: teamDescription,
             audio: teamAudio,
+            points: teamPoints,
           }),
         }
       );
@@ -121,6 +125,7 @@ export default function AdminDashboard() {
       setTeamImage("");
       setTeamDescription("");
       setTeamAudio("");
+      setTeamPoints("");
     } catch (err) {
       setError("Failed to add team. Please try again.");
       console.error(err);
@@ -230,10 +235,12 @@ export default function AdminDashboard() {
                                       </p>
                                     </div>
                                     {team.image && (
-                                      <img
+                                      <Image
                                         src={team.image}
                                         alt={team.name}
-                                        className="w-16 h-16 rounded-lg object-cover"
+                                        width={80}
+                                        height={80}
+                                        className="rounded-lg"
                                       />
                                     )}
                                   </div>
@@ -316,6 +323,18 @@ export default function AdminDashboard() {
               />
             </div>
 
+            <div>
+              <label className="block mb-2 font-medium text-white">
+                Team Points
+              </label>
+              <input
+                type="text"
+                value={teamPoints}
+                onChange={(e) => setTeamPoints(e.target.value)}
+                className="w-full px-4 py-3 bg-black/50 backdrop-blur-sm border-2 border-zinc-800/50 rounded-xl focus:outline-none focus:border-purple-500/50 text-white"
+              />
+            </div>
+
             <div className="md:col-span-2">
               <label className="block mb-2 font-medium text-white">
                 Team Description
@@ -336,7 +355,8 @@ export default function AdminDashboard() {
                   !teamName ||
                   !teamImage ||
                   !teamDescription ||
-                  !teamAudio
+                  !teamAudio ||
+                  !teamPoints
                 }
                 className="w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-purple-500/20 flex items-center justify-center"
               >

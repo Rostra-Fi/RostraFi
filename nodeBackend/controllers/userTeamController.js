@@ -12,10 +12,9 @@ exports.createUserTeam = async (req, res, next) => {
 
   try {
     const { userId, teamName, sections, walletUserId, tournamentId } = req.body;
-    console.log(sections);
 
     // Check if tournament exists
-    if (tournamentId && !isValidObjectId(tournamentId)) {
+    if (!tournamentId) {
       return next(new AppError('Invalid tournament ID', 400));
     }
 

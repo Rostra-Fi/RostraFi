@@ -1,11 +1,15 @@
-"use client";
-import Image from "next/image";
-import React, { useEffect, useId, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { useOutsideClick } from "@/hooks/use-outside-click";
-import { setTeams } from "@/store/teamsSlice";
+import { useState, useRef, useId, useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { TeamMember, Team } from "@/types/team.types";
+import { setTeams } from "@/store/teamsSlice";
+import { Team } from "@/types/team.types";
+import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
+import { useAppSelector } from "@/hooks/reduxHooks";
+import { updateTournamentTeamSelectionPoints } from "@/store/userSlice";
+import { getTournamentTeamSelectionPoints } from "@/store/userSlice";
+import toast from "react-hot-toast";
+import { useOutsideClick } from "../hooks/use-outside-click";
+import { useParams } from "next/navigation";
 
 type SelectionState = {
   isPending: boolean;
@@ -30,12 +34,15 @@ export function InfluencersTeamSection({
   const [active, setActive] = useState<Team | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Team[]>([]);
   const [selectionStates, setSelectionStates] = useState<SelectionMap>({});
+  const [showPointsInfo, setShowPointsInfo] = useState(false);
   const ref = useRef<HTMLDivElement>(null as unknown as HTMLDivElement);
   const id = useId();
 
-  const isTeamFull = selectedTeam.length >= 4;
   const dispatch = useDispatch();
-  console.log(selectedTeam);
+  const { tourId } = useParams();
+  const tournamentTeamSelectionPoints = useAppSelector((state) =>
+    getTournamentTeamSelectionPoints(state, tourId as string)
+  );
 
   const handleTeamUpdate = (selectedTeam: Team[]) => {
     dispatch(
@@ -73,7 +80,7 @@ export function InfluencersTeamSection({
     };
 
     if (currentState.isSelected) {
-      // Remove from team
+      // Remove from team and restore points
       const updatedTeam = selectedTeam.filter(
         (teamMember) => teamMember.name !== member.name
       );
@@ -83,7 +90,37 @@ export function InfluencersTeamSection({
         [member.name]: { isPending: false, isSelected: false },
       });
       handleTeamUpdate(updatedTeam);
+
+      // Restore points when removing a team member - now tournament specific
+      const pointsToRestore = member.points || 250;
+      dispatch(
+        updateTournamentTeamSelectionPoints({
+          tournamentId: tourId as string,
+          points: pointsToRestore,
+        })
+      );
+
+      toast.success(
+        `Removed ${member.name}. +${pointsToRestore} points returned.`
+      );
+
+      // Show points info when a team member is removed
+      setShowPointsInfo(true);
+      setTimeout(() => setShowPointsInfo(false), 3000);
     } else {
+      // Check if we have enough points
+      const memberPoints = member.points || 250;
+      if (tournamentTeamSelectionPoints < memberPoints) {
+        toast.error(
+          `Not enough points! You need ${memberPoints} points to select ${member.name}.`
+        );
+
+        // Show points info when selection fails due to insufficient points
+        setShowPointsInfo(true);
+        setTimeout(() => setShowPointsInfo(false), 3000);
+        return;
+      }
+
       // Start selection process
       setSelectionStates({
         ...selectionStates,
@@ -92,22 +129,45 @@ export function InfluencersTeamSection({
 
       // Animate and then add to team after delay
       setTimeout(() => {
-        if (!isTeamFull) {
-          const updatedTeam = [...selectedTeam, member];
-          setSelectedTeam(updatedTeam);
-          setSelectionStates({
-            ...selectionStates,
-            [member.name]: { isPending: false, isSelected: true },
-          });
-          handleTeamUpdate(updatedTeam);
-        }
+        const updatedTeam = [...selectedTeam, member];
+        setSelectedTeam(updatedTeam);
+        setSelectionStates({
+          ...selectionStates,
+          [member.name]: { isPending: false, isSelected: true },
+        });
+        handleTeamUpdate(updatedTeam);
+
+        // Deduct points when adding a team member - now tournament specific
+        dispatch(
+          updateTournamentTeamSelectionPoints({
+            tournamentId: tourId as string,
+            points: -(member.points || 250),
+          })
+        );
+
+        toast.success(
+          `Added ${member.name} to your team. -${member.points || 250} points.`
+        );
+
+        // Show points info when a team member is added
+        setShowPointsInfo(true);
+        setTimeout(() => setShowPointsInfo(false), 3000);
       }, 800);
     }
   };
 
-  const getMemberState = (member: TeamMember): SelectionState => {
+  const getMemberState = (member: Team): SelectionState => {
     return (
       selectionStates[member.name] || { isPending: false, isSelected: false }
+    );
+  };
+
+  // Check if we can afford this team member
+  const canAfford = (member: Team): boolean => {
+    const memberPoints = member.points || 250;
+    return (
+      tournamentTeamSelectionPoints >= memberPoints ||
+      getMemberState(member).isSelected
     );
   };
 
@@ -172,12 +232,22 @@ export function InfluencersTeamSection({
                     >
                       {active.description}
                     </motion.p>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="mt-2 font-bold text-purple-600 dark:text-purple-400"
+                    >
+                      Cost: {active.points || 250} points
+                    </motion.div>
                   </div>
 
                   <motion.button
                     layoutId={`button-${active.name}-${id}`}
                     onClick={() => {
-                      if (!isTeamFull || getMemberState(active).isSelected) {
+                      if (
+                        canAfford(active) ||
+                        getMemberState(active).isSelected
+                      ) {
                         handleTeamSelection(active);
                         setTimeout(() => setActive(null), 800);
                       }
@@ -191,11 +261,13 @@ export function InfluencersTeamSection({
                           : "bg-green-500 text-white"
                       } 
                       ${
-                        isTeamFull && !getMemberState(active).isSelected
+                        !canAfford(active) && !getMemberState(active).isSelected
                           ? "opacity-50 cursor-not-allowed"
                           : ""
                       }`}
-                    disabled={isTeamFull && !getMemberState(active).isSelected}
+                    disabled={
+                      !canAfford(active) && !getMemberState(active).isSelected
+                    }
                   >
                     {getMemberState(active).isSelected
                       ? "Remove from Team"
@@ -235,25 +307,41 @@ export function InfluencersTeamSection({
         )}
       </AnimatePresence>
 
-      {/* Team List */}
-      <div
-        className={`transition-colors duration-300 ${
-          isTeamFull ? "bg-neutral-100 dark:bg-neutral-800" : ""
-        } rounded-xl p-4`}
-      >
-        <div className="mb-4">
-          <p className="text-neutral-600 dark:text-neutral-400">
-            Selected Team Members: {selectedTeam.length}/4
-          </p>
-        </div>
+      {/* Section Header - Removed Premium and Tournament Points from here */}
+      <div className="mb-4 flex justify-between items-center">
+        <h2 className="text-xl font-bold text-neutral-800 dark:text-neutral-200">
+          {sectionName}
+        </h2>
 
+        {/* Points info only shows when users interact with team selection */}
+        <AnimatePresence>
+          {showPointsInfo && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-2 bg-purple-100 dark:bg-purple-900/30 px-4 py-2 rounded-full"
+            >
+              <span className="text-purple-600 dark:text-purple-400 font-medium">
+                Points Remaining:
+              </span>
+              <span className="text-purple-800 dark:text-purple-300 font-bold">
+                {tournamentTeamSelectionPoints}
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Team List - Removed Selected Team Members counter */}
+      <div className="transition-colors duration-300 rounded-xl p-4">
         <ul className="max-w-2xl w-full gap-4">
           {teams.map((member) => (
             <motion.div
               layoutId={`card-${member.name}-${id}`}
               key={`card-${member.name}-${id}`}
               onClick={() =>
-                !isTeamFull || getMemberState(member).isSelected
+                canAfford(member) || getMemberState(member).isSelected
                   ? setActive(member)
                   : null
               }
@@ -261,11 +349,13 @@ export function InfluencersTeamSection({
                 ${
                   getMemberState(member).isSelected
                     ? "bg-green-50 dark:bg-green-900"
+                    : !canAfford(member)
+                    ? "bg-red-50/50 dark:bg-red-900/20"
                     : "hover:bg-neutral-50 dark:hover:bg-neutral-800"
                 } 
                 ${
-                  isTeamFull && !getMemberState(member).isSelected
-                    ? "opacity-50 cursor-not-allowed"
+                  !canAfford(member) && !getMemberState(member).isSelected
+                    ? "opacity-70 cursor-not-allowed"
                     : ""
                 }`}
             >
@@ -293,6 +383,9 @@ export function InfluencersTeamSection({
                   >
                     {member.description}
                   </motion.p>
+                  <div className="text-purple-600 dark:text-purple-400 font-medium text-sm mt-1">
+                    {member.points || 250} points
+                  </div>
                 </div>
               </div>
 
@@ -302,16 +395,18 @@ export function InfluencersTeamSection({
                   ${
                     getMemberState(member).isSelected
                       ? "bg-red-500 text-white"
+                      : !canAfford(member)
+                      ? "bg-gray-300 text-gray-500 dark:bg-gray-700"
                       : "bg-gray-100 hover:bg-green-500 hover:text-white text-black"
                   }
                   ${
-                    isTeamFull && !getMemberState(member).isSelected
+                    !canAfford(member) && !getMemberState(member).isSelected
                       ? "opacity-50 cursor-not-allowed"
                       : ""
                   }`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (!isTeamFull || getMemberState(member).isSelected) {
+                  if (canAfford(member) || getMemberState(member).isSelected) {
                     if (getMemberState(member).isSelected) {
                       handleTeamSelection(member);
                     } else {
@@ -319,7 +414,9 @@ export function InfluencersTeamSection({
                     }
                   }
                 }}
-                disabled={isTeamFull && !getMemberState(member).isSelected}
+                disabled={
+                  !canAfford(member) && !getMemberState(member).isSelected
+                }
               >
                 {getMemberState(member).isSelected ? "Remove" : "Select"}
               </motion.button>

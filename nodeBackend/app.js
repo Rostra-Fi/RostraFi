@@ -34,13 +34,13 @@ if (process.env.NODE_ENV === 'development') {
 app.use(cors());
 
 //it ia a middleware function which we can use using app.use
-const limiter = rateLimit({
-  max: 100,
-  windowMs: 60 * 60 * 1000,
-  message: 'Too many requests from this IP,please try again in an hour ',
-});
+// const limiter = rateLimit({
+//   max: 100,
+//   windowMs: 60 * 60 * 1000,
+//   message: 'Too many requests from this IP,please try again in an hour ',
+// });
 
-app.use('/api', limiter); //so this middleware will apply to all the routes which starts with this given route
+// app.use('/api', limiter); //so this middleware will apply to all the routes which starts with this given route
 
 //Body parser,reading data from body into req.body
 app.use(express.json({ limit: '10kb' })); // it is a middleware and it is a function that can modify the incoming request data

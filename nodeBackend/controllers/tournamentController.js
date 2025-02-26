@@ -125,6 +125,144 @@ exports.getTournamentById = async (req, res) => {
 };
 
 // Record a user visit to a tournament
+
+// exports.visitTournament = async (req, res) => {
+//   let session = null;
+
+//   try {
+//     const { tournamentId } = req.params;
+//     const { walletAddress, userId } = req.body;
+
+//     // Input validation
+//     if (!walletAddress) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Wallet address is required',
+//       });
+//     }
+
+//     if (!isValidObjectId(tournamentId)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Invalid tournament ID',
+//       });
+//     }
+
+//     // Find the tournament
+//     const tournament = await Tournament.findById(tournamentId);
+//     if (!tournament) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'Tournament not found',
+//       });
+//     }
+
+//     // Check tournament status
+//     const now = new Date();
+//     if (
+//       !tournament.isActive ||
+//       now < tournament.startDate ||
+//       now > tournament.endDate
+//     ) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Tournament is not active or not ongoing',
+//       });
+//     }
+
+//     // Find the user
+//     const user = await WalletUser.findById(userId);
+//     if (!user) {
+//       return res.status(404).json({
+//         success: false,
+//         message: 'User not found',
+//       });
+//     }
+
+//     // Check if user already visited - outside of transaction
+//     if (tournament.hasVisited(user._id)) {
+//       const tournamentPoints = user.getTournamentPoints(tournament._id);
+//       return res.status(200).json({
+//         success: true,
+//         message: 'Already visited this tournament',
+//         isFirstVisit: false,
+//         tournamentPoints,
+//         data: tournament,
+//       });
+//     }
+
+//     // Start transaction
+//     session = await mongoose.startSession();
+//     session.startTransaction();
+
+//     // Atomic update to mark visit
+//     const updatedTournament = await Tournament.findOneAndUpdate(
+//       {
+//         _id: tournamentId,
+//         visited: { $ne: user._id },
+//       },
+//       {
+//         $addToSet: { visited: user._id },
+//       },
+//       {
+//         session,
+//         new: true,
+//         runValidators: true,
+//       },
+//     );
+
+//     // If no document was updated, user already visited (race condition)
+//     if (!updatedTournament) {
+//       await session.abortTransaction();
+//       session.endSession();
+
+//       const tournamentPoints = user.getTournamentPoints(tournament._id);
+//       return res.status(200).json({
+//         success: true,
+//         message: 'Already visited this tournament',
+//         isFirstVisit: false,
+//         tournamentPoints,
+//         data: tournament,
+//       });
+//     }
+
+//     // Add points in the same transaction
+//     await user.addTournamentPoints(
+//       tournament._id,
+//       tournament.pointsForVisit,
+//       session,
+//     );
+
+//     // Commit transaction
+//     await session.commitTransaction();
+//     session.endSession();
+
+//     return res.status(200).json({
+//       success: true,
+//       message: 'First visit recorded! Points awarded!',
+//       isFirstVisit: true,
+//       pointsAwarded: tournament.pointsForVisit,
+//       data: updatedTournament,
+//     });
+//   } catch (error) {
+//     // Only abort if session exists and is active
+//     if (session && session.inTransaction()) {
+//       try {
+//         await session.abortTransaction();
+//       } catch (abortError) {
+//         console.error('Error aborting transaction:', abortError);
+//       } finally {
+//         session.endSession();
+//       }
+//     }
+
+//     return res.status(500).json({
+//       success: false,
+//       message: `Error: ${error.message}`,
+//     });
+//   }
+// };
+
 exports.visitTournament = async (req, res) => {
   let session = null;
 
@@ -132,6 +270,9 @@ exports.visitTournament = async (req, res) => {
     const { tournamentId } = req.params;
     const { walletAddress, userId } = req.body;
 
+    console.log(tournamentId, walletAddress, userId);
+
+    // Input validation
     if (!walletAddress) {
       return res.status(400).json({
         success: false,
@@ -139,16 +280,15 @@ exports.visitTournament = async (req, res) => {
       });
     }
 
-    if (!isValidObjectId(tournamentId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid tournament ID',
-      });
-    }
+    // if (!isValidObjectId(tournamentId)) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     message: 'Invalid tournament ID',
+    //   });
+    // }
 
-    // First check if user already visited tournament without transaction
+    // Find the tournament
     const tournament = await Tournament.findById(tournamentId);
-
     if (!tournament) {
       return res.status(404).json({
         success: false,
@@ -156,25 +296,21 @@ exports.visitTournament = async (req, res) => {
       });
     }
 
-    // Check if tournament is active and ongoing
-    if (!tournament.isActive) {
-      return res.status(400).json({
-        success: false,
-        message: 'Tournament is not active',
-      });
-    }
-
+    // Check tournament status
     const now = new Date();
-    if (now < tournament.startDate || now > tournament.endDate) {
+    if (
+      !tournament.isActive ||
+      now < tournament.startDate ||
+      now > tournament.endDate
+    ) {
       return res.status(400).json({
         success: false,
-        message: 'Tournament is not ongoing',
+        message: 'Tournament is not active or not ongoing',
       });
     }
 
     // Find the user
     const user = await WalletUser.findById(userId);
-
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -182,11 +318,21 @@ exports.visitTournament = async (req, res) => {
       });
     }
 
-    // Check if user has already visited - outside of transaction
-    if (tournament.hasVisited(user._id)) {
-      // Already visited, no need for transaction
+    // First check if user has already participated and return early if true
+    if (tournament.hasParticipated(user._id)) {
       const tournamentPoints = user.getTournamentPoints(tournament._id);
+      return res.status(200).json({
+        success: true,
+        message: 'You have already participated in this tournament',
+        isParticipant: true,
+        tournamentPoints,
+        data: tournament,
+      });
+    }
 
+    // Check if user already visited - outside of transaction
+    if (tournament.hasVisited(user._id)) {
+      const tournamentPoints = user.getTournamentPoints(tournament._id);
       return res.status(200).json({
         success: true,
         message: 'Already visited this tournament',
@@ -196,110 +342,76 @@ exports.visitTournament = async (req, res) => {
       });
     }
 
-    // Only start a transaction if we need to record a new visit
+    // Start transaction
     session = await mongoose.startSession();
     session.startTransaction();
 
-    try {
-      // Use findOneAndUpdate with filters that ensure atomic operation
-      const updatedTournament = await Tournament.findOneAndUpdate(
-        {
-          _id: tournamentId,
-          visited: { $ne: user._id }, // Ensure we only update if user hasn't visited
-        },
-        {
-          $addToSet: { visited: user._id },
-        },
-        {
-          session,
-          new: true, // Return updated document
-          runValidators: true,
-        },
-      );
+    // Atomic update to mark visit
+    const updatedTournament = await Tournament.findOneAndUpdate(
+      {
+        _id: tournamentId,
+        visited: { $ne: user._id },
+      },
+      {
+        $addToSet: { visited: user._id },
+      },
+      {
+        session,
+        new: true,
+        runValidators: true,
+      },
+    );
 
-      // If no document was updated, it means someone else already added this user
-      if (!updatedTournament) {
-        // Release transaction resources
-        await session.abortTransaction();
-        session.endSession();
-        session = null;
-
-        // Check if they already have points for this tournament
-        const tournamentPoints = user.getTournamentPoints(tournament._id);
-
-        return res.status(200).json({
-          success: true,
-          message: 'Already visited this tournament',
-          isFirstVisit: false,
-          tournamentPoints,
-          data: tournament,
-        });
-      }
-
-      // Add tournament points with retry logic (3 attempts)
-      let pointsAdded = false;
-      let attempts = 0;
-      let error;
-
-      while (!pointsAdded && attempts < 3) {
-        try {
-          attempts++;
-          // Award tournament-specific points for first visit
-          await user.addTournamentPoints(
-            tournament._id,
-            tournament.pointsForVisit,
-          );
-          pointsAdded = true;
-        } catch (e) {
-          error = e;
-          // Small delay before retry
-          await new Promise((resolve) => setTimeout(resolve, 100));
-        }
-      }
-
-      if (!pointsAdded) {
-        // If all attempts failed, abort transaction
-        await session.abortTransaction();
-        session.endSession();
-        session = null;
-        throw (
-          error ||
-          new Error('Failed to add tournament points after multiple attempts')
-        );
-      }
-
-      // Commit the transaction
-      await session.commitTransaction();
+    // If no document was updated, user already visited (race condition)
+    if (!updatedTournament) {
+      await session.abortTransaction();
       session.endSession();
-      session = null;
 
+      const tournamentPoints = user.getTournamentPoints(tournament._id);
       return res.status(200).json({
         success: true,
-        message: 'First visit recorded! Points awarded!',
-        isFirstVisit: true,
-        pointsAwarded: tournament.pointsForVisit,
-        data: updatedTournament,
+        message: 'Already visited this tournament',
+        isFirstVisit: false,
+        tournamentPoints,
+        data: tournament,
       });
-    } catch (error) {
-      if (session) {
-        await session.abortTransaction();
-        session.endSession();
-      }
-      throw error;
     }
+
+    // Add points in the same transaction
+    console.log(tournament);
+    await user.addTournamentPoints(
+      tournament._id,
+      tournament.pointsForVisit,
+      session,
+    );
+
+    // Commit transaction
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(200).json({
+      success: true,
+      message: 'First visit recorded! Points awarded!',
+      isFirstVisit: true,
+      pointsAwarded: tournament.pointsForVisit,
+      data: updatedTournament,
+    });
   } catch (error) {
-    if (session) {
+    // Only abort if session exists and is active
+    console.log(error);
+    if (session && session.inTransaction()) {
       try {
         await session.abortTransaction();
+      } catch (abortError) {
+        console.error('Error aborting transaction:', abortError);
+      } finally {
         session.endSession();
-      } catch (sessionError) {
-        console.error('Error aborting transaction:', sessionError);
       }
     }
 
     return res.status(500).json({
       success: false,
-      message: `Caused by :: ${error.message}`,
+      message: `Error: ${error.message}`,
     });
   }
 };

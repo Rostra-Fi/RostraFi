@@ -13,6 +13,13 @@ import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useAppSelector } from "@/hooks/reduxHooks";
+import { getTournamentTeamSelectionPoints } from "@/store/userSlice";
+import {
+  participateInTournament,
+  resetTournamentState,
+} from "@/store/tournamentSlice";
 
 const createConfetti = () => {
   // Create multiple bursts of confetti
@@ -70,9 +77,18 @@ export function SelectedTeamsOverview() {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dispatch = useDispatch<any>();
   const router = useRouter();
+  const { tourId } = useParams();
 
   const { teams, loading, success, error } = useSelector(
     (state: RootState) => state.teams
+  );
+
+  const { userId, userWalletAddress } = useAppSelector((state) => state.user);
+  const { isParticiapated } = useAppSelector((state) => state.tournaments);
+
+  // Get the points from redux store using the same approach as SolanaNavbar
+  const points = useAppSelector((state: any) =>
+    getTournamentTeamSelectionPoints(state, tourId as string)
   );
 
   const totalSelectedTeams =
@@ -143,6 +159,7 @@ export function SelectedTeamsOverview() {
 
   const resetTeams = () => {
     dispatch(resetStatus());
+    dispatch(resetTournamentState());
     setTeamName("");
     setIsOpen(false);
     // setShowSuccess(false);
@@ -159,11 +176,33 @@ export function SelectedTeamsOverview() {
       return;
     }
 
-    setIsCreating(true);
+    console.log(userWalletAddress);
+
     try {
-      const userId = localStorage.getItem("UserId") || "";
-      dispatch(saveTeams({ userId, teamName, teams }));
-      console.log(success);
+      // First, dispatch the participation action and await its result
+      const participationResult = await dispatch(
+        participateInTournament(tourId as string, userWalletAddress)
+      );
+      console.log(participationResult);
+
+      // Check if participation was successful
+      // This assumes your participateInTournament action returns the API response
+      if (participationResult && participationResult.success) {
+        // Now proceed with saving teams
+        const userId1 = localStorage.getItem("UserId") || "";
+        await dispatch(
+          saveTeams({
+            userId: userId1,
+            teamName,
+            teams,
+            walletUserId: userId,
+            tournamentId: tourId as string,
+          })
+        );
+      } else {
+        // Handle case where participation failed
+        toast.error("Failed to participate in tournament");
+      }
     } catch (error) {
       toast.error("Failed to create team");
       console.error(error);
@@ -286,6 +325,27 @@ export function SelectedTeamsOverview() {
             </h2>
           </div>
 
+          {/* Points display similar to SolanaNavbar */}
+          <div className="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-xl px-3 py-2 border border-gray-800">
+            <div className="w-6 h-6 bg-gray-600 flex items-center justify-center rounded-full">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+            </div>
+            <span className="text-white">{points}</span>
+          </div>
+
           {totalSelectedTeams > 0 && (
             <div className="space-y-4">
               <Input
@@ -347,9 +407,34 @@ export function SelectedTeamsOverview() {
                               <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white" />
                             </div>
                             <div className="flex-1">
-                              <p className="font-semibold text-lg">
-                                {member.name}
-                              </p>
+                              <div className="flex justify-between items-center">
+                                <p className="font-semibold text-lg">
+                                  {member.name}
+                                </p>
+
+                                {/* Points display for each team member */}
+                                {member.points && (
+                                  <div className="flex items-center gap-1 bg-black/40 px-2 py-1 rounded-full">
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      width="10"
+                                      height="10"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="white"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    >
+                                      <circle cx="12" cy="12" r="10" />
+                                      <path d="M12 6v6l4 2" />
+                                    </svg>
+                                    <span className="text-white text-xs">
+                                      {member.points}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                               <p className="text-sm text-neutral-600 dark:text-neutral-400">
                                 {member.followers.toLocaleString()} followers
                               </p>
@@ -362,29 +447,6 @@ export function SelectedTeamsOverview() {
               )}
             </div>
           )}
-
-          {/* <AnimatePresence>
-            {success && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="p-4 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-lg font-medium"
-              >
-                Team created successfully! 🎉
-              </motion.div>
-            )}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="p-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg font-medium"
-              >
-                Error: {error}
-              </motion.div>
-            )}
-          </AnimatePresence> */}
         </div>
       </div>
     </>

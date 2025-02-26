@@ -80,17 +80,18 @@ userWalletSchema.methods.addPoints = function (pointsToAdd) {
 userWalletSchema.methods.addTournamentPoints = function (
   tournamentId,
   pointsToAdd,
+  session = null,
 ) {
   if (pointsToAdd <= 0)
     throw new Error('Points to add must be greater than zero');
+  console.log(tournamentId);
 
   // Check if tournament points already exist
   const existingPointIndex = this.tournamentPoints.findIndex(
-    (tp) => tp.tournamentId.toString() === tournamentId.toString(),
+    (tp) => tp.tournamentId === tournamentId.toString(),
   );
 
   if (existingPointIndex >= 0) {
-    // FIX: Use += instead of === for updating points
     this.tournamentPoints[existingPointIndex].points += pointsToAdd;
   } else {
     // Add new tournament points entry
@@ -104,7 +105,9 @@ userWalletSchema.methods.addTournamentPoints = function (
   this.points += pointsToAdd;
   this.lastActivity = Date.now();
 
-  return this.save();
+  // If session is provided, use it for saving
+  const saveOptions = session ? { session } : {};
+  return this.save(saveOptions);
 };
 
 // Method to get tournament points

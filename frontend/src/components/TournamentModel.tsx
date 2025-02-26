@@ -11,6 +11,7 @@ import { useAppSelector } from "@/hooks/reduxHooks";
 
 export function TournamentModal() {
   const { tournaments, loading } = useAppSelector((state) => state.tournaments);
+  console.log(tournaments);
 
   return (
     <div>
@@ -45,15 +46,6 @@ export function TournamentModal() {
                       <div className="text-white">Loading tournaments...</div>
                     ) : tournaments.length > 0 ? (
                       tournaments.map((tournament) => {
-                        // Calculate time remaining in minutes
-                        const endDate = new Date(tournament.endDate);
-                        const now = new Date();
-                        const diffMs = endDate.getTime() - now.getTime();
-                        const timeRemaining = Math.max(
-                          0,
-                          Math.floor(diffMs / (1000 * 60))
-                        );
-
                         return (
                           <div
                             key={tournament._id}
@@ -63,7 +55,6 @@ export function TournamentModal() {
                               platform={tournament.platform}
                               image={tournament.image}
                               icon={tournament.icon}
-                              timeRemaining={timeRemaining}
                               tournamentData={tournament}
                             />
                           </div>

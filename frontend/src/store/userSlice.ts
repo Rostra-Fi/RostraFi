@@ -3,6 +3,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 interface TournamentPoint {
   tournamentId: string;
   points: number;
+  teamSelectionPoints: number;
   createdAt: string;
 }
 
@@ -52,19 +53,50 @@ export const userSlice = createSlice({
     setUserPoints: (state, action: PayloadAction<number>) => {
       state.points = action.payload;
     },
+    updateTournamentTeamSelectionPoints: (
+      state,
+      action: PayloadAction<{ tournamentId: string; points: number }>
+    ) => {
+      const { tournamentId, points } = action.payload;
+      const existingTournamentIndex = state.tournamentPoints.findIndex(
+        (tp) => tp.tournamentId === tournamentId
+      );
+
+      if (existingTournamentIndex >= 0) {
+        // Update existing tournament's teamSelectionPoints
+        if (
+          state.tournamentPoints[existingTournamentIndex]
+            .teamSelectionPoints !== undefined
+        ) {
+          state.tournamentPoints[existingTournamentIndex].teamSelectionPoints +=
+            points;
+        } else {
+          state.tournamentPoints[existingTournamentIndex].teamSelectionPoints =
+            1000 + points;
+        }
+      }
+    },
     setUserData: (state, action: PayloadAction<any>) => {
       const userData = action.payload;
       state.userId = userData._id;
       state.userWalletAddress = userData.walletAddress;
       state.points = userData.points;
-      state.tournamentPoints = userData.tournamentPoints || [];
+      console.log(userData);
+
+      // Initialize tournamentPoints with teamSelectionPoints if provided, otherwise set default
+      state.tournamentPoints =
+        userData.tournamentPoints?.map((tp: any) => ({
+          ...tp,
+          teamSelectionPoints: tp.points !== undefined ? tp.points : 1000,
+        })) || [];
+
       state.isActive = userData.isActive;
       state.lastActivity = userData.lastActivity;
       state.createdAt = userData.createdAt;
       state.updatedAt = userData.updatedAt;
     },
     updateTournamentPoints: (state, action: PayloadAction<TournamentPoint>) => {
-      const { tournamentId, points } = action.payload;
+      const { tournamentId, points, teamSelectionPoints } = action.payload;
       const existingTournamentIndex = state.tournamentPoints.findIndex(
         (tp) => tp.tournamentId === tournamentId
       );
@@ -72,13 +104,26 @@ export const userSlice = createSlice({
       if (existingTournamentIndex >= 0) {
         // Update existing tournament points
         state.tournamentPoints[existingTournamentIndex].points = points;
+        if (teamSelectionPoints !== undefined) {
+          state.tournamentPoints[existingTournamentIndex].teamSelectionPoints =
+            teamSelectionPoints;
+        }
       } else {
-        // Add new tournament points
-        state.tournamentPoints.push(action.payload);
+        // Add new tournament points with default teamSelectionPoints if not provided
+        state.tournamentPoints.push({
+          ...action.payload,
+          teamSelectionPoints:
+            teamSelectionPoints !== undefined ? teamSelectionPoints : 1000,
+        });
       }
     },
     setTournamentPoints: (state, action: PayloadAction<TournamentPoint[]>) => {
-      state.tournamentPoints = action.payload;
+      // Ensure all tournament points have teamSelectionPoints
+      state.tournamentPoints = action.payload.map((tp) => ({
+        ...tp,
+        teamSelectionPoints:
+          tp.teamSelectionPoints !== undefined ? tp.teamSelectionPoints : 1000,
+      }));
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
@@ -118,6 +163,7 @@ export const {
   setUserWalletAddress,
   setCurrentTournament,
   updateTournamentPoints,
+  updateTournamentTeamSelectionPoints,
   setTournamentPoints,
 } = userSlice.actions;
 
@@ -165,6 +211,20 @@ export const getTournamentPoints = (
     (tp) => tp.tournamentId === tournamentId
   );
   return tournamentPoint ? tournamentPoint.points : 0;
+};
+
+// Function to get tournament-specific team selection points
+export const getTournamentTeamSelectionPoints = (
+  state: { user: UserState },
+  tournamentId: string
+): number => {
+  const tournamentPoint = state.user.tournamentPoints.find(
+    (tp) => tp.tournamentId === tournamentId
+  );
+  console.log(tournamentId);
+  return tournamentPoint && tournamentPoint.teamSelectionPoints !== undefined
+    ? tournamentPoint.teamSelectionPoints
+    : 1000; // Default value if not found
 };
 
 export default userSlice.reducer;
