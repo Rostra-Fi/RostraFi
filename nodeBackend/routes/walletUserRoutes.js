@@ -9,6 +9,8 @@ router.get('/:address', walletUserController.getWallet);
 // Register or retrieve wallet
 router.post('/', walletUserController.registerOrRetrieveWallet);
 
+router.get('/:address/tournaments', walletUserController.getUserTournaments);
+
 // Add points to wallet
 router.post('/points/add', walletUserController.addPoints);
 

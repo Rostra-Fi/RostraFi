@@ -1,5 +1,3 @@
-// This can be implemented using a library like node-cron
-// Install with: npm install node-cron
 const cron = require('node-cron');
 const Tournament = require('../models/tournamentModel');
 
