@@ -16,7 +16,7 @@ router.post(
   userTeamController.createUserTeam,
 );
 
-router.get('/:userId', userTeamController.getUserTeams);
+router.get('/:walletUserId/:userId', userTeamController.getUserTeams);
 
 router.patch(
   '/:teamId',

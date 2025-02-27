@@ -41,6 +41,12 @@ const UserTeamSchema = new mongoose.Schema(
         ],
       },
     ],
+    // Added tournament reference
+    tournamentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tournament',
+      required: true,
+    },
     isActive: {
       type: Boolean,
       default: true,

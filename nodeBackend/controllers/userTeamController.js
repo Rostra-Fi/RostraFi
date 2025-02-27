@@ -142,10 +142,14 @@ exports.getUserTeams = async (req, res, next) => {
     }).populate([
       {
         path: 'sections.sectionId',
-        select: '_id name', // Added name to selection
+        select: '_id name',
       },
       {
         path: 'sections.selectedTeams',
+      },
+      {
+        path: 'tournamentId',
+        select: 'name startDate endDate prizePool image icon platform isActive',
       },
     ]);
 
