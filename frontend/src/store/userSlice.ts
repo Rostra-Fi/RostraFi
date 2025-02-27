@@ -72,7 +72,7 @@ export const userSlice = createSlice({
             points;
         } else {
           state.tournamentPoints[existingTournamentIndex].teamSelectionPoints =
-            1000 + points;
+            0.0 + points;
         }
       }
     },
@@ -224,7 +224,7 @@ export const getTournamentTeamSelectionPoints = (
   console.log(tournamentId);
   return tournamentPoint && tournamentPoint.teamSelectionPoints !== undefined
     ? tournamentPoint.teamSelectionPoints
-    : 1000; // Default value if not found
+    : 0.0;
 };
 
 export default userSlice.reducer;

@@ -236,12 +236,11 @@ export function WobbleTeamSection({
         {teams.map((member) => {
           const isSelected = getMemberState(member).isSelected;
           const canSelectTeam = canAfford(member) || isSelected;
-          const bgColor = getCardBackground(member.name);
 
           return (
             <WobbleCard
               key={`card-${member.name}-${id}`}
-              containerClassName={`min-h-[300px] relative transition-all duration-300 overflow-hidden ${
+              containerClassName={`min-h-[250px] h-80 w-52 relative transition-all duration-300 overflow-hidden ${
                 isSelected
                   ? "ring-4 ring-green-500 ring-opacity-50"
                   : !canSelectTeam
@@ -250,43 +249,41 @@ export function WobbleTeamSection({
               }`}
               className="cursor-pointer relative"
             >
-              {/* Background gradient overlay */}
-              <div className={`absolute inset-0 ${bgColor} opacity-80`}></div>
+              {/* Background color - using the specified RGB value */}
+              <div className="absolute inset-0 bg-[rgb(21,22,22)] bg-opacity-100"></div>
 
-              {/* Image overlay for top half */}
-              <div className="absolute inset-0 h-1/2 overflow-hidden">
+              {/* Image - now 60% of card height */}
+              <div className="absolute inset-0 h-3/5 overflow-hidden">
                 {member.image && (
                   <div className="relative w-full h-full">
                     <Image
                       src={member.image}
                       layout="fill"
-                      objectFit="cover"
+                      objectFit=""
                       alt={member.name}
-                      className="opacity-40"
+                      className="opacity-100"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/90"></div>
+                    {/* Bottom gradient for smooth transition to content */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[rgb(21,22,22)]"></div>
                   </div>
                 )}
               </div>
 
-              {/* Content */}
-              <div className="relative z-10 p-6 flex flex-col h-full">
-                <div className="mb-auto">
-                  <h2 className="text-xl font-semibold text-white mb-2">
+              {/* Content - positioned in the bottom 40% with left alignment */}
+              <div className="relative z-10 p-4 flex flex-col h-full">
+                {/* Push content to bottom portion */}
+                <div className="mt-auto pt-28">
+                  <h2 className="text-lg font-semibold text-white mb-1 truncate text-left pl-1">
                     {member.name}
                   </h2>
-                  <p className="text-neutral-200 mb-4 line-clamp-2">
-                    {member.description}
-                  </p>
-                </div>
 
-                {/* Bottom section with points and select button */}
-                <div className="mt-4">
-                  <div className="flex items-center gap-2 text-yellow-300 font-medium mb-3">
-                    <Coins size={18} />
+                  {/* Points display */}
+                  <div className="flex items-center gap-1 text-yellow-300 font-medium mb-3 pl-1">
+                    <Coins size={16} />
                     <span>{member.points || 250}</span>
                   </div>
 
+                  {/* Selection button */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
