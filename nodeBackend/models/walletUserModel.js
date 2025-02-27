@@ -36,6 +36,13 @@ const userWalletSchema = new Schema(
     },
     // Track tournament-specific points
     tournamentPoints: [tournamentPointSchema],
+    // Add tournaments array to track participated tournaments
+    tournaments: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Tournament',
+      },
+    ],
     isActive: {
       type: Boolean,
       default: true,
@@ -108,6 +115,33 @@ userWalletSchema.methods.addTournamentPoints = function (
   // If session is provided, use it for saving
   const saveOptions = session ? { session } : {};
   return this.save(saveOptions);
+};
+
+// Method to add a tournament to user's participated tournaments
+userWalletSchema.methods.addTournament = function (
+  tournamentId,
+  session = null,
+) {
+  // Check if user has already participated in this tournament
+  const alreadyParticipated = this.tournaments.some(
+    (id) => id.toString() === tournamentId.toString(),
+  );
+
+  if (!alreadyParticipated) {
+    this.tournaments.push(tournamentId);
+    this.lastActivity = Date.now();
+  }
+
+  // If session is provided, use it for saving
+  const saveOptions = session ? { session } : {};
+  return this.save(saveOptions);
+};
+
+// Method to check if user has participated in a tournament
+userWalletSchema.methods.hasParticipatedInTournament = function (tournamentId) {
+  return this.tournaments.some(
+    (id) => id.toString() === tournamentId.toString(),
+  );
 };
 
 // Method to get tournament points

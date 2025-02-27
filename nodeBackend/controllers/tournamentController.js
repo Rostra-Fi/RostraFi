@@ -417,6 +417,114 @@ exports.visitTournament = async (req, res) => {
 };
 
 // Register a user as participant in a tournament
+// exports.participateInTournament = async (req, res) => {
+//   try {
+//     const { tournamentId } = req.params;
+//     const { walletAddress } = req.body;
+
+//     if (!walletAddress) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Wallet address is required',
+//       });
+//     }
+
+//     if (!isValidObjectId(tournamentId)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Invalid tournament ID',
+//       });
+//     }
+
+//     // Start session for transaction
+//     const session = await mongoose.startSession();
+//     session.startTransaction();
+
+//     try {
+//       // Get the tournament
+//       const tournament =
+//         await Tournament.findById(tournamentId).session(session);
+
+//       if (!tournament) {
+//         await session.abortTransaction();
+//         session.endSession();
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Tournament not found',
+//         });
+//       }
+
+//       // Check if tournament is active and ongoing
+//       if (!tournament.isActive) {
+//         await session.abortTransaction();
+//         session.endSession();
+//         return res.status(400).json({
+//           success: false,
+//           message: 'Tournament is not active',
+//         });
+//       }
+
+//       const now = new Date();
+//       if (now < tournament.startDate || now > tournament.endDate) {
+//         await session.abortTransaction();
+//         session.endSession();
+//         return res.status(400).json({
+//           success: false,
+//           message: 'Tournament is not ongoing',
+//         });
+//       }
+
+//       // Find or create the wallet user
+//       const user = await WalletUser.findOrCreateWallet(walletAddress);
+
+//       // Check if user has already participated
+//       if (tournament.hasParticipated(user._id)) {
+//         await session.abortTransaction();
+//         session.endSession();
+//         return res.status(200).json({
+//           success: true,
+//           message: 'Already participated in this tournament',
+//           data: tournament,
+//         });
+//       }
+
+//       // If not already visited, add as visitor first and give visit points
+//       if (!tournament.hasVisited(user._id)) {
+//         tournament.addVisitor(user._id);
+//         await user.addTournamentPoints(
+//           tournament._id,
+//           tournament.pointsForVisit,
+//         );
+//       }
+
+//       // Add user to participated array
+//       tournament.addParticipant(user._id);
+//       await tournament.save({ session });
+
+//       // Note: We don't add additional points for participation as per your requirement
+//       // Points are only awarded once upon first visit
+
+//       await session.commitTransaction();
+//       session.endSession();
+
+//       res.status(200).json({
+//         success: true,
+//         message: 'Successfully participated in tournament!',
+//         data: tournament,
+//       });
+//     } catch (error) {
+//       await session.abortTransaction();
+//       session.endSession();
+//       throw error;
+//     }
+//   } catch (error) {
+//     res.status(500).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
 exports.participateInTournament = async (req, res) => {
   try {
     const { tournamentId } = req.params;
@@ -477,7 +585,7 @@ exports.participateInTournament = async (req, res) => {
       // Find or create the wallet user
       const user = await WalletUser.findOrCreateWallet(walletAddress);
 
-      // Check if user has already participated
+      // Check if user has already participated using the tournament hasParticipated method
       if (tournament.hasParticipated(user._id)) {
         await session.abortTransaction();
         session.endSession();
@@ -494,12 +602,16 @@ exports.participateInTournament = async (req, res) => {
         await user.addTournamentPoints(
           tournament._id,
           tournament.pointsForVisit,
+          session,
         );
       }
 
-      // Add user to participated array
+      // Add user to participated array in tournament
       tournament.addParticipant(user._id);
       await tournament.save({ session });
+
+      // Add tournament to user's participated tournaments array
+      await user.addTournament(tournament._id, session);
 
       // Note: We don't add additional points for participation as per your requirement
       // Points are only awarded once upon first visit

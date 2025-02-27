@@ -1,4 +1,5 @@
 const WalletUser = require('../models/walletUserModel');
+const UserTeam = require('../models/userTeamModel');
 const { isValidSolanaAddress } = require('../utils/validate');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
@@ -23,6 +24,60 @@ exports.getWallet = catchAsync(async (req, res) => {
   });
 });
 
+exports.getUserTournaments = catchAsync(async (req, res, next) => {
+  const { address } = req.params;
+
+  // Find the wallet and populate the tournaments array with tournament details
+  const wallet = await WalletUser.findOne({ walletAddress: address }).populate({
+    path: 'tournaments',
+    select:
+      'name description startDate endDate isActive pointsForVisit pointsForParticipation totalVisitors totalParticipants',
+  });
+
+  if (!wallet) {
+    return next(new AppError('Wallet not found', 404));
+  }
+
+  // Get all user teams for this wallet user in a single query
+  const userTeams = await UserTeam.find({
+    walletUserId: wallet._id,
+    isActive: true,
+  }).populate({
+    path: 'sections.selectedTeams',
+  });
+
+  // Create a map of tournament ID to user team for quick lookup
+  const tournamentTeamMap = {};
+  userTeams.forEach((team) => {
+    tournamentTeamMap[team.tournamentId.toString()] = team;
+  });
+
+  // For each tournament, add the user-specific points and team
+  const tournamentsWithDetails = wallet.tournaments.map((tournament) => {
+    const tournamentId = tournament._id.toString();
+    // const tournamentPoints = wallet.getTournamentPoints(tournament._id);
+
+    // Get the user team for this tournament from our map
+    const userTeam = tournamentTeamMap[tournamentId] || null;
+
+    // Convert tournament to plain object if it's a Mongoose document
+    const tournamentObj = tournament.toObject
+      ? tournament.toObject()
+      : tournament;
+
+    return {
+      ...tournamentObj,
+      userTeam: userTeam,
+    };
+  });
+
+  res.status(200).json({
+    success: true,
+    count: tournamentsWithDetails.length,
+    data: tournamentsWithDetails,
+  });
+});
+
 exports.registerOrRetrieveWallet = catchAsync(async (req, res, next) => {
   const { walletAddress } = req.body;
 
@@ -31,15 +86,8 @@ exports.registerOrRetrieveWallet = catchAsync(async (req, res, next) => {
     return next(new AppError('Wallet address is required', 400));
   }
 
-  // Validate Solana wallet address
-  //   if (!isValidSolanaAddress(walletAddress)) {
-  //     return next(new AppError('Invalid Solana wallet address', 400));
-  //   }
-
-  // Find or create wallet
   const wallet = await WalletUser.findOrCreateWallet(walletAddress);
 
-  // Set appropriate status code (201 if created, 200 if found)
   const statusCode =
     wallet.createdAt.getTime() === wallet.updatedAt.getTime() ? 201 : 200;
 

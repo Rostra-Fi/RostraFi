@@ -157,9 +157,24 @@ exports.getUserTeams = async (req, res, next) => {
       return next(new AppError('No teams found for this user', 404));
     }
 
+    // Filter teams to get only those with active tournaments
+    const activeTeams = teams.filter(
+      (team) => team.tournamentId && team.tournamentId.isActive === true,
+    );
+
+    // Check if there are any active tournament teams
+    if (!activeTeams.length) {
+      return res.status(200).json({
+        status: 'success',
+        message: 'No active tournaments you are participating in',
+        data: [],
+      });
+    }
+
     res.status(200).json({
       status: 'success',
-      data: teams,
+      count: activeTeams.length,
+      data: activeTeams,
     });
   } catch (error) {
     next(error);
