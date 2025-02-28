@@ -7,11 +7,62 @@ interface TournamentPoint {
   createdAt: string;
 }
 
+interface Section {
+  name: string;
+  sectionId: {
+    _id: string;
+    name: string;
+    id: string;
+  };
+  selectedTeams: Team[];
+  _id: string;
+  id: string;
+}
+
+interface Team {
+  _id: string;
+  name: string;
+  image: string;
+  description: string;
+  followers: number;
+  points: number;
+}
+
+interface Tournament {
+  _id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  prizePool: number;
+  image: string;
+  icon: string;
+  platform: string;
+  isActive: boolean;
+  isOngoing: boolean;
+  id: string;
+}
+
+interface UserTournament {
+  _id: string;
+  userId: string;
+  walletUserId: string;
+  teamName: string;
+  sections: Section[];
+  tournamentId: Tournament;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  totalFollowers: number;
+  id: string;
+}
+
 interface UserState {
   userWalletAddress: string;
   userId: string;
   currentTournament: string;
+  userCurrentTournament: UserTournament | null;
   points: number;
+  tournaments: number;
   tournamentPoints: TournamentPoint[];
   isActive: boolean;
   lastActivity: string;
@@ -28,7 +79,9 @@ const initialState: UserState = {
   currentTournament: "",
   points: 0,
   tournamentPoints: [],
+  tournaments: 0,
   isActive: true,
+  userCurrentTournament: null,
   lastActivity: "",
   createdAt: "",
   updatedAt: "",
@@ -46,6 +99,12 @@ export const userSlice = createSlice({
     },
     setUserWalletAddress: (state, action: PayloadAction<string>) => {
       state.userWalletAddress = action.payload;
+    },
+    setUserCurrentTournament: (
+      state,
+      action: PayloadAction<UserTournament | null>
+    ) => {
+      state.userCurrentTournament = action.payload;
     },
     setCurrentTournament: (state, action: PayloadAction<string>) => {
       state.currentTournament = action.payload;
@@ -81,6 +140,7 @@ export const userSlice = createSlice({
       state.userId = userData._id;
       state.userWalletAddress = userData.walletAddress;
       state.points = userData.points;
+      state.tournaments = action.payload.tournaments.length || 0;
       console.log(userData);
 
       // Initialize tournamentPoints with teamSelectionPoints if provided, otherwise set default
@@ -148,6 +208,7 @@ export const userSlice = createSlice({
       state.isError = false;
       state.error = "";
       state.loading = false;
+      state.userCurrentTournament = null;
     },
   },
 });
@@ -165,6 +226,7 @@ export const {
   updateTournamentPoints,
   updateTournamentTeamSelectionPoints,
   setTournamentPoints,
+  setUserCurrentTournament,
 } = userSlice.actions;
 
 export const userWalletConnect = (userId: string) => async (dispatch: any) => {
@@ -201,6 +263,40 @@ export const userWalletConnect = (userId: string) => async (dispatch: any) => {
     dispatch(setLoading(false));
   }
 };
+
+export const userCurrentTournaments =
+  (userId: string, walletUserId: string) => async (dispatch: any) => {
+    try {
+      dispatch(setLoading(true));
+      const response = await fetch(
+        `http://127.0.0.1:3001/api/v1/userTeams/${walletUserId}/${userId}`
+      );
+
+      const data = await response.json();
+      console.log(data);
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch user tournaments");
+      }
+
+      if (data.status === "success" && data.data && data.data.length > 0) {
+        dispatch(setUserCurrentTournament(data.data));
+      } else {
+        dispatch(setUserCurrentTournament(null));
+      }
+
+      return data.data;
+    } catch (e) {
+      if (e instanceof Error) {
+        dispatch(setError(e.message));
+      } else {
+        dispatch(setError("An unknown error occurred"));
+      }
+      return null;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
 
 // Function to get tournament-specific points
 export const getTournamentPoints = (

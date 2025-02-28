@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const Tournament = require('../models/tournamentModel');
+const TournamentWinnerService = require('../services/tournamentWinningServices');
 
 // Schedule task to run every hour
 // Format: second minute hour day-of-month month day-of-week
@@ -19,4 +20,20 @@ const scheduleTournamentDeactivation = () => {
   });
 };
 
+function initTournamentSchedulers() {
+  // Schedule winner calculation checks every 15 minutes
+  cron.schedule('*/15 * * * *', async () => {
+    try {
+      console.log('Running scheduled tournament winner calculations...');
+      await TournamentWinnerService.scheduleWinnerCalculations();
+    } catch (error) {
+      console.error(
+        'Error in scheduled tournament winner calculations:',
+        error,
+      );
+    }
+  });
+}
+
 module.exports = scheduleTournamentDeactivation;
+module.exports = { initTournamentSchedulers };

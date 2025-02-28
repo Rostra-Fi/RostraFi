@@ -21,7 +21,8 @@ exports.createSection = async (req, res, next) => {
 exports.addTeamToSection = async (req, res, next) => {
   try {
     const { sectionId } = req.params;
-    const { name, image, followers, description, audio, points } = req.body;
+    const { name, image, followers, description, audio, points, twitterId } =
+      req.body;
 
     if (!name || !image || !description || !audio) {
       next(new AppError('All fields are required', 400));
@@ -37,6 +38,7 @@ exports.addTeamToSection = async (req, res, next) => {
       description,
       audio,
       points,
+      twitterId,
     });
     await team.save();
 

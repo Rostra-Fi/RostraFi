@@ -137,7 +137,7 @@ exports.getUserTeams = async (req, res, next) => {
     }
 
     const teams = await UserTeam.find({
-      userId,
+      userId: userId,
       isActive: true,
     }).populate([
       {
@@ -153,10 +153,6 @@ exports.getUserTeams = async (req, res, next) => {
       },
     ]);
 
-    if (!teams.length) {
-      return next(new AppError('No teams found for this user', 404));
-    }
-
     // Filter teams to get only those with active tournaments
     const activeTeams = teams.filter(
       (team) => team.tournamentId && team.tournamentId.isActive === true,
@@ -169,6 +165,10 @@ exports.getUserTeams = async (req, res, next) => {
         message: 'No active tournaments you are participating in',
         data: [],
       });
+    }
+
+    if (!teams.length) {
+      return next(new AppError('No teams found for this user', 404));
     }
 
     res.status(200).json({
