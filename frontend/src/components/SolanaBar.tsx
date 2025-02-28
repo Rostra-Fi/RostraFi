@@ -1,18 +1,17 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Wallet } from "lucide-react";
-import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
+import { useAppSelector } from "@/hooks/reduxHooks";
 import {
-  getTournamentPoints,
   getTournamentTeamSelectionPoints,
 } from "@/store/userSlice";
 import { useParams } from "next/navigation";
-import { WalletDialog } from "@/components/WalletDialog"; // Update path as needed
+import { WalletDialog } from "@/components/WalletDialog";
 
 const SolanaNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [balance, setBalance] = useState("0.000");
   const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [UserId, setWalletAddress] = useState("");
 
   const { tourId } = useParams();
 
@@ -31,10 +30,51 @@ const SolanaNavbar = () => {
     };
 
     window.addEventListener("scroll", handleScroll);
+    
+    loadWalletFromLocalStorage();
+    
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
   }, []);
+
+  const loadWalletFromLocalStorage = () => {
+    try {
+      const storedWalletAddress = localStorage.getItem("UserId");
+      
+      if (storedWalletAddress) {
+        setWalletAddress(storedWalletAddress);
+        fetchWalletBalance(storedWalletAddress);
+      }
+    } catch (error) {
+      console.error("Error loading wallet from localStorage:", error);
+    }
+  };
+
+  const fetchWalletBalance = async (address) => {
+    try {
+      const { solana } = window as any;
+      
+      if (solana && address) {
+        const connection = new solana.Connection(
+          "https://api.devnet.solana.com", 
+          "confirmed"
+        );
+        
+        const publicKey = new solana.PublicKey(address);
+        const balanceInLamports = await connection.getBalance(publicKey);
+        
+        const balanceInSol = balanceInLamports / 1000000000;
+        setBalance(balanceInSol.toFixed(3));
+      }
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+    }
+  };
+
+  const openWalletDialog = () => {
+    setIsWalletOpen(true);
+  };
 
   return (
     <>
@@ -48,7 +88,6 @@ const SolanaNavbar = () => {
             className="flex items-center gap-2 bg-black/60 backdrop-blur-md rounded-[32px] px-3 py-2 max-w-[350px] sm:max-w-[520px] border border-gray-800 pointer-events-auto"
             style={{ backgroundColor: "rgba(0, 0, 0, .6)" }}
           >
-            {/* SOL Balance */}
             <div className="flex items-center gap-2 px-2">
               <div className="w-6 h-6 bg-blue-600 flex items-center justify-center rounded-full">
                 <svg
@@ -65,7 +104,10 @@ const SolanaNavbar = () => {
                 </svg>
               </div>
               <span className="text-white">{balance}</span>
-              <button className="text-gray-400 hover:text-white transition-colors">
+              <button 
+                className="text-gray-400 hover:text-white transition-colors"
+                onClick={openWalletDialog}
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="14"
@@ -82,7 +124,6 @@ const SolanaNavbar = () => {
               </button>
             </div>
 
-            {/* Points */}
             <div className="flex items-center gap-2 px-2 border-l border-gray-700">
               <div className="w-6 h-6 bg-gray-600 flex items-center justify-center rounded-full ml-2">
                 <svg
@@ -100,8 +141,11 @@ const SolanaNavbar = () => {
                   <path d="M12 6v6l4 2" />
                 </svg>
               </div>
-              <span className="text-white">{points}</span>
-              <button className="text-gray-400 hover:text-white transition-colors">
+              <span className="text-white">{points || 0}</span>
+              <button 
+                className="text-gray-400 hover:text-white transition-colors"
+                onClick={openWalletDialog}
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="14"
@@ -118,9 +162,8 @@ const SolanaNavbar = () => {
               </button>
             </div>
 
-            {/* Buy Button */}
             <button
-              onClick={() => setIsWalletOpen(true)}
+              onClick={openWalletDialog}
               className="bg-slate-300 text-black font-medium px-4 py-1 rounded-full h-8 ml-2 flex items-center justify-center"
             >
               Buy
@@ -129,7 +172,6 @@ const SolanaNavbar = () => {
         </div>
       </div>
 
-      {/* Wallet Dialog */}
       <WalletDialog
         isOpen={isWalletOpen}
         onClose={() => setIsWalletOpen(false)}

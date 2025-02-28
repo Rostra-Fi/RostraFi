@@ -63,7 +63,6 @@ export const userSlice = createSlice({
       );
 
       if (existingTournamentIndex >= 0) {
-        // Update existing tournament's teamSelectionPoints
         if (
           state.tournamentPoints[existingTournamentIndex]
             .teamSelectionPoints !== undefined
@@ -76,6 +75,27 @@ export const userSlice = createSlice({
         }
       }
     },
+
+    addPoints: (
+      state,
+      action: PayloadAction<{ tournamentId: string; points: number }>
+    ) => {
+      const { tournamentId, points } = action.payload;
+      const existingTournamentIndex = state.tournamentPoints.findIndex(
+        (tp) => tp.tournamentId === tournamentId
+      );
+      if (existingTournamentIndex >= 0) {
+        state.tournamentPoints[existingTournamentIndex].teamSelectionPoints += points;
+      } else {
+        state.tournamentPoints.push({
+          tournamentId,
+          points: 0,
+          teamSelectionPoints: points,
+          createdAt: new Date().toISOString(),
+        });
+      }
+    },
+
     setUserData: (state, action: PayloadAction<any>) => {
       const userData = action.payload;
       state.userId = userData._id;
@@ -83,7 +103,6 @@ export const userSlice = createSlice({
       state.points = userData.points;
       console.log(userData);
 
-      // Initialize tournamentPoints with teamSelectionPoints if provided, otherwise set default
       state.tournamentPoints =
         userData.tournamentPoints?.map((tp: any) => ({
           ...tp,
@@ -102,14 +121,12 @@ export const userSlice = createSlice({
       );
 
       if (existingTournamentIndex >= 0) {
-        // Update existing tournament points
         state.tournamentPoints[existingTournamentIndex].points = points;
         if (teamSelectionPoints !== undefined) {
           state.tournamentPoints[existingTournamentIndex].teamSelectionPoints =
             teamSelectionPoints;
         }
       } else {
-        // Add new tournament points with default teamSelectionPoints if not provided
         state.tournamentPoints.push({
           ...action.payload,
           teamSelectionPoints:
@@ -118,7 +135,6 @@ export const userSlice = createSlice({
       }
     },
     setTournamentPoints: (state, action: PayloadAction<TournamentPoint[]>) => {
-      // Ensure all tournament points have teamSelectionPoints
       state.tournamentPoints = action.payload.map((tp) => ({
         ...tp,
         teamSelectionPoints:
@@ -165,6 +181,7 @@ export const {
   updateTournamentPoints,
   updateTournamentTeamSelectionPoints,
   setTournamentPoints,
+  addPoints, 
 } = userSlice.actions;
 
 export const userWalletConnect = (userId: string) => async (dispatch: any) => {
@@ -187,7 +204,6 @@ export const userWalletConnect = (userId: string) => async (dispatch: any) => {
       throw new Error(data.message || "Failed to connect wallet");
     }
 
-    // Use the new setUserData action to set all user data at once
     dispatch(setUserData(data.data));
 
     return data.data.walletAddress;
@@ -202,7 +218,6 @@ export const userWalletConnect = (userId: string) => async (dispatch: any) => {
   }
 };
 
-// Function to get tournament-specific points
 export const getTournamentPoints = (
   state: { user: UserState },
   tournamentId: string
@@ -213,7 +228,6 @@ export const getTournamentPoints = (
   return tournamentPoint ? tournamentPoint.points : 0;
 };
 
-// Function to get tournament-specific team selection points
 export const getTournamentTeamSelectionPoints = (
   state: { user: UserState },
   tournamentId: string
