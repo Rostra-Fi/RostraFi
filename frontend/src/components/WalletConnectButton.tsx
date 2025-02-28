@@ -12,13 +12,11 @@ export const WalletConnectButton = () => {
 
   useEffect(() => {
     if (publicKey) {
-      // Store public key as UserId in localStorage
       localStorage.setItem("UserId", publicKey.toString());
       dispatch(userWalletConnect(publicKey.toString()));
     }
 
     if (disconnecting) {
-      // Remove UserId when wallet disconnects
       localStorage.removeItem("UserId");
     }
   }, [publicKey, disconnecting, dispatch]);
