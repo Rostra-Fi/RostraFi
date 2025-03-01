@@ -33,6 +33,7 @@ export default function AdminDashboard() {
   const [teamDescription, setTeamDescription] = useState("");
   const [teamAudio, setTeamAudio] = useState("");
   const [teamPoints, setTeamPoints] = useState("");
+  const [twitterId, setTwitterId] = useState("");
   const [selectedSection, setSelectedSection] = useState<Section | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -105,6 +106,7 @@ export default function AdminDashboard() {
             description: teamDescription,
             audio: teamAudio,
             points: teamPoints,
+            twitterId: twitterId,
           }),
         }
       );
@@ -126,6 +128,7 @@ export default function AdminDashboard() {
       setTeamDescription("");
       setTeamAudio("");
       setTeamPoints("");
+      setTwitterId("");
     } catch (err) {
       setError("Failed to add team. Please try again.");
       console.error(err);
@@ -331,6 +334,18 @@ export default function AdminDashboard() {
                 type="text"
                 value={teamPoints}
                 onChange={(e) => setTeamPoints(e.target.value)}
+                className="w-full px-4 py-3 bg-black/50 backdrop-blur-sm border-2 border-zinc-800/50 rounded-xl focus:outline-none focus:border-purple-500/50 text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block mb-2 font-medium text-white">
+                Team Twitter ID
+              </label>
+              <input
+                type="text"
+                value={twitterId}
+                onChange={(e) => setTwitterId(e.target.value)}
                 className="w-full px-4 py-3 bg-black/50 backdrop-blur-sm border-2 border-zinc-800/50 rounded-xl focus:outline-none focus:border-purple-500/50 text-white"
               />
             </div>

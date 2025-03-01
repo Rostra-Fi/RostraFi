@@ -150,7 +150,7 @@ export function SelectedTeamsOverview() {
       // Reset and redirect after delay
       const timer = setTimeout(() => {
         resetTeams();
-        router.push("/user");
+        router.push(`/user/${userId}`);
       }, 2000);
 
       return () => clearTimeout(timer);
