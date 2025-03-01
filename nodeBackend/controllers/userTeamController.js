@@ -5,6 +5,8 @@ const AppError = require('../utils/appError');
 const logger = require('../config/logger');
 const { MAX_TEAMS_PER_SECTION } = require('../utils/constants');
 const mongoose = require('mongoose');
+const { TwitterApi } = require('twitter-api-v2');
+const twitterService = require('../services/twitterService');
 
 exports.createUserTeam = async (req, res, next) => {
   const session = await mongoose.startSession();
@@ -171,15 +173,114 @@ exports.getUserTeams = async (req, res, next) => {
       return next(new AppError('No teams found for this user', 404));
     }
 
+    // Process each tournament to include Twitter data
+    const enhancedTeams = await Promise.all(
+      activeTeams.map(async (team) => {
+        // Convert Mongoose document to plain JavaScript object for manipulation
+        const teamObj = team.toObject();
+        console.log(`Single teams: ${team}`);
+
+        // Extract all selected teams from all sections
+        const allTeams = teamObj.sections.flatMap((section) =>
+          section.selectedTeams.map((selectedTeam) => ({
+            ...selectedTeam,
+            section: section.sectionId.name,
+          })),
+        );
+
+        console.log(`All the teams: `, allTeams);
+
+        try {
+          // Initialize or update the queue for this tournament
+          await twitterService.initializeQueueForTournament(
+            team.tournamentId._id,
+            allTeams,
+            team.tournamentId.startDate,
+            team.tournamentId.endDate,
+          );
+
+          // Get the current Twitter stats from our database
+          const twitterStats = await twitterService.getAggregatedTwitterStats(
+            team.tournamentId._id,
+          );
+          teamObj.twitterStats = twitterStats;
+        } catch (error) {
+          console.error(
+            `Error processing Twitter data for tournament ${teamObj.tournamentId.name}:`,
+            error,
+          );
+          // Fallback to sample data if there's an error
+          teamObj.twitterStats = twitterService.generateFallbackData(allTeams);
+        }
+
+        return teamObj;
+      }),
+    );
+
     res.status(200).json({
       status: 'success',
-      count: activeTeams.length,
-      data: activeTeams,
+      count: enhancedTeams.length,
+      data: enhancedTeams,
     });
   } catch (error) {
     next(error);
   }
 };
+
+// exports.getUserTeams = async (req, res, next) => {
+//   try {
+//     const { userId, walletUserId } = req.params;
+
+//     // Check if wallet user exists
+//     const walletUser = await WalletUser.findById(walletUserId);
+//     if (!walletUser) {
+//       return next(new AppError('Wallet user not found', 404));
+//     }
+
+//     const teams = await UserTeam.find({
+//       userId: userId,
+//       isActive: true,
+//     }).populate([
+//       {
+//         path: 'sections.sectionId',
+//         select: '_id name',
+//       },
+//       {
+//         path: 'sections.selectedTeams',
+//       },
+//       {
+//         path: 'tournamentId',
+//         select: 'name startDate endDate prizePool image icon platform isActive',
+//       },
+//     ]);
+
+//     // Filter teams to get only those with active tournaments
+//     const activeTeams = teams.filter(
+//       (team) => team.tournamentId && team.tournamentId.isActive === true,
+//     );
+
+//     // Check if there are any active tournament teams
+//     if (!activeTeams.length) {
+//       return res.status(200).json({
+//         status: 'success',
+//         message: 'No active tournaments you are participating in',
+//         data: [],
+//       });
+//     }
+
+//     if (!teams.length) {
+//       return next(new AppError('No teams found for this user', 404));
+//     }
+
+//     res.status(200).json({
+//       status: 'success',
+//       count: activeTeams.length,
+//       data: activeTeams,
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
 
 exports.updateUserTeam = async (req, res, next) => {
   const session = await mongoose.startSession();

@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
       { hostname: "media.istockphoto.com" },
       { hostname: "cdn.pixabay.com" },
       { hostname: "upload.wikimedia.org" },
+      { hostname: "pbs.twimg.com" },
       {
         protocol: "https",
         hostname: "**.gstatic.com",
