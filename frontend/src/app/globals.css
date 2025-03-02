@@ -2,10 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
-
 /* Wallet adapter button and modal customization */
 .wallet-adapter-button {
-  background-color: #512da8 !important;  /* Purple theme */
+  background-color: #512da8 !important; /* Purple theme */
   color: white !important;
   padding: 12px 20px !important;
   border-radius: 8px !important;
@@ -17,7 +16,7 @@
 }
 
 .wallet-adapter-button:hover {
-  background-color: #4527a0 !important;  /* Slightly darker on hover */
+  background-color: #4527a0 !important; /* Slightly darker on hover */
   opacity: 0.95 !important;
 }
 
@@ -33,7 +32,7 @@
 }
 
 .wallet-adapter-modal-button-close {
-  background-color: #ef4444 !important;  /* Red close button */
+  background-color: #ef4444 !important; /* Red close button */
   color: white !important;
   padding: 6px !important;
   border-radius: 50% !important;
@@ -54,11 +53,11 @@
     background-color: #1f2937 !important;
     color: white !important;
   }
-  
+
   .wallet-adapter-modal-list-item {
     background-color: transparent !important;
   }
-  
+
   .wallet-adapter-modal-list-item:hover {
     background-color: #374151 !important;
   }
@@ -76,8 +75,6 @@
 .wallet-adapter-button:hover {
   background-color: #4527a0 !important;
 }
-
-
 
 @layer base {
   :root {
@@ -135,8 +132,6 @@
   }
 }
 
-
-
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -144,4 +139,8 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.progress-indicator {
+  @apply bg-gradient-to-r from-purple-500 to-pink-500;
 }

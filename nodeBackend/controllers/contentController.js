@@ -45,7 +45,7 @@ exports.createContent = catchAsync(async (req, res, next) => {
 
   if (duration) {
     end = new Date(start);
-    end.setDate(end.getDate() + parseInt(duration));
+    end.setHours(end.getHours() + parseInt(duration));
   } else {
     // Default 7 days
     end = new Date(start);
