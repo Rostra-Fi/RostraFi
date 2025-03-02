@@ -44,6 +44,7 @@ class TournamentWinnerService {
           );
           await this.calculateTournamentWinners(tournament._id);
         }
+        // await this.calculateTournamentWinners(tournament._id);
       }
     } catch (error) {
       console.error(
@@ -70,7 +71,7 @@ class TournamentWinnerService {
       }
 
       // Check if tournament has enough participants
-      if (tournament.participated.length < 3) {
+      if (tournament.participated.length < 1) {
         console.log(
           `Tournament ${tournament.name} doesn't have enough participants for prize distribution`,
         );
