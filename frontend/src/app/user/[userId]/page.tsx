@@ -26,6 +26,7 @@ import {
   Copy,
   Loader,
   RefreshCw,
+  ArrowRight,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,11 @@ import {
 } from "@/components/ui/dialog";
 import { useParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
-import { userCurrentTournaments, userWalletConnect } from "@/store/userSlice";
+import {
+  fetchUserTournaments,
+  userCurrentTournaments,
+  userWalletConnect,
+} from "@/store/userSlice";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -122,16 +127,56 @@ const Noise = () => {
 };
 
 // TeamCard component
-const TeamCard = ({ team, section }) => {
+// Modified TeamCard component with Twitter API integration
+const TeamCard = ({ team, section, tournament }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [twitterData, setTwitterData] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Mock stats for demonstration
-  const stats = {
-    posts: Math.floor(Math.random() * 50) + 10,
-    likes: Math.floor(Math.random() * 5000) + 500,
-    comments: Math.floor(Math.random() * 1000) + 100,
-    views: Math.floor(Math.random() * 15000) + 1000,
-    shares: Math.floor(Math.random() * 500) + 50,
+  // Function to fetch Twitter data when team card is clicked
+  const fetchTwitterData = async () => {
+    try {
+      setIsLoading(true);
+      console.log(tournament);
+      console.log(team.twitterId);
+
+      // Get tournamentId and teamId from props
+      const tournamentId = tournament; // Assuming tournament prop contains the tournamentId
+      const twitterId = team.twitterId; // Assuming team has twitterId property
+
+      if (!tournamentId || !twitterId) {
+        console.error("Missing tournamentId or twitterId");
+        return;
+      }
+
+      // Make API call to fetch Twitter data
+      const response = await fetch(
+        `http://127.0.0.1:3001/api/v1/userTeams/twitter/${tournamentId}/${twitterId}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch Twitter data: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log(data);
+
+      if (data.success) {
+        setTwitterData(data.data);
+      } else {
+        console.error("API returned error:", data.message);
+      }
+    } catch (error) {
+      console.error("Error fetching Twitter data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle dialog open - fetch data when opening
+  const handleDialogOpen = () => {
+    setIsDialogOpen(true);
+    fetchTwitterData();
   };
 
   const sectionColors = {
@@ -147,7 +192,7 @@ const TeamCard = ({ team, section }) => {
     <>
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
-          <div className="cursor-pointer" onClick={() => setIsDialogOpen(true)}>
+          <div className="cursor-pointer" onClick={handleDialogOpen}>
             <WobbleCard
               containerClassName={`bg-gradient-to-br ${
                 colorClass.split(" ")[0]
@@ -225,93 +270,125 @@ const TeamCard = ({ team, section }) => {
               </div>
             </div>
 
+            {/* Twitter Stats Section */}
             <div>
-              <h3 className="text-lg font-semibold mb-3">Team Stats</h3>
-              <div className="grid grid-cols-5 gap-3">
-                {[
-                  {
-                    icon: <Eye size={18} />,
-                    label: "Views",
-                    value: stats.views.toLocaleString(),
-                  },
-                  {
-                    icon: <Heart size={18} />,
-                    label: "Likes",
-                    value: stats.likes.toLocaleString(),
-                  },
-                  {
-                    icon: <MessageSquare size={18} />,
-                    label: "Comments",
-                    value: stats.comments.toLocaleString(),
-                  },
-                  {
-                    icon: <Share2 size={18} />,
-                    label: "Shares",
-                    value: stats.shares.toLocaleString(),
-                  },
-                  {
-                    icon: <Trophy size={18} />,
-                    label: "Points",
-                    value: (team.points || 0).toLocaleString(),
-                  },
-                ].map((stat, i) => (
-                  <Card key={i} className="bg-[#1a1a1a] border-white/10">
-                    <CardContent className="p-3 flex flex-col items-center justify-center">
-                      <div className="text-white/60 mb-1">{stat.icon}</div>
-                      <div className="text-lg font-bold">{stat.value}</div>
-                      <div className="text-xs text-white/60">{stat.label}</div>
-                    </CardContent>
-                  </Card>
-                ))}
+              <h3 className="text-lg font-semibold mb-3">Twitter Stats</h3>
+              {isLoading ? (
+                <div className="flex justify-center p-6">
+                  <Loader className="h-8 w-8 text-white animate-spin" />
+                </div>
+              ) : twitterData ? (
+                <div className="grid grid-cols-5 gap-3">
+                  {[
+                    {
+                      icon: <Eye size={18} />,
+                      label: "Views",
+                      value: twitterData.stats.viewCount.toLocaleString(),
+                    },
+                    {
+                      icon: <Heart size={18} />,
+                      label: "Likes",
+                      value: twitterData.stats.likeCount.toLocaleString(),
+                    },
+                    {
+                      icon: <MessageSquare size={18} />,
+                      label: "Replies",
+                      value: twitterData.stats.replyCount.toLocaleString(),
+                    },
+                    {
+                      icon: <RefreshCw size={18} />,
+                      label: "Retweets",
+                      value: twitterData.stats.retweetCount.toLocaleString(),
+                    },
+                    {
+                      icon: <TrendingUp size={18} />,
+                      label: "Tweets",
+                      value: twitterData.stats.tweetCount.toLocaleString(),
+                    },
+                  ].map((stat, i) => (
+                    <Card key={i} className="bg-[#1a1a1a] border-white/10">
+                      <CardContent className="p-3 flex flex-col items-center justify-center">
+                        <div className="text-white/60 mb-1">{stat.icon}</div>
+                        <div className="text-lg font-bold">{stat.value}</div>
+                        <div className="text-xs text-white/60">
+                          {stat.label}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-[#1a1a1a] border-white/10 rounded-lg p-4 text-center text-white/70">
+                  No Twitter data available for this team
+                </div>
+              )}
+            </div>
+
+            {/* Recent Tweets Section */}
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Recent Tweets</h3>
+              <div className="space-y-3">
+                {isLoading ? (
+                  <div className="flex justify-center p-6">
+                    <Loader className="h-8 w-8 text-white animate-spin" />
+                  </div>
+                ) : twitterData &&
+                  twitterData.tweets &&
+                  twitterData.tweets.length > 0 ? (
+                  twitterData.tweets.map((tweet, i) => (
+                    <Card key={i} className="bg-[#1a1a1a] border-white/10">
+                      <CardContent className="p-3">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarImage src={team.image} />
+                            <AvatarFallback>
+                              {team.name.substring(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium">
+                            {team.name}
+                          </span>
+                          <span className="text-xs text-white/50">
+                            {new Date(tweet.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-sm text-white/80">{tweet.content}</p>
+                        <div className="flex items-center gap-4 mt-2 text-xs text-white/50">
+                          <span className="flex items-center gap-1">
+                            <Heart size={12} />
+                            {tweet.metrics.likeCount}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <MessageSquare size={12} />
+                            {tweet.metrics.replyCount}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <RefreshCw size={12} />
+                            {tweet.metrics.retweetCount}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Eye size={12} />
+                            {tweet.metrics.viewCount}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="bg-[#1a1a1a] border-white/10 rounded-lg p-4 text-center text-white/70">
+                    No tweets available
+                  </div>
+                )}
               </div>
             </div>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-3">Recent Posts</h3>
-              <div className="space-y-3">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Card key={i} className="bg-[#1a1a1a] border-white/10">
-                    <CardContent className="p-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={team.image} />
-                          <AvatarFallback>
-                            {team.name.substring(0, 2).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm font-medium">{team.name}</span>
-                        <span className="text-xs text-white/50">
-                          {Math.floor(Math.random() * 24) + 1}h ago
-                        </span>
-                      </div>
-                      <p className="text-sm text-white/80">
-                        {
-                          [
-                            "Just dropped our latest update! Check it out and let us know what you think.",
-                            "We're excited to announce our partnership with the community. Big things coming soon!",
-                            "Thanks for all the support on our recent campaign. We couldn't have done it without you!",
-                          ][i]
-                        }
-                      </p>
-                      <div className="flex items-center gap-4 mt-2 text-xs text-white/50">
-                        <span className="flex items-center gap-1">
-                          <Heart size={12} />
-                          {Math.floor(Math.random() * 1000) + 100}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MessageSquare size={12} />
-                          {Math.floor(Math.random() * 100) + 10}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Eye size={12} />
-                          {Math.floor(Math.random() * 10000) + 1000}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+            {/* Last Updated Info */}
+            {twitterData && (
+              <div className="text-xs text-white/50 text-right">
+                Last updated:{" "}
+                {new Date(twitterData.lastUpdated).toLocaleString()}
               </div>
-            </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -321,63 +398,8 @@ const TeamCard = ({ team, section }) => {
 
 // Tournament Card component
 const TournamentCard = ({ tournament }) => {
-  // const endDate = new Date(tournament.tournamentId.endDate);
-  // const now = new Date();
-  // const remainingDays = Math.ceil(
-  //   (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-  // );
-  // console.log(tournament);
-
-  // const getTimeStatus = () => {
-  //   if (remainingDays <= 0) {
-  //     return "Ended recently";
-  //   } else if (remainingDays === 1) {
-  //     return "Ends tomorrow";
-  //   } else {
-  //     return `Ends in ${remainingDays} days`;
-  //   }
-  // };
-
-  // // Combine all teams from all sections
-  // const allTeams = tournament.sections.flatMap((section) =>
-  //   section.selectedTeams.map((team) => ({ ...team, section: section.name }))
-  // );
-
-  // console.log(allTeams);
-
-  // // Aggregate stats across all sections
-  // const aggregateStats = {
-  //   posts: 0,
-  //   likes: 0,
-  //   comments: 0,
-  //   views: 0,
-  //   teams: allTeams.length,
-  // };
-
-  // // Calculate aggregate stats
-  // allTeams.forEach(() => {
-  //   aggregateStats.posts += Math.floor(Math.random() * 20) + 5;
-  //   aggregateStats.likes += Math.floor(Math.random() * 2000) + 200;
-  //   aggregateStats.comments += Math.floor(Math.random() * 500) + 50;
-  //   aggregateStats.views += Math.floor(Math.random() * 5000) + 500;
-  // });
-
-  // // Recent posts for the entire tournament
-  // const tournamentPosts = Array.from({ length: 3 }).map((_, i) => ({
-  //   id: i,
-  //   author: allTeams[Math.floor(Math.random() * allTeams.length)],
-  //   content: [
-  //     "Exciting news about the tournament! Stay tuned for more updates coming soon.",
-  //     "We've reached a new milestone in our engagement. Thanks to all the teams for their hard work!",
-  //     "Congratulations to all the teams that have reached the top tier. Keep pushing the boundaries!",
-  //   ][i],
-  //   time: `${Math.floor(Math.random() * 24) + 1}h ago`,
-  //   likes: Math.floor(Math.random() * 1000) + 100,
-  //   comments: Math.floor(Math.random() * 100) + 10,
-  //   views: Math.floor(Math.random() * 10000) + 1000,
-  // }));
-
-  const [loading, setLoading] = useState(false); // Now defaults to false since data comes with tournament
+  const [loading, setLoading] = useState(false);
+  console.log(tournament);
 
   const endDate = new Date(tournament.tournamentId.endDate);
   const now = new Date();
@@ -645,6 +667,7 @@ const TournamentCard = ({ tournament }) => {
                 key={teamIndex}
                 team={team}
                 section={{ name: team.section }}
+                tournament={tournament.tournamentId._id}
               />
             ))}
           </div>
@@ -668,18 +691,24 @@ export default function ProfilePage() {
   const [transactionsDialogOpen, setTransactionsDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
 
-  const { userCurrentTournament, points, tournaments } = useAppSelector(
-    (state) => state.user
-  );
-
-  console.log(tournaments);
+  const { userCurrentTournament, points, tournaments, userTournaments } =
+    useAppSelector((state) => state.user);
 
   const walletUserId = localStorage.getItem("UserId");
+  console.log(userTournaments);
 
   useEffect(() => {
     dispatch(userWalletConnect(walletUserId as string));
     dispatch(userCurrentTournaments(walletUserId as string, userId as string));
+    // dispatch(fetchUserTournaments(walletUserId as string));
   }, [userId, walletUserId, dispatch]);
+
+  // Function to handle opening tournament dialog
+  const handleOpenTournamentDialog = () => {
+    // Fetch user tournaments data before opening dialog
+    dispatch(fetchUserTournaments(walletUserId as string));
+    setTournamentDialogOpen(true);
+  };
 
   return (
     <div
@@ -892,7 +921,7 @@ export default function ProfilePage() {
                 icon: <Trophy className="h-5 w-5 text-white/70" />,
                 trend: `+${tournaments} this month`,
                 trendUp: true,
-                onClick: () => setTournamentDialogOpen(true),
+                onClick: handleOpenTournamentDialog, // Using the new handler
               },
             ].map((stat, i) => (
               <motion.div
@@ -997,55 +1026,107 @@ export default function ProfilePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Tournament Dialog */}
+      {/* Tournament Dialog - Updated */}
       <Dialog
         open={tournamentDialogOpen}
         onOpenChange={setTournamentDialogOpen}
       >
-        <DialogContent className="bg-[#111] border border-white/10 text-white">
+        <DialogContent className="bg-[#111] border border-white/10 text-white max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <Trophy className="h-5 w-5" />
               Tournament Details
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="bg-black/40 rounded-lg p-4">
-              <div className="text-white/60 text-sm mb-1">
-                Total Tournaments
-              </div>
-              <div className="text-2xl font-bold">{tournaments}</div>
-            </div>
 
-            <div className="space-y-2">
-              <div className="text-white/60 text-sm">Recent Tournaments</div>
-              {userCurrentTournament && userCurrentTournament.length > 0 ? (
-                userCurrentTournament.slice(0, 3).map((tournament, index) => (
-                  <div
-                    key={index}
-                    className="bg-black/40 rounded-lg p-3 flex justify-between items-center"
-                  >
-                    <div>
-                      <div className="font-medium">{tournament.name}</div>
-                      <div className="text-xs text-white/60">
-                        Rank: {tournament.rank || "N/A"} | Points:{" "}
-                        {tournament.points || 0}
+          {userTournaments && userTournaments.length > 0 ? (
+            <div className="space-y-4">
+              {userTournaments.map((tournament, index) => (
+                <div
+                  key={index}
+                  className="bg-black/40 rounded-lg p-4 space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                        <Trophy className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-lg">{tournament.name}</h3>
+                        <div className="flex items-center gap-2">
+                          {tournament.isActive && tournament.isOngoing ? (
+                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
+                              <span className="h-1.5 w-1.5 rounded-full bg-green-400"></span>
+                              Active
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400">
+                              <span className="h-1.5 w-1.5 rounded-full bg-yellow-400"></span>
+                              Inactive
+                            </span>
+                          )}
+                          <span className="text-xs text-white/60">
+                            {new Date(
+                              tournament.startDate
+                            ).toLocaleDateString()}{" "}
+                            -{" "}
+                            {new Date(tournament.endDate).toLocaleDateString()}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-white/40" />
                   </div>
-                ))
-              ) : (
-                <div className="text-center text-white/60 py-4">
-                  No tournament data available
-                </div>
-              )}
-            </div>
 
-            <Button className="w-full bg-white/10 hover:bg-white/20">
-              View All Tournaments
-            </Button>
-          </div>
+                  {tournament.userTeam && (
+                    <div className="border-t border-white/10 pt-3">
+                      <div className="text-white/60 text-sm mb-2">
+                        Your Team
+                      </div>
+                      <div className="flex items-center justify-between bg-black/60 p-3 rounded-lg">
+                        <div className="font-medium">
+                          {tournament.userTeam.teamName}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="text-sm text-white/60">
+                            {tournament.userTeam.sections.reduce(
+                              (total, section) =>
+                                total + section.selectedTeams.length,
+                              0
+                            )}{" "}
+                            players
+                          </div>
+                          <ArrowRight className="h-4 w-4 text-white/40" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3 border-t border-white/10 pt-3">
+                    <div className="bg-black/60 p-3 rounded-lg">
+                      <div className="text-white/60 text-xs mb-1">
+                        Current Status
+                      </div>
+                      <div className="font-bold">
+                        {tournament.isOngoing ? "Ongoing" : "Completed"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-8 text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                <Trophy className="h-8 w-8 text-white/40" />
+              </div>
+              <h3 className="text-lg font-medium text-white mb-1">
+                No Tournaments
+              </h3>
+              <p className="text-white/60 text-sm">
+                You haven't joined any tournaments yet.
+              </p>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

@@ -10,8 +10,10 @@ import PlatformCard from "./Cards";
 import { useAppSelector } from "@/hooks/reduxHooks";
 
 export function TournamentModal() {
-  const { tournaments, loading } = useAppSelector((state) => state.tournaments);
-  console.log(tournaments);
+  const { tournaments, loading, openRegistrationTournaments } = useAppSelector(
+    (state) => state.tournaments
+  );
+  console.log(openRegistrationTournaments);
 
   return (
     <div>
@@ -45,7 +47,7 @@ export function TournamentModal() {
                     {loading ? (
                       <div className="text-white">Loading tournaments...</div>
                     ) : tournaments.length > 0 ? (
-                      tournaments.map((tournament) => {
+                      openRegistrationTournaments.map((tournament) => {
                         return (
                           <div
                             key={tournament._id}

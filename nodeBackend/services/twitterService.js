@@ -12,6 +12,7 @@ const twitterClient = new TwitterApi({
 
 const fetchTweetsForUser = async (twitterId, team, startTime) => {
   try {
+    console.log(new Date(startTime).toISOString());
     const tweets = await twitterClient.v2.userTimeline(twitterId, {
       start_time: new Date(startTime).toISOString(),
       'tweet.fields': ['created_at', 'public_metrics'],
@@ -20,6 +21,11 @@ const fetchTweetsForUser = async (twitterId, team, startTime) => {
     console.log(`Current Twitter id:${twitterId}`);
 
     console.log('API result :', tweets);
+
+    // console.log('Some data', tweets?._realData);
+    console.log(tweets?._realData?.errors);
+    console.log(tweets?._requestMaker?.rateLimits);
+    console.log(tweets?._requestMaker?.rateLimits?._oauth);
 
     let userStats = {
       tweetCount: tweets.data?.meta?.result_count || 0,
@@ -80,6 +86,7 @@ const fetchTweetsForUser = async (twitterId, team, startTime) => {
 };
 
 // Function to initialize or update the queue for a tournament
+
 const initializeQueueForTournament = async (
   tournamentId,
   allTeams,
@@ -110,12 +117,35 @@ const initializeQueueForTournament = async (
         processingStartTime: null,
       });
     } else {
-      // Update existing queue - add any new teams, update existing teams
-      const existingTwitterIds = queue.teamsToProcess.map((t) => t.twitterId);
+      // Create a map of existing teams by twitterId for quick lookup
+      const existingTeamsMap = new Map(
+        queue.teamsToProcess
+          .filter((team) => team.twitterId) // Filter out any that might not have twitterId
+          .map((team) => [team.twitterId, team]),
+      );
 
+      // Create a new teamsToProcess array
+      const updatedTeamsToProcess = [];
+
+      // Process all current teams - update existing ones and add new ones
       for (const team of allTeams) {
-        if (team.twitterId && !existingTwitterIds.includes(team.twitterId)) {
-          queue.teamsToProcess.push({
+        if (!team.twitterId) continue; // Skip teams without twitter ID
+
+        if (existingTeamsMap.has(team.twitterId)) {
+          // Update existing team but preserve priority and lastProcessed
+          const existingTeam = existingTeamsMap.get(team.twitterId);
+          updatedTeamsToProcess.push({
+            teamId: team._id,
+            twitterId: team.twitterId,
+            teamName: team.name,
+            teamImage: team.image,
+            teamSection: team.section,
+            priority: existingTeam.priority,
+            lastProcessed: existingTeam.lastProcessed,
+          });
+        } else {
+          // Add new team
+          updatedTeamsToProcess.push({
             teamId: team._id,
             twitterId: team.twitterId,
             teamName: team.name,
@@ -126,6 +156,9 @@ const initializeQueueForTournament = async (
           });
         }
       }
+
+      // Replace the entire array rather than just pushing to it
+      queue.teamsToProcess = updatedTeamsToProcess;
 
       // Update dates if needed
       if (startDate) queue.startDate = startDate;
@@ -187,7 +220,7 @@ const processNextTeamInQueue = async () => {
 
     // Get the next team to process
     const teamToProcess = queue.teamsToProcess[0];
-    console.log(teamToProcess);
+    console.log('Team to process', teamToProcess);
 
     if (!teamToProcess || !teamToProcess.twitterId) {
       console.log('No teams with Twitter IDs to process in queue', queue._id);
@@ -201,6 +234,7 @@ const processNextTeamInQueue = async () => {
     );
 
     try {
+      console.log(queue.startDate);
       // Fetch Twitter data for this team
       const twitterStats = await fetchTweetsForUser(
         teamToProcess.twitterId,
@@ -211,6 +245,8 @@ const processNextTeamInQueue = async () => {
         },
         queue.startDate,
       );
+
+      console.log(twitterStats);
 
       // Update or create Twitter data record
       await TwitterData.findOneAndUpdate(
@@ -279,6 +315,8 @@ const getAggregatedTwitterStats = async (tournamentId) => {
       return generateFallbackData();
     }
 
+    // console.log('ALL Twitter aggregation:', allTwitterData);
+
     // Aggregate all results
     const aggregatedStats = {
       posts: 0,
@@ -309,6 +347,8 @@ const getAggregatedTwitterStats = async (tournamentId) => {
         },
         metrics: tweet.metrics,
       }));
+
+      //   console.log('Team tweets aggregation:', teamTweets);
 
       aggregatedStats.recentTweets.push(...teamTweets);
     });
@@ -408,7 +448,7 @@ const cleanupInactiveTournamentData = async () => {
 
 const setupCronJobs = () => {
   // Process next team in queue every 15 minutes
-  cron.schedule('*/15 * * * *', async () => {
+  cron.schedule('*/16 * * * *', async () => {
     console.log('Running scheduled Twitter data processing...');
     await processNextTeamInQueue();
   });

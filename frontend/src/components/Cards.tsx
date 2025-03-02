@@ -1,7 +1,7 @@
 import React from "react";
 import { CardBody, CardContainer, CardItem } from "./ui/3d-card";
 import Image from "next/image";
-import { Clock, Users, Check } from "lucide-react";
+import { Clock, Users, Check, CalendarClock } from "lucide-react";
 import { useAppSelector, useAppDispatch } from "@/hooks/reduxHooks";
 import { useToast } from "@/hooks/use-toast";
 import { Tournament } from "@/store/tournamentSlice";
@@ -31,13 +31,30 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
   const calculateTimeRemaining = () => {
     const now = new Date();
     let targetDate;
+    let eventType = "";
 
-    if (!tournamentData.isOngoing && tournamentData.isActive) {
+    // Check if registration is open but tournament hasn't started
+    if (tournamentData.isRegistrationOpen && !tournamentData.isOngoing) {
+      targetDate = new Date(tournamentData.registrationEndDate);
+      eventType = "registration";
+    }
+    // Check if tournament is pending (after registration, before start)
+    else if (
+      !tournamentData.isRegistrationOpen &&
+      !tournamentData.isOngoing &&
+      tournamentData.isActive
+    ) {
       targetDate = new Date(tournamentData.startDate);
-    } else if (tournamentData.isOngoing) {
+      eventType = "tournament";
+    }
+    // Check if tournament is ongoing
+    else if (tournamentData.isOngoing) {
       targetDate = new Date(tournamentData.endDate);
-    } else {
-      return { hours: 0, minutes: 0, totalMinutes: 0 };
+      eventType = "end";
+    }
+    // Default case
+    else {
+      return { hours: 0, minutes: 0, totalMinutes: 0, eventType: "none" };
     }
 
     const diffMs = targetDate.getTime() - now.getTime();
@@ -47,6 +64,7 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
       hours: Math.floor(diffMinutes / 60),
       minutes: diffMinutes % 60,
       totalMinutes: diffMinutes,
+      eventType,
     };
   };
 
@@ -142,18 +160,35 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
         className: "bg-gray-500 text-white cursor-not-allowed opacity-70",
         icon: null,
       };
-    } else if (!tournamentData.isOngoing) {
+    } else if (tournamentData.isRegistrationOpen && !tournamentData.isOngoing) {
+      return {
+        text: "Register Now",
+        enabled: true,
+        className: `${platformStyles.background} ${platformStyles.text} hover:opacity-90`,
+        icon: null,
+      };
+    } else if (
+      !tournamentData.isRegistrationOpen &&
+      !tournamentData.isOngoing
+    ) {
       return {
         text: "Coming Soon",
         enabled: false,
         className: "bg-amber-500 text-white cursor-not-allowed",
         icon: null,
       };
-    } else {
+    } else if (tournamentData.isOngoing) {
       return {
         text: "Create Team",
         enabled: true,
         className: `${platformStyles.background} ${platformStyles.text} hover:opacity-90`,
+        icon: null,
+      };
+    } else {
+      return {
+        text: "Create Team",
+        enabled: false,
+        className: "bg-gray-500 text-white cursor-not-allowed",
         icon: null,
       };
     }
@@ -161,28 +196,69 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
 
   const buttonConfig = getButtonConfig();
 
+  // Get status badge text
+  const getStatusBadge = () => {
+    if (hasUserParticipated) {
+      return {
+        text: "Participated",
+        className: "bg-green-600 text-white",
+      };
+    } else if (!tournamentData.isActive) {
+      return {
+        text: "Ended",
+        className: "bg-red-500 text-white",
+      };
+    } else if (tournamentData.isRegistrationOpen && !tournamentData.isOngoing) {
+      return {
+        text: "Registration Open",
+        className: "bg-blue-500 text-white",
+      };
+    } else if (!tournamentData.isOngoing) {
+      return {
+        text: "Coming Soon",
+        className: "bg-amber-500 text-white",
+      };
+    } else if (tournamentData.isOngoing) {
+      return {
+        text: "Live",
+        className: "bg-green-500 text-white",
+      };
+    } else {
+      return {
+        text: "",
+        className: "",
+      };
+    }
+  };
+
+  const statusBadge = getStatusBadge();
+
+  // Get timer description based on event type
+  const getTimerDescription = () => {
+    switch (timeRemaining.eventType) {
+      case "registration":
+        return "Registration closes in";
+      case "tournament":
+        return "Tournament starts in";
+      case "end":
+        return "Tournament ends in";
+      default:
+        return tournamentData.isActive
+          ? "Tournament Live!"
+          : "Tournament Ended";
+    }
+  };
+
   return (
     <CardContainer className="inter-var">
       <CardBody className="bg-black/80 relative group/card border-white/[0.2] w-[20rem] h-[26rem] rounded-xl p-4 border">
-        {/* Status Badge - Only show if coming soon, ended, or participated */}
-        {(!tournamentData.isOngoing ||
-          !tournamentData.isActive ||
-          hasUserParticipated) && (
+        {/* Status Badge */}
+        {statusBadge.text && (
           <CardItem translateZ="80" className="absolute top-4 left-4 z-10">
             <div
-              className={`px-3 py-1 rounded-full text-xs font-bold ${
-                hasUserParticipated
-                  ? "bg-green-600 text-white"
-                  : !tournamentData.isActive
-                  ? "bg-red-500 text-white"
-                  : "bg-amber-500 text-white"
-              }`}
+              className={`px-3 py-1 rounded-full text-xs font-bold ${statusBadge.className}`}
             >
-              {hasUserParticipated
-                ? "Participated"
-                : !tournamentData.isActive
-                ? "Ended"
-                : "Coming Soon"}
+              {statusBadge.text}
             </div>
           </CardItem>
         )}
@@ -221,13 +297,19 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
             translateZ="50"
             className="flex items-center text-white/90 text-base"
           >
-            <Clock className="w-4 h-4 mr-2" />
+            {timeRemaining.eventType === "registration" ? (
+              <CalendarClock className="w-4 h-4 mr-2" />
+            ) : (
+              <Clock className="w-4 h-4 mr-2" />
+            )}
             <span className="font-medium">
-              {timeRemaining.totalMinutes > 0
-                ? formatTimeRemaining()
-                : tournamentData.isActive
-                ? "Tournament Live!"
-                : "Tournament Ended"}
+              {timeRemaining.totalMinutes > 0 ? (
+                <>
+                  {getTimerDescription()}: {formatTimeRemaining()}
+                </>
+              ) : (
+                getTimerDescription()
+              )}
             </span>
           </CardItem>
 

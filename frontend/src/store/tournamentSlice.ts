@@ -4,8 +4,10 @@ export interface Tournament {
   _id: string;
   name: string;
   timeLimit: number;
+  registrationTimeLimit: number;
   startDate: string;
   endDate: string;
+  registrationEndDate: string;
   prizePool: number;
   image: string;
   icon: string;
@@ -15,6 +17,7 @@ export interface Tournament {
   participated: string[];
   isActive: boolean;
   isOngoing: boolean;
+  isRegistrationOpen: boolean;
   createdAt: string;
   updatedAt: string;
   __v: number;
@@ -23,22 +26,28 @@ export interface Tournament {
 
 interface TournamentState {
   tournaments: Tournament[];
+  openRegistrationTournaments: Tournament[];
   selectedTournament: Tournament | null;
   count: number;
+  openRegistrationCount: number;
   isParticiapated: boolean;
   isError: boolean;
   error: string;
   loading: boolean;
+  openRegistrationLoading: boolean;
 }
 
 const initialState: TournamentState = {
   tournaments: [],
+  openRegistrationTournaments: [],
   selectedTournament: null,
   count: 0,
+  openRegistrationCount: 0,
   isParticiapated: false,
   isError: false,
   error: "",
   loading: false,
+  openRegistrationLoading: false,
 };
 
 export const tournamentSlice = createSlice({
@@ -48,8 +57,17 @@ export const tournamentSlice = createSlice({
     setTournaments: (state, action: PayloadAction<Tournament[]>) => {
       state.tournaments = action.payload;
     },
+    setOpenRegistrationTournaments: (
+      state,
+      action: PayloadAction<Tournament[]>
+    ) => {
+      state.openRegistrationTournaments = action.payload;
+    },
     setTournamentCount: (state, action: PayloadAction<number>) => {
       state.count = action.payload;
+    },
+    setOpenRegistrationCount: (state, action: PayloadAction<number>) => {
+      state.openRegistrationCount = action.payload;
     },
     setSelectedTournament: (state, action: PayloadAction<Tournament>) => {
       state.selectedTournament = action.payload;
@@ -71,6 +89,23 @@ export const tournamentSlice = createSlice({
             !state.tournaments[tournamentIndex].visited.includes(action.payload)
           ) {
             state.tournaments[tournamentIndex].visited.push(action.payload);
+          }
+        }
+
+        // Also update in the openRegistrationTournaments array
+        const openRegTournamentIndex =
+          state.openRegistrationTournaments.findIndex(
+            (t) => t._id === state.selectedTournament?._id
+          );
+        if (openRegTournamentIndex !== -1) {
+          if (
+            !state.openRegistrationTournaments[
+              openRegTournamentIndex
+            ].visited.includes(action.payload)
+          ) {
+            state.openRegistrationTournaments[
+              openRegTournamentIndex
+            ].visited.push(action.payload);
           }
         }
       }
@@ -95,10 +130,30 @@ export const tournamentSlice = createSlice({
             );
           }
         }
+
+        // Also update in the openRegistrationTournaments array
+        const openRegTournamentIndex =
+          state.openRegistrationTournaments.findIndex(
+            (t) => t._id === state.selectedTournament?._id
+          );
+        if (openRegTournamentIndex !== -1) {
+          if (
+            !state.openRegistrationTournaments[
+              openRegTournamentIndex
+            ].participated.includes(action.payload)
+          ) {
+            state.openRegistrationTournaments[
+              openRegTournamentIndex
+            ].participated.push(action.payload);
+          }
+        }
       }
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
+    },
+    setOpenRegistrationLoading: (state, action: PayloadAction<boolean>) => {
+      state.openRegistrationLoading = action.payload;
     },
     setError: (state, action: PayloadAction<string>) => {
       state.isError = true;
@@ -110,11 +165,14 @@ export const tournamentSlice = createSlice({
     },
     resetTournamentState: (state) => {
       state.tournaments = [];
+      state.openRegistrationTournaments = [];
       state.selectedTournament = null;
       state.count = 0;
+      state.openRegistrationCount = 0;
       state.isError = false;
       state.error = "";
       state.loading = false;
+      state.openRegistrationLoading = false;
       state.isParticiapated = false;
     },
   },
@@ -122,11 +180,14 @@ export const tournamentSlice = createSlice({
 
 export const {
   setTournaments,
+  setOpenRegistrationTournaments,
   setTournamentCount,
+  setOpenRegistrationCount,
   setSelectedTournament,
   addToVisited,
   addToParticipated,
   setLoading,
+  setOpenRegistrationLoading,
   setError,
   resetError,
   resetTournamentState,
@@ -164,6 +225,39 @@ export const fetchTournaments = () => async (dispatch: any) => {
     }
   } finally {
     dispatch(setLoading(false));
+  }
+};
+
+export const fetchOpenRegistrationTournaments = () => async (dispatch: any) => {
+  try {
+    dispatch(setOpenRegistrationLoading(true));
+    const response = await fetch(
+      "http://127.0.0.1:3001/api/v1/compitition/tournaments/open-registration",
+      {
+        method: "GET",
+      }
+    );
+
+    const data = await response.json();
+    console.log("Open registration tournaments:", data);
+
+    if (!response.ok) {
+      throw new Error(
+        data.message || "Failed to fetch open registration tournaments"
+      );
+    }
+
+    dispatch(setOpenRegistrationTournaments(data.data));
+    dispatch(setOpenRegistrationCount(data.count));
+    return data;
+  } catch (e) {
+    if (e instanceof Error) {
+      dispatch(setError(e.message));
+    } else {
+      dispatch(setError("An unknown error occurred"));
+    }
+  } finally {
+    dispatch(setOpenRegistrationLoading(false));
   }
 };
 
