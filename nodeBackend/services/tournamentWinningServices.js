@@ -4,13 +4,28 @@ const Tournament = require('../models/tournamentModel');
 const WalletUser = require('../models/walletUserModel');
 const UserTeam = require('../models/userTeamModel');
 const Team = require('../models/team');
+const TwitterData = require('../models/twitterDataModel');
+const cron = require('node-cron');
 
 class TournamentWinnerService {
   /**
-   * Schedules winner calculation for all active tournaments
-   * This should be run by a scheduler (e.g., cron job)
+   * Initializes the service by setting up cron jobs
    */
-  static async scheduleWinnerCalculations() {
+  static initialize() {
+    // Check for tournaments nearing completion every 15 minutes
+    cron.schedule('*/15 * * * *', async () => {
+      console.log('Checking for tournaments nearing completion...');
+      await this.checkTournamentsForWinnerCalculation();
+    });
+
+    console.log('Tournament winner calculation service initialized');
+  }
+
+  /**
+   * Checks for tournaments that are nearing completion
+   * and schedules winner calculations
+   */
+  static async checkTournamentsForWinnerCalculation() {
     try {
       const activeTournaments = await Tournament.getActiveTournaments();
 
@@ -22,16 +37,22 @@ class TournamentWinnerService {
         // If we're within the calculation window (one hour before end)
         if (now >= oneHourBeforeEnd && now <= tournament.endDate) {
           // Calculate winners if not already calculated
+          console.log(
+            `Tournament ${tournament.name} is nearing completion. Calculating winners...`,
+          );
           await this.calculateTournamentWinners(tournament._id);
         }
       }
     } catch (error) {
-      console.error('Error scheduling winner calculations:', error);
+      console.error(
+        'Error checking tournaments for winner calculation:',
+        error,
+      );
     }
   }
 
   /**
-   * Calculates winners for a specific tournament
+   * Calculates winners for a specific tournament using existing Twitter data
    * @param {ObjectId} tournamentId - Tournament ID
    */
   static async calculateTournamentWinners(tournamentId) {
@@ -77,9 +98,9 @@ class TournamentWinnerService {
         return;
       }
 
-      // Fetch Twitter engagement data for all teams in this tournament
+      // Fetch Twitter engagement data from TwitterData model
       const teamEngagementData =
-        await this.fetchTwitterEngagementData(userTeams);
+        await this.fetchTwitterEngagementFromDatabase(tournamentId);
 
       // Calculate scores for each user team based on Twitter engagement
       const userScores = await this.calculateUserScores(
@@ -120,240 +141,89 @@ class TournamentWinnerService {
     }
   }
 
-  // Updated implementation with real Twitter API calls
-
   /**
-   * Fetches Twitter engagement data for the past 24 hours for all teams
-   * @param {Array} userTeams - List of user teams
+   * Fetches Twitter engagement data from the database instead of API
+   * @param {ObjectId} tournamentId - Tournament ID
    * @returns {Object} - Map of team IDs to engagement scores
    */
-  static async fetchTwitterEngagementData(userTeams) {
+  static async fetchTwitterEngagementFromDatabase(tournamentId) {
     try {
-      // Extract all Twitter IDs from user teams
-      const twitterIds = new Set();
-      userTeams.forEach((userTeam) => {
-        userTeam.sections.forEach((section) => {
-          section.selectedTeams.forEach((team) => {
-            if (team.twitterId) {
-              twitterIds.add(team.twitterId);
-            }
-          });
-        });
-      });
+      // Get all Twitter data for this tournament
+      const allTwitterData = await TwitterData.find({ tournamentId });
 
-      // Convert to array
-      const twitterIdArray = Array.from(twitterIds);
+      if (!allTwitterData.length) {
+        console.log(`No Twitter data found for tournament ${tournamentId}`);
+        return {};
+      }
 
-      // Create Twitter API v2 client with your credentials
-      const { TwitterApi } = require('twitter-api-v2');
+      console.log(
+        `Found ${allTwitterData.length} Twitter data entries for tournament ${tournamentId}`,
+      );
 
-      const twitterClient = new TwitterApi({
-        appKey: process.env.TWITTER_API_KEY,
-        appSecret: process.env.TWITTER_API_SECRET,
-        accessToken: process.env.TWITTER_ACCESS_TOKEN,
-        accessSecret: process.env.TWITTER_ACCESS_SECRET,
-        bearerToken: process.env.TWITTER_BEARER_TOKEN,
-      });
-
-      // Get the read-only client
-      const roClient = twitterClient.readOnly;
-
-      // Calculate timestamp for 24 hours ago (in ISO format)
-      const twentyFourHoursAgo = new Date();
-      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-      const startTime = twentyFourHoursAgo.toISOString();
-
-      // Store engagement data for each Twitter ID
+      // Create engagement data object
       const engagementData = {};
 
-      // Process Twitter IDs in batches to avoid rate limits
-      const batchSize = 10;
-      for (let i = 0; i < twitterIdArray.length; i += batchSize) {
-        const batch = twitterIdArray.slice(i, i + batchSize);
+      // Process all Twitter data
+      allTwitterData.forEach((data) => {
+        if (!data.twitterId) return;
 
-        // Process each Twitter ID in the current batch
-        const batchPromises = batch.map(async (twitterId) => {
-          try {
-            // Get user details to access username
-            const user = await roClient.v2.user(twitterId, {
-              'user.fields': ['username'],
-            });
+        // Calculate total engagement metrics from stored tweets
+        let totalLikes = 0;
+        let totalRetweets = 0;
+        let totalReplies = 0;
+        let tweetsCount = 0;
 
-            if (!user.data) {
-              console.warn(`Twitter user not found for ID: ${twitterId}`);
-              return;
-            }
-
-            const username = user.data.username;
-
-            // Get recent tweets from this user
-            const userTweets = await roClient.v2.userTimeline(twitterId, {
-              max_results: 100,
-              start_time: startTime,
-              'tweet.fields': ['public_metrics', 'created_at'],
-              exclude: ['retweets', 'replies'],
-            });
-
-            // Initialize engagement counters
-            let totalLikes = 0;
-            let totalRetweets = 0;
-            let totalReplies = 0;
-            let totalQuotes = 0;
-            let tweetsCount = 0;
-
-            // Process all tweets
-            if (userTweets.data?.data) {
-              for (const tweet of userTweets.data.data) {
-                // Ensure tweet has public_metrics
-                if (tweet.public_metrics) {
-                  totalLikes += tweet.public_metrics.like_count || 0;
-                  totalRetweets += tweet.public_metrics.retweet_count || 0;
-                  totalReplies += tweet.public_metrics.reply_count || 0;
-                  totalQuotes += tweet.public_metrics.quote_count || 0;
-                  tweetsCount++;
-                }
-              }
-            }
-
-            // Get tweet count to measure activity level
-            const userTweetCount = await roClient.v2.userTweetCount(twitterId, {
-              start_time: startTime,
-            });
-
-            const activityCount = userTweetCount.data?.total || 0;
-
-            // Store engagement data for this user
-            engagementData[twitterId] = {
-              likes: totalLikes,
-              retweets: totalRetweets,
-              replies: totalReplies,
-              quotes: totalQuotes,
-              tweetsCount,
-              activityCount,
-              // Calculate total engagement with weighted metrics
-              get totalEngagement() {
-                return (
-                  this.likes +
-                  this.retweets * 2 +
-                  this.replies * 1.5 +
-                  this.quotes * 2.5 +
-                  // Add activity bonus to reward consistent posting
-                  this.activityCount * 5
-                );
-              },
-            };
-
-            // Add some logging
-            console.log(
-              `Fetched engagement data for Twitter ID: ${twitterId} (${username})`,
-            );
-            console.log(
-              `  - Likes: ${totalLikes}, Retweets: ${totalRetweets}, Replies: ${totalReplies}, Quotes: ${totalQuotes}`,
-            );
-            console.log(
-              `  - Activity: ${activityCount} tweets in the last 24 hours`,
-            );
-          } catch (error) {
-            console.error(
-              `Error fetching data for Twitter ID ${twitterId}:`,
-              error,
-            );
-            // Set default values if API call fails
-            engagementData[twitterId] = {
-              likes: 0,
-              retweets: 0,
-              replies: 0,
-              quotes: 0,
-              tweetsCount: 0,
-              activityCount: 0,
-              get totalEngagement() {
-                return 0;
-              },
-            };
-          }
-        });
-
-        // Wait for all promises in the current batch to resolve
-        await Promise.all(batchPromises);
-
-        // Add a small delay between batches to avoid rate limiting
-        if (i + batchSize < twitterIdArray.length) {
-          await new Promise((resolve) => setTimeout(resolve, 2000));
+        // Process all tweets
+        if (data.tweets && data.tweets.length > 0) {
+          data.tweets.forEach((tweet) => {
+            totalLikes += tweet.metrics?.likeCount || 0;
+            totalRetweets += tweet.metrics?.retweetCount || 0;
+            totalReplies += tweet.metrics?.replyCount || 0;
+            tweetsCount++;
+          });
         }
-      }
 
-      // Add additional API calls to get engagement with the teams' content
-      // This fetches recent tweets that mention or interact with these accounts
-      for (const twitterId of twitterIdArray) {
-        try {
-          // Skip if we couldn't get basic data for this ID
-          if (!engagementData[twitterId]) continue;
+        // Store engagement data
+        engagementData[data.twitterId] = {
+          likes: totalLikes,
+          retweets: totalRetweets,
+          replies: totalReplies,
+          tweetsCount,
+          viewCount: data.stats?.viewCount || 0,
+          // Calculate total engagement with weighted metrics
+          get totalEngagement() {
+            return (
+              this.likes +
+              this.retweets * 2 +
+              this.replies * 1.5 +
+              this.viewCount * 0.1 +
+              // Add activity bonus to reward consistent posting
+              this.tweetsCount * 5
+            );
+          },
+          // Add team metadata for reference
+          teamName: data.teamName,
+          teamId: data.teamId,
+        };
 
-          // Get user details to access username
-          const user = await roClient.v2.user(twitterId, {
-            'user.fields': ['username'],
-          });
-
-          if (!user.data) continue;
-
-          const username = user.data.username;
-
-          // Search for mentions of this user in the last 24 hours
-          const mentions = await roClient.v2.search(`@${username}`, {
-            'tweet.fields': ['public_metrics', 'created_at'],
-            max_results: 100,
-            start_time: startTime,
-          });
-
-          let mentionLikes = 0;
-          let mentionRetweets = 0;
-          let mentionCount = 0;
-
-          // Process mentions
-          if (mentions.data?.data) {
-            for (const mention of mentions.data.data) {
-              if (mention.public_metrics) {
-                mentionLikes += mention.public_metrics.like_count || 0;
-                mentionRetweets += mention.public_metrics.retweet_count || 0;
-                mentionCount++;
-              }
-            }
-          }
-
-          // Update engagement data with mention metrics
-          engagementData[twitterId].mentions = mentionCount;
-          engagementData[twitterId].mentionLikes = mentionLikes;
-          engagementData[twitterId].mentionRetweets = mentionRetweets;
-
-          // Update total engagement calculation
-          const originalGetTotalEngagement =
-            engagementData[twitterId].totalEngagement;
-          Object.defineProperty(engagementData[twitterId], 'totalEngagement', {
-            get: function () {
-              return (
-                originalGetTotalEngagement +
-                this.mentions * 3 +
-                this.mentionLikes * 0.5 +
-                this.mentionRetweets * 1
-              );
-            },
-          });
-
-          console.log(
-            `Added mention data for ${username}: ${mentionCount} mentions with ${mentionLikes} likes`,
-          );
-        } catch (error) {
-          console.error(
-            `Error fetching mentions for Twitter ID ${twitterId}:`,
-            error,
-          );
-          // Continue with existing data if this part fails
-        }
-      }
+        // Add logging
+        console.log(
+          `Processed engagement data for Twitter ID: ${data.twitterId} (${data.teamName})`,
+        );
+        console.log(
+          `  - Likes: ${totalLikes}, Retweets: ${totalRetweets}, Replies: ${totalReplies}`,
+        );
+        console.log(
+          `  - Activity: ${tweetsCount} tweets, Views: ${data.stats?.viewCount || 0}`,
+        );
+      });
 
       return engagementData;
     } catch (error) {
-      console.error('Error fetching Twitter engagement data:', error);
+      console.error(
+        'Error fetching Twitter engagement data from database:',
+        error,
+      );
       throw new Error(
         `Failed to fetch Twitter engagement data: ${error.message}`,
       );

@@ -64,6 +64,7 @@ interface UserState {
   points: number;
   tournaments: number;
   tournamentPoints: TournamentPoint[];
+  userTournaments: Tournament[];
   isActive: boolean;
   lastActivity: string;
   createdAt: string;
@@ -82,6 +83,7 @@ const initialState: UserState = {
   tournaments: 0,
   isActive: true,
   userCurrentTournament: null,
+  userTournaments: [],
   lastActivity: "",
   createdAt: "",
   updatedAt: "",
@@ -108,6 +110,9 @@ export const userSlice = createSlice({
     },
     setCurrentTournament: (state, action: PayloadAction<string>) => {
       state.currentTournament = action.payload;
+    },
+    setUserTournaments: (state, action: PayloadAction<Tournament[]>) => {
+      state.userTournaments = action.payload;
     },
     setUserPoints: (state, action: PayloadAction<number>) => {
       state.points = action.payload;
@@ -201,6 +206,7 @@ export const userSlice = createSlice({
       state.userWalletAddress = "";
       state.points = 0;
       state.tournamentPoints = [];
+      state.userTournaments = [];
       state.isActive = true;
       state.lastActivity = "";
       state.createdAt = "";
@@ -227,6 +233,7 @@ export const {
   updateTournamentTeamSelectionPoints,
   setTournamentPoints,
   setUserCurrentTournament,
+  setUserTournaments,
 } = userSlice.actions;
 
 export const userWalletConnect = (userId: string) => async (dispatch: any) => {
@@ -293,6 +300,40 @@ export const userCurrentTournaments =
         dispatch(setError("An unknown error occurred"));
       }
       return null;
+    } finally {
+      dispatch(setLoading(false));
+    }
+  };
+
+export const fetchUserTournaments =
+  (walletAddress: string) => async (dispatch: any) => {
+    try {
+      dispatch(setLoading(true));
+      const response = await fetch(
+        `http://127.0.0.1:3001/api/v1/walletUser/${walletAddress}/tournaments`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch user tournaments");
+      }
+
+      if (data.success && data.data) {
+        dispatch(setUserTournaments(data.data));
+        return data.data;
+      } else {
+        dispatch(setUserTournaments([]));
+        return [];
+      }
+    } catch (e) {
+      if (e instanceof Error) {
+        dispatch(setError(e.message));
+      } else {
+        dispatch(setError("An unknown error occurred"));
+      }
+      dispatch(setUserTournaments([]));
+      return [];
     } finally {
       dispatch(setLoading(false));
     }

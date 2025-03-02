@@ -17,6 +17,10 @@ router.post(
 );
 
 router.get('/:walletUserId/:userId', userTeamController.getUserTeams);
+router.get(
+  '/twitter/:tournamentId/:twitterId',
+  userTeamController.getTwitterDataByTournamentAndTwitterId,
+);
 
 router.patch(
   '/:teamId',

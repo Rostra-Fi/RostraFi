@@ -8,7 +8,7 @@ const TwitterDataSchema = new mongoose.Schema({
   },
   teamId: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
+    // required: true,
   },
   twitterId: {
     type: String,

@@ -8,11 +8,21 @@ const router = express.Router();
 // Tournament CRUD routes
 router.post('/tournaments', tournamentController.createTournament);
 router.get('/tournaments', tournamentController.getAllTournaments);
+router.get(
+  '/tournaments/open-registration',
+  tournamentController.getOpenRegistrationTournaments,
+);
 router.get('/tournaments/:id', tournamentController.getTournamentById);
 router.put('/tournaments/:id', tournamentController.updateTournament);
+
 router.get(
   '/tournaments/:tournamentId/points',
   tournamentController.getUserTournamentPoints,
+);
+
+router.get(
+  '/tournaments/:id/participants',
+  tournamentController.getTournamentParticipants,
 );
 
 // Tournament interaction routes

@@ -42,6 +42,7 @@ export default function Page() {
         }
 
         const data = await res.json();
+        console.log(data);
         setTeamsData(data);
       } catch (error) {
         console.error("Failed to fetch teams data:", error);

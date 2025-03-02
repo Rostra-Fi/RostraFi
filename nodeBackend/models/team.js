@@ -26,7 +26,7 @@ const TeamSchema = new mongoose.Schema(
       required: false,
     },
     twitterId: {
-      type: Number,
+      type: String,
       required: true,
     },
     points: {

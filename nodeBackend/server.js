@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const TournamentWinnerService = require('./services/tournamentWinningServices');
 
 const dotenv = require('dotenv');
 
@@ -11,13 +12,22 @@ process.on('uncaughtException', (err) => {
 dotenv.config({ path: './config.env' });
 // we require the app.js here after we config the whole process in above code
 const app = require('./app');
+const {
+  scheduleTournamentDeactivation,
+} = require('./utils/deactivateTournament');
 
 const DB = process.env.DATABASE.replace(
   '<db_password>',
   process.env.DATABASE_PASSWORD,
 );
 
-mongoose.connect(DB, {}).then(() => console.log('DB connection succesfull'));
+mongoose.connect(DB, {}).then(() => {
+  console.log('DB connection succesfull');
+
+  // Initialize the TournamentWinnerService here
+  TournamentWinnerService.initialize();
+  scheduleTournamentDeactivation();
+});
 
 const port = process.env.PORT || 3000;
 

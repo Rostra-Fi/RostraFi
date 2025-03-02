@@ -7,12 +7,68 @@ const isValidObjectId = (id) => {
   return mongoose.Types.ObjectId.isValid(id);
 };
 
-// Create a new tournament
+// exports.createTournament = async (req, res) => {
+//   try {
+//     const {
+//       name,
+//       timeLimit,
+//       registrationTimeLimit,
+//       startDate,
+//       pointsForVisit,
+//       image,
+//       icon,
+//       platform,
+//       prizePool,
+//     } = req.body;
+
+//     // Calculate start date and end date
+//     const start = startDate ? new Date(startDate) : new Date();
+//     const endDate = new Date(start);
+//     endDate.setHours(endDate.getHours() + (timeLimit || 24));
+
+//     // Calculate registration end date
+//     const registrationEnd = new Date(start);
+//     registrationEnd.setHours(
+//       registrationEnd.getHours() - (registrationTimeLimit || 12),
+//     );
+
+//     const tournament = new Tournament({
+//       name,
+//       image,
+//       icon,
+//       platform,
+//       prizePool,
+//       timeLimit: timeLimit || 24,
+//       registrationTimeLimit: registrationTimeLimit || 12,
+//       startDate: start,
+//       endDate,
+//       registrationEndDate: registrationEnd,
+//       pointsForVisit: pointsForVisit || 10,
+//     });
+
+//     await tournament.save();
+
+//     res.status(201).json({
+//       success: true,
+//       message: 'Tournament created successfully',
+//       data: tournament,
+//     });
+//   } catch (error) {
+//     res.status(400).json({
+//       success: false,
+//       message: error.message,
+//     });
+//   }
+// };
+
+// Get all tournaments
+
 exports.createTournament = async (req, res) => {
   try {
     const {
       name,
       timeLimit,
+      registrationTimeLimit,
       startDate,
       pointsForVisit,
       image,
@@ -21,8 +77,16 @@ exports.createTournament = async (req, res) => {
       prizePool,
     } = req.body;
 
-    // Calculate end date
-    const start = startDate ? new Date(startDate) : new Date();
+    // Set the base date (either provided startDate or current date)
+    const baseDate = startDate ? new Date(startDate) : new Date();
+
+    // Calculate registration end date
+    const registrationEnd = new Date(baseDate);
+
+    // Calculate tournament start date (same as registration end)
+    const start = new Date(registrationEnd);
+
+    // Calculate tournament end date
     const endDate = new Date(start);
     endDate.setHours(endDate.getHours() + (timeLimit || 24));
 
@@ -33,8 +97,10 @@ exports.createTournament = async (req, res) => {
       platform,
       prizePool,
       timeLimit: timeLimit || 24,
+      registrationTimeLimit: registrationTimeLimit || 12,
       startDate: start,
       endDate,
+      registrationEndDate: registrationEnd,
       pointsForVisit: pointsForVisit || 10,
     });
 
@@ -53,28 +119,109 @@ exports.createTournament = async (req, res) => {
   }
 };
 
-// Get all tournaments
 exports.getAllTournaments = async (req, res) => {
   try {
     const { active } = req.query;
-    let query = {};
+    let tournaments = [];
+    const now = new Date();
 
-    // Filter by active status if specified
     if (active === 'true') {
-      const now = new Date();
-      query = {
+      // Get active tournaments that have started but registration is closed
+      tournaments = await Tournament.find({
         isActive: true,
-        startDate: { $lte: now },
-        endDate: { $gte: now },
-      };
+        startDate: { $lte: now }, // Tournament has started
+        registrationEndDate: { $lt: now }, // Registration period is over
+      })
+        .sort({ startDate: -1 })
+        .populate('visited', 'walletAddress points')
+        .populate('participated', 'walletAddress points');
     } else if (active === 'false') {
-      query = { isActive: false };
+      // Get inactive tournaments
+      tournaments = await Tournament.find({ isActive: false })
+        .sort({ startDate: -1 })
+        .populate('visited', 'walletAddress points')
+        .populate('participated', 'walletAddress points');
+    } else {
+      // Get all tournaments (default)
+      tournaments = await Tournament.find({})
+        .sort({ startDate: -1 })
+        .populate('visited', 'walletAddress points')
+        .populate('participated', 'walletAddress points');
     }
 
-    const tournaments = await Tournament.find(query)
-      .sort({ startDate: -1 })
+    res.status(200).json({
+      success: true,
+      count: tournaments.length,
+      data: tournaments,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+exports.getTournamentParticipants = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find tournament by id and populate the participants array
+    const tournament = await Tournament.findById(id).populate({
+      path: 'participated',
+      select:
+        'username email avatar walletAddress lastActivity createdAt isActive', // Select fields you want to return
+      model: 'WalletUser',
+    });
+
+    // Check if tournament exists
+    if (!tournament) {
+      return res.status(404).json({
+        success: false,
+        message: 'Tournament not found',
+      });
+    }
+
+    // Return the participants array
+    return res.status(200).json({
+      success: true,
+      count: tournament.participated.length,
+      data: tournament.participated,
+    });
+  } catch (error) {
+    console.error('Error fetching tournament participants:', error);
+
+    // Handle invalid ID format
+    if (error.kind === 'ObjectId') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid tournament ID format',
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching tournament participants',
+    });
+  }
+};
+
+exports.getOpenRegistrationTournaments = async (req, res) => {
+  try {
+    const now = new Date();
+
+    // Find tournaments where:
+    // 1. The tournament is active
+    // 2. Current time is before registration end date
+    const tournaments = await Tournament.find({
+      isActive: true,
+      registrationEndDate: { $gte: now },
+    })
+      .sort({ startDate: 1 })
       .populate('visited', 'walletAddress points')
       .populate('participated', 'walletAddress points');
+
+    console.log(tournaments);
 
     res.status(200).json({
       success: true,
@@ -300,8 +447,8 @@ exports.visitTournament = async (req, res) => {
     const now = new Date();
     if (
       !tournament.isActive ||
-      now < tournament.startDate ||
-      now > tournament.endDate
+      // now < tournament.startDate ||
+      now > tournament.registrationEndDate
     ) {
       return res.status(400).json({
         success: false,
@@ -573,7 +720,7 @@ exports.participateInTournament = async (req, res) => {
       }
 
       const now = new Date();
-      if (now < tournament.startDate || now > tournament.endDate) {
+      if (now > tournament.registrationEndDate) {
         await session.abortTransaction();
         session.endSession();
         return res.status(400).json({

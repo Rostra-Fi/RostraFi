@@ -14,6 +14,11 @@ const tournamentSchema = new Schema(
       required: true,
       default: 24,
     },
+    registrationTimeLimit: {
+      type: Number, // Registration time limit in hours before tournament starts
+      required: true,
+      default: 12,
+    },
     startDate: {
       type: Date,
       required: true,
@@ -36,6 +41,10 @@ const tournamentSchema = new Schema(
       required: true,
     },
     endDate: {
+      type: Date,
+      required: true,
+    },
+    registrationEndDate: {
       type: Date,
       required: true,
     },
@@ -78,11 +87,18 @@ const tournamentSchema = new Schema(
 
 // Add index for better query performance
 tournamentSchema.index({ startDate: 1, endDate: 1, isActive: 1 });
+tournamentSchema.index({ registrationEndDate: 1 });
 
 // Virtual for checking if tournament is ongoing
 tournamentSchema.virtual('isOngoing').get(function () {
   const now = new Date();
   return this.isActive && now >= this.startDate && now <= this.endDate;
+});
+
+// Virtual for checking if registration is open
+tournamentSchema.virtual('isRegistrationOpen').get(function () {
+  const now = new Date();
+  return this.isActive && now <= this.registrationEndDate;
 });
 
 // Pre-save middleware
@@ -94,6 +110,15 @@ tournamentSchema.pre('save', function (next) {
     const endDate = new Date(this.startDate);
     endDate.setHours(endDate.getHours() + this.timeLimit);
     this.endDate = endDate;
+  }
+
+  // Calculate registration end date if not provided
+  if (!this.registrationEndDate) {
+    const registrationEnd = new Date(this.startDate);
+    registrationEnd.setHours(
+      registrationEnd.getHours() - (this.registrationTimeLimit || 12),
+    );
+    this.registrationEndDate = registrationEnd;
   }
 
   next();
@@ -149,6 +174,15 @@ tournamentSchema.statics.getActiveTournaments = function () {
     startDate: { $lte: now },
     endDate: { $gte: now },
   }).sort({ endDate: 1 });
+};
+
+// Static method to get tournaments with open registration
+tournamentSchema.statics.getTournamentsWithOpenRegistration = function () {
+  const now = new Date();
+  return this.find({
+    isActive: true,
+    registrationEndDate: { $gte: now },
+  }).sort({ startDate: 1 });
 };
 
 // Static method to deactivate expired tournaments

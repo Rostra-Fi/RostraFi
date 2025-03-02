@@ -60,6 +60,9 @@ export function WobbleTeamSection({
     );
   };
 
+  console.log(selectedTeam);
+  console.log(teams);
+
   useOutsideClick(ref, () => setActiveTeam(null));
 
   // Close dialog when escape key is pressed

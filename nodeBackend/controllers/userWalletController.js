@@ -41,7 +41,7 @@ exports.getUserTournaments = catchAsync(async (req, res, next) => {
   // Get all user teams for this wallet user in a single query
   const userTeams = await UserTeam.find({
     walletUserId: wallet._id,
-    isActive: true,
+    // isActive: true,
   }).populate({
     path: 'sections.selectedTeams',
   });
