@@ -28,11 +28,13 @@ class TournamentWinnerService {
   static async checkTournamentsForWinnerCalculation() {
     try {
       const activeTournaments = await Tournament.getActiveTournaments();
+      console.log(activeTournaments);
 
       for (const tournament of activeTournaments) {
         const now = new Date();
         const oneHourBeforeEnd = new Date(tournament.endDate);
         oneHourBeforeEnd.setHours(oneHourBeforeEnd.getHours() - 1);
+        console.log(oneHourBeforeEnd);
 
         // If we're within the calculation window (one hour before end)
         if (now >= oneHourBeforeEnd && now <= tournament.endDate) {
