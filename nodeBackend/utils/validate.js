@@ -14,7 +14,8 @@ const schemas = {
     tournamentId: Joi.string()
       .trim()
       .regex(/^[0-9a-fA-F]{24}$/)
-      .allow(null, ''), // Optional but must be a valid ID
+      .allow(null, ''),
+    totalPoints: Joi.number().min(0).required(),
     sections: Joi.array()
       .items(
         Joi.object({
