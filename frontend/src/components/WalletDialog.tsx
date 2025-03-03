@@ -1,11 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
-import {
-  addPoints,
-  deductPoints,
-  getTournamentTeamSelectionPoints,
-} from "@/store/userSlice";
+import { addUserPoints, removeUserPoints } from "@/store/userSlice";
 import { useParams } from "next/navigation";
 import {
   Connection,
@@ -32,9 +28,7 @@ export const WalletDialog = ({ isOpen, onClose }) => {
   const dispatch = useAppDispatch();
   const { tourId } = useParams();
 
-  const currentPoints = useAppSelector((state) =>
-    getTournamentTeamSelectionPoints(state, tourId as string)
-  );
+  const { points } = useAppSelector((state) => state.user);
 
   useEffect(() => {
     if (isOpen) {
@@ -118,9 +112,7 @@ export const WalletDialog = ({ isOpen, onClose }) => {
       await connection.confirmTransaction(signature, "confirmed");
 
       fetchWalletBalance(walletAddress);
-      dispatch(
-        addPoints({ tournamentId: tourId, points: POINTS_PER_PURCHASE })
-      );
+      dispatch(addUserPoints(POINTS_PER_PURCHASE));
 
       setMessage({
         type: "success",
@@ -152,7 +144,7 @@ export const WalletDialog = ({ isOpen, onClose }) => {
         return;
       }
 
-      if (currentPoints < POINTS_PER_PURCHASE) {
+      if (points < POINTS_PER_PURCHASE) {
         setMessage({
           type: "error",
           text: `Insufficient points. You need at least ${POINTS_PER_PURCHASE} points.`,
@@ -186,12 +178,7 @@ export const WalletDialog = ({ isOpen, onClose }) => {
       }
 
       // Only deduct points after successful Redis storage
-      dispatch(
-        deductPoints({
-          tournamentId: tourId,
-          points: POINTS_PER_PURCHASE,
-        })
-      );
+      dispatch(removeUserPoints(POINTS_PER_PURCHASE));
 
       setMessage({
         type: "success",
@@ -253,7 +240,7 @@ export const WalletDialog = ({ isOpen, onClose }) => {
 
           <div className="flex justify-between items-center mb-6">
             <span className="text-gray-500">Points Balance</span>
-            <span className="font-medium">{currentPoints || 0} Points</span>
+            <span className="font-medium">{points || 0} Points</span>
           </div>
 
           {!walletAddress ? (
