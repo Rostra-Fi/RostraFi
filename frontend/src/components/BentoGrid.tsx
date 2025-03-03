@@ -4,9 +4,11 @@ import { GridBackgroundDemo } from "./ui/gridBackgorund";
 
 export function FeaturesSectionDemo() {
   return (
-    <>
-      <GridBackgroundDemo />
-    </>
+    <div className="w-full flex justify-center">
+      <div className="w-full">
+        <GridBackgroundDemo />
+      </div>
+    </div>
   );
 }
 export default FeaturesSectionDemo;

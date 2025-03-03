@@ -1,80 +1,104 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Additional utilities to prevent flickering */
+@layer utilities {
+  .backface-hidden {
+    -webkit-backface-visibility: hidden;
+  }
+  .transform-translate3d {
+    -webkit-transform: translate3d(0, 0, 0);
+  }
+  .no-transformorigin {
+    transform-origin: unset;
+  }
+  .transition-all-300 {
+    transition: all 0.3s ease;
+  }
+  .will-change-transform {
+    will-change: transform;
+  }
+  .will-change-opacity {
+    will-change: opacity;
+  }
+  .transition-bg {
+    transition: background-color 0.2s ease;
+  }
+  .hover-scale-105 {
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+  .active-scale-95 {
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+  .glow-shadow {
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+  }
+  .active-glow-shadow {
+    box-shadow: 0 0 25px rgba(192, 132, 252, 0.4);
+  }
+}
+
 /* Wallet adapter button and modal customization */
 .wallet-adapter-button {
-  background-color: #512da8 !important; /* Purple theme */
-  color: white !important;
-  padding: 12px 20px !important;
-  border-radius: 8px !important;
-  font-size: 16px !important;
-  font-weight: 500 !important;
-  height: auto !important;
-  line-height: 1.5 !important;
-  transition: all 0.2s ease !important;
+  @apply bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-200 ease-in-out;
 }
 
 .wallet-adapter-button:hover {
-  background-color: #4527a0 !important; /* Slightly darker on hover */
-  opacity: 0.95 !important;
+  @apply bg-purple-800 opacity-95;
 }
 
 .wallet-adapter-button:not([disabled]):hover {
-  background-color: #4527a0 !important;
+  @apply bg-purple-800;
 }
 
 /* Modal styling */
 .wallet-adapter-modal-wrapper {
-  background-color: white !important;
-  border-radius: 16px !important;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+  @apply bg-white rounded-lg shadow-lg;
 }
 
 .wallet-adapter-modal-button-close {
-  background-color: #ef4444 !important; /* Red close button */
-  color: white !important;
-  padding: 6px !important;
-  border-radius: 50% !important;
+  @apply bg-red-500 text-white px-2 py-1 rounded-full;
 }
 
 .wallet-adapter-modal-list-item {
-  border-radius: 8px !important;
-  transition: background-color 0.2s ease !important;
+  @apply rounded-lg transition-all-300;
 }
 
 .wallet-adapter-modal-list-item:hover {
-  background-color: #f3f4f6 !important;
+  @apply bg-gray-100;
 }
 
 /* Dark mode adjustments */
 @media (prefers-color-scheme: dark) {
   .wallet-adapter-modal-wrapper {
-    background-color: #1f2937 !important;
-    color: white !important;
+    @apply bg-gray-800 text-white;
   }
 
   .wallet-adapter-modal-list-item {
-    background-color: transparent !important;
+    @apply bg-transparent;
   }
 
   .wallet-adapter-modal-list-item:hover {
-    background-color: #374151 !important;
+    @apply bg-gray-700;
   }
 }
 
-.wallet-adapter-button {
-  background-color: #512da8 !important;
-  color: white !important;
-  padding: 12px 20px !important;
-  border-radius: 8px !important;
-  font-weight: 500 !important;
-  transition: all 0.2s ease !important;
+/* Custom glow effects */
+.glow-hover:hover {
+  @apply glow-shadow;
 }
 
-.wallet-adapter-button:hover {
-  background-color: #4527a0 !important;
+.glow-active {
+  @apply active-glow-shadow;
 }
+
+/* Base styles */
 
 @layer base {
   :root {
@@ -143,4 +167,40 @@
 
 .progress-indicator {
   @apply bg-gradient-to-r from-purple-500 to-pink-500;
+}
+
+@keyframes flyout {
+  0% {
+    transform: scale(0) translate(0, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translate(50px, -50px);
+    opacity: 0;
+  }
+}
+.animate-flyout {
+  animation: flyout 1s ease-out forwards;
+}
+
+@keyframes lightSweep {
+  0% {
+    transform: translateX(-100%) skewY(-12deg);
+  }
+  100% {
+    transform: translateX(200%) skewY(-12deg);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-lightSweep {
+  animation: lightSweep 2s ease-out forwards;
 }

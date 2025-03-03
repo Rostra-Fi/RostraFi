@@ -7,7 +7,7 @@ import { TextGenerateEffect } from "./ui/text-generate-effect";
 import { ColourfulText } from "./ui/colourful-text";
 import TournamentModal from "./TournamentModel";
 
-const words = "Select, Bid, and Win Big with Solana-Powered Social Influence";
+const words = "Draft Your Dream Team, Dominate the Leaderboard, Claim Huge Rewards";
 
 export function HomeBackGround() {
   return (
@@ -27,16 +27,14 @@ export function HomeBackGround() {
             <div className="flex flex-col items-center space-y-2">
               <div className="flex items-center space-x-4">
                 <span className="bg-gradient-to-br from-slate-100 to-slate-300 bg-clip-text text-transparent">
-                  Craft Your
+                Build Your Influencer
                 </span>
-                <TextRevealEffect text="Winning" />
-                <span className="bg-gradient-to-br from-slate-100 to-slate-300 bg-clip-text text-transparent">
-                  Team
-                </span>
+                <TextRevealEffect text="Empire" />
+              
               </div>
               <div>
                 <span className="bg-gradient-to-br from-slate-100 to-slate-300 bg-clip-text text-transparent">
-                  with <ColourfulText text="Influencers" />
+                Win Big at <ColourfulText text="RostaFi" />
                 </span>
               </div>
             </div>
