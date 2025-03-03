@@ -12,8 +12,11 @@ export default {
   darkMode: ["media", "class"],
   theme: {
     extend: {
+      // New animations added here
       animation: {
         aurora: "aurora 60s linear infinite",
+        pop: "pop 0.2s ease-out", // New
+        "trophy-bounce": "trophy-bounce 1s ease-in-out infinite", // New
       },
       colors: {
         background: "hsl(var(--background))",
@@ -57,6 +60,7 @@ export default {
           "5": "hsl(var(--chart-5))",
         },
       },
+      // New keyframes added here
       keyframes: {
         aurora: {
           from: {
@@ -66,11 +70,23 @@ export default {
             backgroundPosition: "350% 50%, 350% 50%",
           },
         },
+        pop: {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(0.95)" },
+        },
+        "trophy-bounce": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-5px)" },
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      // New box shadow added here
+      boxShadow: {
+        "3xl": "0 35px 60px -15px rgba(0, 0, 0, 0.3)", // New
       },
     },
   },

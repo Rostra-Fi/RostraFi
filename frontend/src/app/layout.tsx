@@ -34,7 +34,6 @@ export default function RootLayout({
       >
         <AppWalletProvider>
           <ReduxProvider>
-            {/* <Navbar /> */}
             {children}
             <ToasterAll />
             <Toaster position="top-center" />

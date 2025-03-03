@@ -11,7 +11,7 @@ import { Cover } from "@/components/ui/cover";
 import { Section } from "../../../types/team.types";
 import { SelectedTeamsOverview } from "@/components/SelectedTeamsOverview";
 import { AuroraBack } from "@/components/aroraBack";
-import AnimatedScrollButton from "@/components/AnimatedScrollButton";
+// import AnimatedScrollButton from "@/components/AnimatedScrollButton";
 import SolanaNavbar from "@/components/SolanaBar";
 import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
 import { addUserPoints, userWalletConnect } from "@/store/userSlice";
@@ -128,7 +128,7 @@ export default function Page() {
     <div className="bg-black mb-6 ">
       <SolanaNavbar />
       <TeamsHeader />
-      <AnimatedScrollButton />
+      {/* <AnimatedScrollButton /> */}
 
       <AuroraBack />
 
@@ -199,9 +199,9 @@ export default function Page() {
             <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-transparent blur-2xl" />
             <h1 className="relative group text-4xl md:text-4xl lg:text-6xl font-semibold max-w-7xl mx-auto text-center mt-6 z-20 py-6 bg-clip-text text-transparent bg-gradient-to-b from-neutral-800 via-neutral-700 to-neutral-700 dark:from-neutral-800 dark:via-white dark:to-white drop-shadow-[0_0_25px_rgba(255,255,255,0.5)]">
               <span className="relative inline-block">
-                <Cover>Create Teams</Cover>
+                <Cover>Create Your</Cover>
               </span>{" "}
-              Of <ColourfulText text="Influencers" />
+              Ultimate <ColourfulText text="Influencer Lineup" />
             </h1>
           </div>
 

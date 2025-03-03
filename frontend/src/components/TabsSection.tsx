@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Tabs } from "./ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, LineChart, Wallet, Trophy, Crown } from "lucide-react";
+import { Users, LineChart, Wallet, Trophy, Crown, Swords, Target, Coins } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export function TabsDemo() {
@@ -23,8 +23,10 @@ export function TabsDemo() {
           animate={{ x: 0 }}
           transition={{ type: "spring", stiffness: 200 }}
         >
-          <Icon className="w-12 h-12 text-white opacity-80" />
-          <h2 className="text-4xl font-bold text-white">{title}</h2>
+          <Icon className="w-12 h-12 text-purple-400 glow-purple" />
+          <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+            {title}
+          </h2>
         </motion.div>
 
         <motion.div
@@ -79,33 +81,32 @@ export function TabsDemo() {
     );
   };
 
+  
   const tabs = [
     {
-      title: "Build Team",
+      title: "Draft Squad",
       value: "team",
       content: (
-        <div className="w-full overflow-hidden relative h-full rounded-2xl p-8 text-2xl md:text-5xl font-bold text-white bg-gradient-to-br from-gray-900 to-black">
+        <div className="w-full overflow-hidden relative h-full rounded-2xl p-8 text-2xl md:text-5xl font-bold text-white bg-gradient-to-br from-gray-900 via-purple-900 to-black">
           <AnimatedContent
-            title="Create Your Dream Team"
-            icon={Users}
+            title="Assemble Your Empire"
+            icon={Swords}
             features={[
               {
-                title: "Premium Selection",
-                description:
-                  "Choose from Diamond, Gold, Silver, and Bronze tier influencers",
+                title: "Elite Tier Selection",
+                description: "Handpick from S-tier, A-tier, and rising star influencers",
               },
               {
-                title: "Strategic Builder",
-                description:
-                  "Build your perfect 20-account roster from our curated selections",
+                title: "Championship Builder",
+                description: "Craft your 5-player dream team from 1000+ creators",
               },
               {
-                title: "Performance Stats",
-                description: "Track real-time engagement metrics and growth",
+                title: "Live Power Rankings",
+                description: "Real-time RP (Rostra Points) tracking for each member",
               },
               {
-                title: "AI Optimization",
-                description: "Get intelligent suggestions for team composition",
+                title: "Meta Compositions",
+                description: "AI-powered synergy analysis for maximum points",
               },
             ]}
           />
@@ -113,31 +114,29 @@ export function TabsDemo() {
       ),
     },
     {
-      title: "Track",
+      title: "War Room",
       value: "track",
       content: (
-        <div className="w-full overflow-hidden relative h-full rounded-2xl p-8 text-2xl md:text-5xl font-bold text-white bg-gradient-to-br from-gray-900 to-black">
+        <div className="w-full overflow-hidden relative h-full rounded-2xl p-8 text-2xl md:text-5xl font-bold text-white bg-gradient-to-br from-gray-900 via-blue-900 to-black">
           <AnimatedContent
-            title="Performance Analytics"
-            icon={LineChart}
+            title="Conquer the Leaderboards"
+            icon={Target}
             features={[
               {
-                title: "24h Analysis",
-                description:
-                  "Real-time monitoring of likes, comments, and follower growth",
+                title: "Live Battlefeed",
+                description: "Second-by-second updates on influencer engagements",
               },
               {
-                title: "Engagement Metrics",
-                description:
-                  "Deep dive into post performance and audience interaction",
+                title: "Rivalry Radar",
+                description: "Track competing teams' moves in real-time",
               },
               {
-                title: "Competitive Edge",
-                description: "Compare your team's performance against others",
+                title: "Victory Predictor",
+                description: "AI-powered win probability calculations",
               },
               {
-                title: "Trend Detection",
-                description: "Identify patterns and optimize your strategy",
+                title: "Clutch Moments",
+                description: "Highlight reels of key performance spikes",
               },
             ]}
           />
@@ -145,30 +144,29 @@ export function TabsDemo() {
       ),
     },
     {
-      title: "Invest",
+      title: "Solana Arena",
       value: "invest",
       content: (
-        <div className="w-full overflow-hidden relative h-full rounded-2xl p-8 text-2xl md:text-5xl font-bold text-white bg-gradient-to-br from-gray-900 to-black">
+        <div className="w-full overflow-hidden relative h-full rounded-2xl p-8 text-2xl md:text-5xl font-bold text-white bg-gradient-to-br from-gray-900 via-yellow-900 to-black">
           <AnimatedContent
-            title="Solana Integration"
-            icon={Wallet}
+            title="Web3 Warfare"
+            icon={Coins}
             features={[
               {
-                title: "Swift Deposits",
-                description: "Instant funding with Solana's high-speed network",
+                title: "Blitz Deposits",
+                description: "Fund your warchest in <1s with SOL",
               },
               {
-                title: "Smart Bidding",
-                description: "Place secure bids with smart contract protection",
+                title: "Smart Contract Siege",
+                description: "Provably fair matches on-chain",
               },
               {
-                title: "Auto Rewards",
-                description: "Instant prize distribution to winning teams",
+                title: "Victory Vault",
+                description: "Auto-claim prizes to your Phantom wallet",
               },
               {
-                title: "Minimal Fees",
-                description:
-                  "Benefit from Solana's efficient transaction costs",
+                title: "Yield Generators",
+                description: "Stake SOL between battles for extra rewards",
               },
             ]}
           />
@@ -176,30 +174,29 @@ export function TabsDemo() {
       ),
     },
     {
-      title: "Winners",
+      title: "Hall of Fame",
       value: "winners",
       content: (
-        <div className="w-full overflow-hidden relative h-full rounded-2xl p-8 text-2xl md:text-5xl font-bold text-white bg-gradient-to-br from-gray-900 to-black">
+        <div className="w-full overflow-hidden relative h-full rounded-2xl p-8 text-2xl md:text-5xl font-bold text-white bg-gradient-to-br from-gray-900 via-red-900 to-black">
           <AnimatedContent
-            title="Champions Circle"
+            title="Eternal Glory"
             icon={Trophy}
             features={[
               {
-                title: "Reward Pools",
-                description:
-                  "Multiple prize tiers based on performance metrics",
+                title: "Daily Spoils",
+                description: "$10k+ SOL pool distributed every 24h",
               },
               {
-                title: "Daily Victories",
-                description: "New winning opportunities every 24 hours",
+                title: "Legendary NFTs",
+                description: "Mint champion badges with royalty rights",
               },
               {
-                title: "NFT Badges",
-                description: "Collect exclusive achievement NFTs",
+                title: "Global Dominance",
+                description: "Climb from Bronze to Celestial ranks",
               },
               {
-                title: "Global Ranks",
-                description: "Compete for top positions worldwide",
+                title: "Pro Circuit",
+                description: "Qualify for $100k championship tournaments",
               },
             ]}
           />
@@ -207,29 +204,29 @@ export function TabsDemo() {
       ),
     },
     {
-      title: "VIP",
+      title: "Elite Dynasty",
       value: "vip",
       content: (
-        <div className="w-full overflow-hidden relative h-full rounded-2xl p-8 text-2xl md:text-5xl font-bold text-white bg-gradient-to-br from-gray-900 to-black">
+        <div className="w-full overflow-hidden relative h-full rounded-2xl p-8 text-2xl md:text-5xl font-bold text-white bg-gradient-to-br from-gray-900 via-pink-900 to-black">
           <AnimatedContent
-            title="Elite Benefits"
+            title="Shadow Council"
             icon={Crown}
             features={[
               {
-                title: "Early Access",
-                description: "First pick of new influencers and features",
+                title: "Alpha Access",
+                description: "Early intel on influencer performance metrics",
               },
               {
-                title: "Premium Rates",
-                description: "Exclusive transaction fee discounts",
+                title: "Whale Benefits",
+                description: "5% edge on all point calculations",
               },
               {
-                title: "Pro Insights",
-                description: "Advanced analytics and strategy guidance",
+                title: "Dark Pool",
+                description: "Exclusive high-stakes private matches",
               },
               {
-                title: "Elite Events",
-                description: "VIP-only tournaments and virtual meetups",
+                title: "Oracle Network",
+                description: "Direct Q&A with top strategists",
               },
             ]}
           />
@@ -240,23 +237,22 @@ export function TabsDemo() {
 
   return (
     <div className="h-[18rem] md:h-[35rem] [perspective:1000px] relative flex flex-col w-[90%] max-w-6xl items-start justify-start my-4 ml-0">
+      <div className="mb-8">
+        <h1 className="text-5xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">
+          Build Your Influencer Empire
+        </h1>
+        <p className="text-xl text-gray-300 mt-2">
+          Draft. Strategize. Conquer. Win SOL prizes daily in the ultimate Web3 showdown
+        </p>
+      </div>
+      
       <Tabs
         tabs={tabs}
-        tabClassName="mx-1 text-lg font-semibold transition-all duration-300 hover:bg-white/10"
-        activeTabClassName="bg-white/20 backdrop-blur-sm"
+        tabClassName="mx-1 text-lg font-semibold bg-white/5 hover:bg-white/20 transition-all duration-300 glow-hover"
+        activeTabClassName="bg-white/20 backdrop-blur-sm glow-active"
       />
     </div>
   );
-}
 
-const DummyContent = () => {
-  return (
-    <Image
-      src="/linear.webp"
-      alt="dummy image"
-      width="1000"
-      height="1000"
-      className="object-cover object-left-top h-[60%] md:h-[90%] absolute -bottom-10 inset-x-0 w-[90%] rounded-xl mx-auto"
-    />
-  );
-};
+
+}

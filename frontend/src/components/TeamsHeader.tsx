@@ -1,17 +1,17 @@
 "use client";
 import { TypewriterEffectSmooth } from "./ui/typewriter-effect";
-import SearchComponent from "./SearchComponent";
+// import SearchComponent from "./SearchComponent";
 
 export function TeamsHeader() {
   const words = [
     {
-      text: "Build",
+      text: "Select,",
     },
     {
-      text: "awesome",
+      text: "build,",
     },
     {
-      text: "teams",
+      text: "win",
     },
     {
       text: "with",
@@ -25,7 +25,7 @@ export function TeamsHeader() {
   return (
     <div className="flex flex-col items-center justify-center h-[25rem]">
       <TypewriterEffectSmooth words={words} />
-      <SearchComponent />
+      {/* <SearchComponent /> */}
     </div>
   );
 }
