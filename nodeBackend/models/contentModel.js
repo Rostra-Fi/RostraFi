@@ -53,11 +53,11 @@ const contentSchema = new Schema(
     endDate: {
       type: Date,
       // Default to 7 days from creation if not specified
-      default: function () {
-        const date = new Date(this.startDate || Date.now());
-        date.setDate(date.getDate() + 7);
-        return date;
-      },
+      // default: function () {
+      //   const date = new Date(this.startDate || Date.now());
+      //   date.setDate(date.getDate() + 7);
+      //   return date;
+      // },
     },
     duration: {
       type: Number,
@@ -114,7 +114,7 @@ contentSchema.pre('save', function (next) {
     // If duration is set and startDate exists, calculate endDate
     if (this.duration && this.startDate) {
       const endDate = new Date(this.startDate);
-      endDate.setDate(endDate.getDate() + this.duration);
+      endDate.setHours(endDate.getHours() + this.duration);
       this.endDate = endDate;
     }
   }
