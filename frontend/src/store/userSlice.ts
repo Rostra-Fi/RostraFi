@@ -67,6 +67,16 @@ interface UserState {
   loading: boolean;
 }
 
+interface AddPointsPayload {
+  tournamentId: string;
+  points: number;
+}
+
+interface DeductPointsPayload {
+  tournamentId: string;
+  points: number;
+}
+
 const initialState: UserState = {
   userWalletAddress: "",
   userId: "",
@@ -159,6 +169,71 @@ export const userSlice = createSlice({
       state.error = "";
       state.loading = false;
       state.userCurrentTournament = null;
+    }, // Add the missing addPoints reducer
+    addPoints: (state, action: PayloadAction<AddPointsPayload>) => {
+      const { tournamentId, points } = action.payload;
+
+      // Add to total user points
+      state.points += points;
+
+      // Add to tournament-specific points
+      const existingTournamentIndex = state.tournamentPoints.findIndex(
+        (tp) => tp.tournamentId === tournamentId
+      );
+
+      if (existingTournamentIndex >= 0) {
+        // Update existing tournament's points
+        state.tournamentPoints[existingTournamentIndex].points += points;
+
+        // Also update teamSelectionPoints if needed
+        if (
+          state.tournamentPoints[existingTournamentIndex]
+            .teamSelectionPoints !== undefined
+        ) {
+          state.tournamentPoints[existingTournamentIndex].teamSelectionPoints +=
+            points;
+        }
+      } else {
+        // Add new tournament points entry
+        state.tournamentPoints.push({
+          tournamentId,
+          points,
+          teamSelectionPoints: points,
+          createdAt: new Date().toISOString(),
+        });
+      }
+    },
+    deductPoints: (state, action: PayloadAction<DeductPointsPayload>) => {
+      const { tournamentId, points } = action.payload;
+
+      // Deduct from total user points
+      state.points = Math.max(0, state.points - points);
+
+      // Deduct from tournament-specific points
+      const existingTournamentIndex = state.tournamentPoints.findIndex(
+        (tp) => tp.tournamentId === tournamentId
+      );
+
+      if (existingTournamentIndex >= 0) {
+        // Update existing tournament's points
+        state.tournamentPoints[existingTournamentIndex].points = Math.max(
+          0,
+          state.tournamentPoints[existingTournamentIndex].points - points
+        );
+
+        // Also update teamSelectionPoints if needed
+        if (
+          state.tournamentPoints[existingTournamentIndex]
+            .teamSelectionPoints !== undefined
+        ) {
+          state.tournamentPoints[existingTournamentIndex].teamSelectionPoints =
+            Math.max(
+              0,
+              state.tournamentPoints[existingTournamentIndex]
+                .teamSelectionPoints - points
+            );
+        }
+      }
     },
   },
 });

@@ -3,12 +3,13 @@ import React, { useState, useEffect } from "react";
 import { useAppSelector } from "@/hooks/reduxHooks";
 import { useParams } from "next/navigation";
 import { WalletDialog } from "@/components/WalletDialog";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const SolanaNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const [balance, setBalance] = useState("0.000");
   const [isWalletOpen, setIsWalletOpen] = useState(false);
-  const [UserId, setWalletAddress] = useState("");
+  const [walletAddress, setWalletAddress] = useState("");
 
   const { tourId } = useParams();
 
@@ -159,9 +160,24 @@ const SolanaNavbar = () => {
 
             <button
               onClick={openWalletDialog}
-              className="bg-slate-300 text-black font-medium px-4 py-1 rounded-full h-8 ml-2 flex items-center justify-center"
+              className="flex gap-1 items-center bg-slate-300 text-black font-medium px-4 py-1 rounded-full h-8 ml-2"
             >
-              Buy
+              <span>Wallet</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <circle cx="12" cy="12" r="2" />
+                <path d="M6 12h.01M18 12h.01" />
+              </svg>
             </button>
           </div>
         </div>
