@@ -280,6 +280,8 @@ exports.getTournamentById = async (req, res) => {
 //     const { tournamentId } = req.params;
 //     const { walletAddress, userId } = req.body;
 
+//     console.log(tournamentId, walletAddress, userId);
+
 //     // Input validation
 //     if (!walletAddress) {
 //       return res.status(400).json({
@@ -288,12 +290,12 @@ exports.getTournamentById = async (req, res) => {
 //       });
 //     }
 
-//     if (!isValidObjectId(tournamentId)) {
-//       return res.status(400).json({
-//         success: false,
-//         message: 'Invalid tournament ID',
-//       });
-//     }
+//     // if (!isValidObjectId(tournamentId)) {
+//     //   return res.status(400).json({
+//     //     success: false,
+//     //     message: 'Invalid tournament ID',
+//     //   });
+//     // }
 
 //     // Find the tournament
 //     const tournament = await Tournament.findById(tournamentId);
@@ -308,8 +310,8 @@ exports.getTournamentById = async (req, res) => {
 //     const now = new Date();
 //     if (
 //       !tournament.isActive ||
-//       now < tournament.startDate ||
-//       now > tournament.endDate
+//       // now < tournament.startDate ||
+//       now > tournament.registrationEndDate
 //     ) {
 //       return res.status(400).json({
 //         success: false,
@@ -323,6 +325,18 @@ exports.getTournamentById = async (req, res) => {
 //       return res.status(404).json({
 //         success: false,
 //         message: 'User not found',
+//       });
+//     }
+
+//     // First check if user has already participated and return early if true
+//     if (tournament.hasParticipated(user._id)) {
+//       const tournamentPoints = user.getTournamentPoints(tournament._id);
+//       return res.status(200).json({
+//         success: true,
+//         message: 'You have already participated in this tournament',
+//         isParticipant: true,
+//         tournamentPoints,
+//         data: tournament,
 //       });
 //     }
 
@@ -374,6 +388,7 @@ exports.getTournamentById = async (req, res) => {
 //     }
 
 //     // Add points in the same transaction
+//     console.log(tournament);
 //     await user.addTournamentPoints(
 //       tournament._id,
 //       tournament.pointsForVisit,
@@ -393,6 +408,7 @@ exports.getTournamentById = async (req, res) => {
 //     });
 //   } catch (error) {
 //     // Only abort if session exists and is active
+//     console.log(error);
 //     if (session && session.inTransaction()) {
 //       try {
 //         await session.abortTransaction();
@@ -427,13 +443,6 @@ exports.visitTournament = async (req, res) => {
       });
     }
 
-    // if (!isValidObjectId(tournamentId)) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: 'Invalid tournament ID',
-    //   });
-    // }
-
     // Find the tournament
     const tournament = await Tournament.findById(tournamentId);
     if (!tournament) {
@@ -445,11 +454,7 @@ exports.visitTournament = async (req, res) => {
 
     // Check tournament status
     const now = new Date();
-    if (
-      !tournament.isActive ||
-      // now < tournament.startDate ||
-      now > tournament.registrationEndDate
-    ) {
+    if (!tournament.isActive || now > tournament.registrationEndDate) {
       return res.status(400).json({
         success: false,
         message: 'Tournament is not active or not ongoing',
@@ -467,24 +472,20 @@ exports.visitTournament = async (req, res) => {
 
     // First check if user has already participated and return early if true
     if (tournament.hasParticipated(user._id)) {
-      const tournamentPoints = user.getTournamentPoints(tournament._id);
       return res.status(200).json({
         success: true,
         message: 'You have already participated in this tournament',
         isParticipant: true,
-        tournamentPoints,
         data: tournament,
       });
     }
 
-    // Check if user already visited - outside of transaction
+    // Check if user already visited this tournament - outside of transaction
     if (tournament.hasVisited(user._id)) {
-      const tournamentPoints = user.getTournamentPoints(tournament._id);
       return res.status(200).json({
         success: true,
         message: 'Already visited this tournament',
         isFirstVisit: false,
-        tournamentPoints,
         data: tournament,
       });
     }
@@ -514,19 +515,19 @@ exports.visitTournament = async (req, res) => {
       await session.abortTransaction();
       session.endSession();
 
-      const tournamentPoints = user.getTournamentPoints(tournament._id);
       return res.status(200).json({
         success: true,
         message: 'Already visited this tournament',
         isFirstVisit: false,
-        tournamentPoints,
         data: tournament,
       });
     }
 
-    // Add points in the same transaction
-    console.log(tournament);
-    await user.addTournamentPoints(
+    // Simplified approach: Add points only if this is the first tournament visit ever
+    // The method will only store at most one tournament in the visitedTournaments array
+    const isFirstTournamentEver = !user.hasVisitedAnyTournament();
+    console.log(isFirstTournamentEver);
+    await user.addPointsForTournamentVisit(
       tournament._id,
       tournament.pointsForVisit,
       session,
@@ -538,9 +539,11 @@ exports.visitTournament = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: 'First visit recorded! Points awarded!',
-      isFirstVisit: true,
-      pointsAwarded: tournament.pointsForVisit,
+      message: isFirstTournamentEver
+        ? 'First visit recorded! Points awarded!'
+        : 'Tournament visit recorded!',
+      isFirstVisit: isFirstTournamentEver,
+      pointsAwarded: isFirstTournamentEver ? tournament.pointsForVisit : 0,
       data: updatedTournament,
     });
   } catch (error) {
@@ -562,7 +565,6 @@ exports.visitTournament = async (req, res) => {
     });
   }
 };
-
 // Register a user as participant in a tournament
 // exports.participateInTournament = async (req, res) => {
 //   try {
@@ -746,11 +748,6 @@ exports.participateInTournament = async (req, res) => {
       // If not already visited, add as visitor first and give visit points
       if (!tournament.hasVisited(user._id)) {
         tournament.addVisitor(user._id);
-        await user.addTournamentPoints(
-          tournament._id,
-          tournament.pointsForVisit,
-          session,
-        );
       }
 
       // Add user to participated array in tournament

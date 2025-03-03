@@ -86,18 +86,25 @@ exports.registerOrRetrieveWallet = catchAsync(async (req, res, next) => {
     return next(new AppError('Wallet address is required', 400));
   }
 
-  const wallet = await WalletUser.findOrCreateWallet(walletAddress);
+  // Find or create wallet
+  const { wallet, isNewWallet } =
+    await WalletUser.findOrCreateWallet(walletAddress);
 
-  const statusCode =
-    wallet.createdAt.getTime() === wallet.updatedAt.getTime() ? 201 : 200;
+  let message = 'Wallet retrieved successfully';
+  let statusCode = 200;
+
+  // If new wallet, add bonus points
+  if (isNewWallet) {
+    await wallet.addPoints(150);
+    statusCode = 201;
+    message = 'Wallet created successfully and 150 bonus points added';
+  }
 
   res.status(statusCode).json({
     success: true,
     data: wallet,
-    message:
-      statusCode === 201
-        ? 'Wallet created successfully'
-        : 'Wallet retrieved successfully',
+    isNewUser: isNewWallet,
+    message: message,
   });
 });
 

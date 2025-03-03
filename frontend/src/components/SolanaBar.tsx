@@ -1,9 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useAppSelector } from "@/hooks/reduxHooks";
-import {
-  getTournamentTeamSelectionPoints,
-} from "@/store/userSlice";
 import { useParams } from "next/navigation";
 import { WalletDialog } from "@/components/WalletDialog";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
@@ -16,9 +13,7 @@ const SolanaNavbar = () => {
 
   const { tourId } = useParams();
 
-  const points = useAppSelector((state) =>
-    getTournamentTeamSelectionPoints(state, tourId as string)
-  );
+  const { points } = useAppSelector((state) => state.user);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,9 +26,9 @@ const SolanaNavbar = () => {
     };
 
     window.addEventListener("scroll", handleScroll);
-    
+
     loadWalletFromLocalStorage();
-    
+
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
@@ -42,7 +37,7 @@ const SolanaNavbar = () => {
   const loadWalletFromLocalStorage = () => {
     try {
       const storedWalletAddress = localStorage.getItem("UserId");
-      
+
       if (storedWalletAddress) {
         setWalletAddress(storedWalletAddress);
         fetchWalletBalance(storedWalletAddress);
@@ -55,27 +50,18 @@ const SolanaNavbar = () => {
   const fetchWalletBalance = async (address) => {
     try {
       const { solana } = window as any;
-      
-      if (!solana) {
-        console.error("Solana object not found. Is Phantom wallet installed?");
-        return;
-      }
-      
-      if (address) {
+
+      if (solana && address) {
         const connection = new solana.Connection(
-          "https://api.devnet.solana.com", 
+          "https://api.devnet.solana.com",
           "confirmed"
         );
-        
-        try {
-          const publicKey = new solana.PublicKey(address);
-          const balanceInLamports = await connection.getBalance(publicKey);
-          
-          const balanceInSol = balanceInLamports / LAMPORTS_PER_SOL;
-          setBalance(balanceInSol.toFixed(3));
-        } catch (err) {
-          console.error("Error with Solana public key or connection:", err);
-        }
+
+        const publicKey = new solana.PublicKey(address);
+        const balanceInLamports = await connection.getBalance(publicKey);
+
+        const balanceInSol = balanceInLamports / 1000000000;
+        setBalance(balanceInSol.toFixed(3));
       }
     } catch (error) {
       console.error("Error fetching balance:", error);
@@ -114,7 +100,7 @@ const SolanaNavbar = () => {
                 </svg>
               </div>
               <span className="text-white">{balance}</span>
-              <button 
+              <button
                 className="text-gray-400 hover:text-white transition-colors"
                 onClick={openWalletDialog}
               >
@@ -152,7 +138,7 @@ const SolanaNavbar = () => {
                 </svg>
               </div>
               <span className="text-white">{points || 0}</span>
-              <button 
+              <button
                 className="text-gray-400 hover:text-white transition-colors"
                 onClick={openWalletDialog}
               >

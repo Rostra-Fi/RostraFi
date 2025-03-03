@@ -144,7 +144,7 @@ exports.getVotesByUser = catchAsync(async (req, res, next) => {
   const { userId } = req.params;
 
   const votes = await Vote.find({ user: userId })
-    .populate('content', 'title description image')
+    .populate('content', 'id ')
     .sort({ createdAt: -1 });
 
   res.status(200).json({

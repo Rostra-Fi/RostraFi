@@ -1,13 +1,25 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
-import { addPoints, deductPoints, getTournamentTeamSelectionPoints } from "@/store/userSlice";
+import {
+  addPoints,
+  deductPoints,
+  getTournamentTeamSelectionPoints,
+} from "@/store/userSlice";
 import { useParams } from "next/navigation";
-import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import {
+  Connection,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  LAMPORTS_PER_SOL,
+} from "@solana/web3.js";
 
 const POINTS_PER_PURCHASE = 150;
-const SOL_AMOUNT = 0.2; 
-const TREASURY_WALLET = new PublicKey("JCsFjtj6tem9Dv83Ks4HxsL7p8GhdLtokveqW7uWjGyi");
+const SOL_AMOUNT = 0.2;
+const TREASURY_WALLET = new PublicKey(
+  "JCsFjtj6tem9Dv83Ks4HxsL7p8GhdLtokveqW7uWjGyi"
+);
 const SOLANA_RPC_URL = "https://api.devnet.solana.com";
 
 export const WalletDialog = ({ isOpen, onClose }) => {
@@ -19,7 +31,7 @@ export const WalletDialog = ({ isOpen, onClose }) => {
 
   const dispatch = useAppDispatch();
   const { tourId } = useParams();
-  
+
   const currentPoints = useAppSelector((state) =>
     getTournamentTeamSelectionPoints(state, tourId as string)
   );
@@ -64,12 +76,18 @@ export const WalletDialog = ({ isOpen, onClose }) => {
   const buyPoints = async () => {
     try {
       if (!walletAddress) {
-        setMessage({ type: "error", text: "Please connect your wallet first." });
+        setMessage({
+          type: "error",
+          text: "Please connect your wallet first.",
+        });
         return;
       }
 
       if (balance < SOL_AMOUNT) {
-        setMessage({ type: "error", text: `Insufficient balance. You need at least ${SOL_AMOUNT} SOL.` });
+        setMessage({
+          type: "error",
+          text: `Insufficient balance. You need at least ${SOL_AMOUNT} SOL.`,
+        });
         return;
       }
 
@@ -94,13 +112,20 @@ export const WalletDialog = ({ isOpen, onClose }) => {
       if (!solana) throw new Error("Phantom wallet not found");
 
       const signedTransaction = await solana.signTransaction(transaction);
-      const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+      const signature = await connection.sendRawTransaction(
+        signedTransaction.serialize()
+      );
       await connection.confirmTransaction(signature, "confirmed");
 
       fetchWalletBalance(walletAddress);
-      dispatch(addPoints({ tournamentId: tourId, points: POINTS_PER_PURCHASE }));
+      dispatch(
+        addPoints({ tournamentId: tourId, points: POINTS_PER_PURCHASE })
+      );
 
-      setMessage({ type: "success", text: `Successfully purchased ${POINTS_PER_PURCHASE} points!` });
+      setMessage({
+        type: "success",
+        text: `Successfully purchased ${POINTS_PER_PURCHASE} points!`,
+      });
 
       setTimeout(() => {
         setMessage({ type: "", text: "" });
@@ -108,21 +133,30 @@ export const WalletDialog = ({ isOpen, onClose }) => {
       }, 3000);
     } catch (error) {
       console.error("Error buying points:", error);
-      setMessage({ type: "error", text: "Transaction failed. Please try again." });
+      setMessage({
+        type: "error",
+        text: "Transaction failed. Please try again.",
+      });
     } finally {
       setIsProcessing(false);
     }
   };
 
-const exchangePointsForSol = async () => {
+  const exchangePointsForSol = async () => {
     try {
       if (!walletAddress) {
-        setMessage({ type: "error", text: "Please connect your wallet first." });
+        setMessage({
+          type: "error",
+          text: "Please connect your wallet first.",
+        });
         return;
       }
 
       if (currentPoints < POINTS_PER_PURCHASE) {
-        setMessage({ type: "error", text: `Insufficient points. You need at least ${POINTS_PER_PURCHASE} points.` });
+        setMessage({
+          type: "error",
+          text: `Insufficient points. You need at least ${POINTS_PER_PURCHASE} points.`,
+        });
         return;
       }
 
@@ -130,36 +164,38 @@ const exchangePointsForSol = async () => {
       setMessage({ type: "", text: "" });
 
       // Get public key from localStorage
-      const publicKey = localStorage.getItem('UserId');
+      const publicKey = localStorage.getItem("UserId");
       if (!publicKey) {
-        throw new Error('Wallet address not found');
+        throw new Error("Wallet address not found");
       }
 
       // Make API call to record redemption
-      const response = await fetch('/api/redeem', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      const response = await fetch("/api/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           points: POINTS_PER_PURCHASE,
           publicKey,
-          solAmount: SOL_AMOUNT
+          solAmount: SOL_AMOUNT,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Redemption failed');
+        throw new Error(errorData.error || "Redemption failed");
       }
 
       // Only deduct points after successful Redis storage
-      dispatch(deductPoints({ 
-        tournamentId: tourId, 
-        points: POINTS_PER_PURCHASE 
-      }));
+      dispatch(
+        deductPoints({
+          tournamentId: tourId,
+          points: POINTS_PER_PURCHASE,
+        })
+      );
 
-      setMessage({ 
-        type: "success", 
-        text: `${POINTS_PER_PURCHASE} points exchanged for ${SOL_AMOUNT} SOL!` 
+      setMessage({
+        type: "success",
+        text: `${POINTS_PER_PURCHASE} points exchanged for ${SOL_AMOUNT} SOL!`,
       });
 
       setTimeout(() => {
@@ -169,9 +205,9 @@ const exchangePointsForSol = async () => {
       }, 5000);
     } catch (error) {
       console.error("Error exchanging points:", error);
-      setMessage({ 
-        type: "error", 
-        text: error.message || "Transaction failed. Please try again." 
+      setMessage({
+        type: "error",
+        text: error.message || "Transaction failed. Please try again.",
       });
     } finally {
       setIsProcessing(false);
@@ -182,10 +218,16 @@ const exchangePointsForSol = async () => {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
       <div className="relative bg-white dark:bg-neutral-900 rounded-2xl shadow-xl w-full max-w-md m-4 z-10 overflow-hidden">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+        >
           ✕
         </button>
 
@@ -195,7 +237,9 @@ const exchangePointsForSol = async () => {
           {message.text && (
             <div
               className={`px-4 py-3 rounded relative mb-4 ${
-                message.type === "error" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+                message.type === "error"
+                  ? "bg-red-100 text-red-700"
+                  : "bg-green-100 text-green-700"
               }`}
             >
               {message.text}
@@ -220,15 +264,17 @@ const exchangePointsForSol = async () => {
             <div className="space-y-4">
               <div className="bg-gray-100 rounded-lg p-4">
                 <div className="text-sm text-gray-500">Connected Wallet</div>
-                <div className="text-sm font-mono truncate">{walletAddress}</div>
+                <div className="text-sm font-mono truncate">
+                  {walletAddress}
+                </div>
               </div>
 
               <div className="flex gap-4 mb-4">
                 <button
                   onClick={() => setTransactionType("buy")}
                   className={`flex-1 py-2 rounded-lg ${
-                    transactionType === "buy" 
-                      ? "bg-blue-600 text-white" 
+                    transactionType === "buy"
+                      ? "bg-blue-600 text-white"
                       : "bg-gray-200 text-gray-700"
                   }`}
                 >
@@ -237,8 +283,8 @@ const exchangePointsForSol = async () => {
                 <button
                   onClick={() => setTransactionType("exchange")}
                   className={`flex-1 py-2 rounded-lg ${
-                    transactionType === "exchange" 
-                      ? "bg-blue-600 text-white" 
+                    transactionType === "exchange"
+                      ? "bg-blue-600 text-white"
                       : "bg-gray-200 text-gray-700"
                   }`}
                 >
@@ -261,7 +307,9 @@ const exchangePointsForSol = async () => {
                 <div className="bg-gray-100 rounded-lg p-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-gray-500">Points Cost</span>
-                    <span className="font-medium">{POINTS_PER_PURCHASE} Points</span>
+                    <span className="font-medium">
+                      {POINTS_PER_PURCHASE} Points
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-500">SOL Received</span>
@@ -271,17 +319,19 @@ const exchangePointsForSol = async () => {
               )}
 
               <button
-                onClick={transactionType === "buy" ? buyPoints : exchangePointsForSol}
+                onClick={
+                  transactionType === "buy" ? buyPoints : exchangePointsForSol
+                }
                 disabled={isProcessing}
                 className={`w-full py-2 rounded-lg text-white ${
                   isProcessing ? "bg-gray-500" : "bg-blue-600 hover:bg-blue-700"
                 }`}
               >
-                {isProcessing 
-                  ? "Processing..." 
-                  : transactionType === "buy" 
-                    ? `Buy ${POINTS_PER_PURCHASE} Points` 
-                    : `Exchange for ${SOL_AMOUNT} SOL`}
+                {isProcessing
+                  ? "Processing..."
+                  : transactionType === "buy"
+                  ? `Buy ${POINTS_PER_PURCHASE} Points`
+                  : `Exchange for ${SOL_AMOUNT} SOL`}
               </button>
             </div>
           )}

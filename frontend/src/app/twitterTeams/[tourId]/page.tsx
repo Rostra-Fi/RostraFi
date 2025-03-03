@@ -14,7 +14,7 @@ import { AuroraBack } from "@/components/aroraBack";
 // import AnimatedScrollButton from "@/components/AnimatedScrollButton";
 import SolanaNavbar from "@/components/SolanaBar";
 import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
-import { updateTournamentPoints, userWalletConnect } from "@/store/userSlice";
+import { addUserPoints, userWalletConnect } from "@/store/userSlice";
 
 import CelebrationDialog from "@/components/CelebrationDialog";
 import { useParams } from "next/navigation";
@@ -95,14 +95,7 @@ export default function Page() {
         if (data.isFirstVisit) {
           setPointsAwarded(data.pointsAwarded || 0); // Default to 100 if not provided
           setShowCelebration(true);
-          dispatch(
-            updateTournamentPoints({
-              tournamentId: tourId as string,
-              points: data.pointsAwarded || data.tournamentPoints,
-              teamSelectionPoints: data.pointsAwarded || data.tournamentPoints,
-              createdAt: new Date().toISOString(),
-            })
-          );
+          dispatch(addUserPoints(data.pointsAwarded));
         }
 
         if (data.isParticipant) {
