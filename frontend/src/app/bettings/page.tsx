@@ -38,28 +38,109 @@ import {
 } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
-import { fetchContent } from "@/store/contentSlice";
+import {
+  fetchContent,
+  fetchUserVotes,
+  voteOnContent,
+} from "@/store/contentSlice";
+import { userWalletConnect } from "@/store/userSlice";
 
-// Types
+// Types based on the actual data structure
 interface Influencer {
-  id: number;
-  name: string;
+  _id: string;
+  id: string;
+  title: string;
   image: string;
   description: string;
-  timeLimit: string;
+  voteCost: number;
   points: number;
-  category: string;
-  popularity: number;
+  duration: number;
+  timeRemaining: number;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  isExpired: boolean;
+  yesVotes: number;
+  noVotes: number;
+  totalVotes: number;
+  yesPercentage: number;
+  noPercentage: number;
 }
 
 interface UserBet {
-  influencerId: number;
+  influencerId: string;
   betType: "yes" | "no";
   points: number;
 }
 
+// Function to determine the category based on the influencer's title or description
+const determineCategory = (influencer: Influencer): string => {
+  const title = influencer.title.toLowerCase();
+  const desc = influencer.description.toLowerCase();
+
+  if (
+    title.includes("elon") ||
+    desc.includes("tweet") ||
+    desc.includes("tech")
+  ) {
+    return "Tech";
+  } else if (desc.includes("followers") || desc.includes("social media")) {
+    return "Entertainment";
+  } else if (
+    desc.includes("match") ||
+    desc.includes("game") ||
+    desc.includes("win")
+  ) {
+    return "Sports";
+  } else if (
+    desc.includes("brand") ||
+    desc.includes("partnership") ||
+    desc.includes("launch")
+  ) {
+    return "Business";
+  }
+
+  // Default category
+  return "Entertainment";
+};
+
+// Function to format time remaining in a human-readable format
+const formatTimeRemaining = (timeRemaining: number): string => {
+  const seconds = Math.floor(timeRemaining / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  if (days > 0) {
+    return `${days} day${days > 1 ? "s" : ""} left`;
+  } else if (hours > 0) {
+    return `${hours} hour${hours > 1 ? "s" : ""} left`;
+  } else if (minutes > 0) {
+    return `${minutes} minute${minutes > 1 ? "s" : ""} left`;
+  } else {
+    return `${seconds} second${seconds > 1 ? "s" : ""} left`;
+  }
+};
+
+// Function to calculate popularity based on votes
+const calculatePopularity = (influencer: Influencer): number => {
+  // If there are no votes, return a default value
+  if (influencer.totalVotes === 0) {
+    return 50; // Default 50% popularity
+  }
+
+  // Calculate as percentage of yes votes or use a more complex algorithm
+  return (
+    influencer.yesPercentage ||
+    (influencer.yesVotes / influencer.totalVotes) * 100
+  );
+};
+
 export default function Home() {
-  const [userPoints, setUserPoints] = useState(1000);
+  const { points } = useAppSelector((state) => state.user);
+  console.log(points);
+
+  const [userPoints, setUserPoints] = useState<number>(points);
   const [selectedInfluencer, setSelectedInfluencer] =
     useState<Influencer | null>(null);
   const [betType, setBetType] = useState<"yes" | "no" | null>(null);
@@ -70,73 +151,72 @@ export default function Home() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [showPointsAlert, setShowPointsAlert] = useState(false);
   const { width, height } = useWindowSize();
+  const [timeUpdater, setTimeUpdater] = useState(0);
 
   const dispatch = useAppDispatch();
-  const { content } = useAppSelector((state) => state.content);
-  console.log(content);
+  const { content, userVotes } = useAppSelector((state) => state.content);
+  const { userId } = useAppSelector((state) => state.user);
+  const userId1 = localStorage.getItem("UserId");
 
+  console.log("User votes:", userVotes);
+  console.log("jhjshj");
+
+  // Update time remaining every second
+  // useEffect(() => {
+  //   const timer = setInterval(() => {
+  //     setTimeUpdater((prev) => prev + 1);
+  //   }, 1000);
+
+  //   return () => clearInterval(timer);
+  // }, []);
+
+  // Fetch content and user votes on mount
   useEffect(() => {
+    dispatch(userWalletConnect(userId1 as string));
     dispatch(fetchContent());
-  }, [dispatch]);
+    dispatch(fetchUserVotes(userId));
+  }, [dispatch, userId, userId1]);
 
-  // Sample data
-  const influencers: Influencer[] = [
-    {
-      id: 1,
-      name: "Alex Rivers",
-      image: "/placeholder.svg?height=400&width=400",
-      description: "Will launch a new product line by end of month?",
-      timeLimit: "2 days left",
-      points: 250,
-      category: "Tech",
-      popularity: 85,
-    },
-    {
-      id: 2,
-      name: "Emma Stone",
-      image: "/placeholder.svg?height=400&width=400",
-      description: "Will hit 10M followers on social media?",
-      timeLimit: "5 days left",
-      points: 500,
-      category: "Entertainment",
-      popularity: 92,
-    },
-    {
-      id: 3,
-      name: "Jake Paul",
-      image: "/placeholder.svg?height=400&width=400",
-      description: "Will win the upcoming boxing match?",
-      timeLimit: "1 day left",
-      points: 750,
-      category: "Sports",
-      popularity: 78,
-    },
-    {
-      id: 4,
-      name: "Sophia Chen",
-      image: "/placeholder.svg?height=400&width=400",
-      description: "Will announce a major brand partnership?",
-      timeLimit: "3 days left",
-      points: 300,
-      category: "Business",
-      popularity: 88,
-    },
-  ];
+  // Update userBets state based on fetched userVotes
+  useEffect(() => {
+    if (userVotes && userVotes.length > 0) {
+      const formattedBets = userVotes.map((vote) => ({
+        influencerId: vote.content._id || vote.content.id,
+        betType: vote.voteType,
+        points: vote.pointsSpent,
+      }));
 
-  // Check if user has already bet on an influencer
-  const hasUserBetOn = (influencerId: number) => {
-    return userBets.some((bet) => bet.influencerId === influencerId);
+      setUserBets(formattedBets);
+    }
+  }, [userVotes]);
+
+  // Check if user has already bet on an influencer using Redux state
+  const hasUserBetOn = (influencerId: string) => {
+    return userVotes.some(
+      (vote) =>
+        vote.content._id === influencerId || vote.content.id === influencerId
+    );
   };
 
-  // Get user's bet type on an influencer
-  const getUserBetType = (influencerId: number) => {
-    const bet = userBets.find((bet) => bet.influencerId === influencerId);
-    return bet ? bet.betType : null;
+  // Get user's bet type on an influencer using Redux state
+  const getUserBetType = (influencerId: string) => {
+    const vote = userVotes.find(
+      (vote) =>
+        vote.content._id === influencerId || vote.content.id === influencerId
+    );
+    return vote ? vote.voteType : null;
   };
 
   const handleBet = (influencer: Influencer, type: "yes" | "no") => {
+    // Check if user has already bet on this influencer
+    if (hasUserBetOn(influencer._id || influencer.id)) {
+      setShowPointsAlert(true);
+      setTimeout(() => setShowPointsAlert(false), 3000);
+      return;
+    }
+
     // Check if user has enough points
-    if (userPoints < influencer.points) {
+    if (points < influencer.voteCost) {
       setShowPointsAlert(true);
       setTimeout(() => setShowPointsAlert(false), 3000);
       return;
@@ -148,17 +228,27 @@ export default function Home() {
   };
 
   const confirmBet = () => {
-    if (selectedInfluencer && betType) {
-      // Deduct points
-      setUserPoints(userPoints - selectedInfluencer.points);
+    if (selectedInfluencer && betType && userId) {
+      // Dispatch the vote action to Redux
+      dispatch(
+        voteOnContent({
+          userId: userId,
+          contentId: selectedInfluencer._id || selectedInfluencer.id,
+          voteType: betType,
+          pointsSpent: selectedInfluencer.voteCost,
+        })
+      );
 
-      // Add to user bets
+      // Deduct points
+      setUserPoints(points - selectedInfluencer.voteCost);
+
+      // Add to user bets locally (this will be updated by the effect when userVotes updates)
       setUserBets([
         ...userBets,
         {
-          influencerId: selectedInfluencer.id,
+          influencerId: selectedInfluencer._id || selectedInfluencer.id,
           betType: betType,
-          points: selectedInfluencer.points,
+          points: selectedInfluencer.voteCost,
         },
       ]);
 
@@ -167,8 +257,8 @@ export default function Home() {
 
       // Show notification and confetti
       setNotificationMessage(
-        `You bet ${betType.toUpperCase()} on ${selectedInfluencer.name} for ${
-          selectedInfluencer.points
+        `You bet ${betType.toUpperCase()} on ${selectedInfluencer.title} for ${
+          selectedInfluencer.voteCost
         } points!`
       );
       setShowNotification(true);
@@ -251,7 +341,7 @@ export default function Home() {
                   <div className="flex flex-col">
                     <span className="text-xs text-gray-400">Your Balance</span>
                     <span className="text-xl font-bold text-yellow-400">
-                      {userPoints}
+                      {points}
                     </span>
                   </div>
                   <div className="h-8 w-8 rounded-full bg-yellow-400/20 flex items-center justify-center">
@@ -285,7 +375,9 @@ export default function Home() {
             <Alert className="bg-red-900/90 border-red-700 text-white max-w-md">
               <AlertDescription className="flex items-center gap-2">
                 <X className="h-5 w-5 text-red-400" />
-                Not enough points! You need more points to place this bet.
+                {hasUserBetOn(selectedInfluencer?._id || "")
+                  ? "You've already placed a bet on this influencer!"
+                  : "Not enough points! You need more points to place this bet."}
               </AlertDescription>
             </Alert>
           </motion.div>
@@ -295,143 +387,152 @@ export default function Home() {
       {/* Main Content */}
       <main className="container mx-auto py-8 px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {influencers.map((influencer) => {
-            const hasBet = hasUserBetOn(influencer.id);
-            const userBetType = getUserBetType(influencer.id);
+          {content &&
+            content.map((influencer: Influencer) => {
+              const hasBet = hasUserBetOn(influencer._id || influencer.id);
+              const userBetType = getUserBetType(
+                influencer._id || influencer.id
+              );
+              const category = determineCategory(influencer);
+              const popularity = calculatePopularity(influencer);
+              // Calculate remaining time dynamically
+              const timeLeft = formatTimeRemaining(
+                influencer.timeRemaining - timeUpdater * 1000
+              );
 
-            return (
-              <motion.div
-                key={influencer.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                whileHover={{ y: -5 }}
-                className="h-full"
-              >
-                <Card
-                  className={`bg-gradient-to-b from-gray-900 to-gray-950 border-gray-800 overflow-hidden h-full transition-all duration-300 ${
-                    hasBet
-                      ? userBetType === "yes"
-                        ? "border-l-4 border-l-green-500 shadow-lg shadow-green-900/10"
-                        : "border-l-4 border-l-red-500 shadow-lg shadow-red-900/10"
-                      : "hover:shadow-lg hover:shadow-purple-900/20"
-                  }`}
+              return (
+                <motion.div
+                  key={influencer._id || influencer.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  whileHover={{ y: -5 }}
+                  className="h-full"
                 >
-                  <div className="relative h-48">
-                    <Image
-                      src={influencer.image || "/placeholder.svg"}
-                      alt={influencer.name}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent"></div>
+                  <Card
+                    className={`bg-gradient-to-b from-gray-900 to-gray-950 border-gray-800 overflow-hidden h-full transition-all duration-300 ${
+                      hasBet
+                        ? userBetType === "yes"
+                          ? "border-l-4 border-l-green-500 shadow-lg shadow-green-900/10"
+                          : "border-l-4 border-l-red-500 shadow-lg shadow-red-900/10"
+                        : "hover:shadow-lg hover:shadow-purple-900/20"
+                    }`}
+                  >
+                    <div className="relative h-48">
+                      <Image
+                        src={influencer.image || "/placeholder.svg"}
+                        alt={influencer.title}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent"></div>
 
-                    {/* Category Badge */}
-                    <div className="absolute top-3 left-3">
-                      <Badge className="bg-gray-800/80 backdrop-blur-sm border-gray-700 px-2 py-1 flex items-center gap-1">
-                        {getCategoryIcon(influencer.category)}
-                        {influencer.category}
-                      </Badge>
-                    </div>
-
-                    {/* User Bet Badge */}
-                    {hasBet && (
-                      <div className="absolute top-3 right-3">
-                        <Badge
-                          className={`px-2 py-1 flex items-center gap-1 ${
-                            userBetType === "yes"
-                              ? "bg-green-600"
-                              : "bg-red-600"
-                          }`}
-                        >
-                          {userBetType === "yes" ? (
-                            <Check className="h-3 w-3" />
-                          ) : (
-                            <X className="h-3 w-3" />
-                          )}
-                          You bet {userBetType}
+                      {/* Category Badge */}
+                      <div className="absolute top-3 left-3">
+                        <Badge className="bg-gray-800/80 backdrop-blur-sm border-gray-700 px-2 py-1 flex items-center gap-1">
+                          {getCategoryIcon(category)}
+                          {category}
                         </Badge>
                       </div>
-                    )}
 
-                    <div className="absolute bottom-0 left-0 right-0 p-4">
-                      <h3 className="font-bold text-xl text-white">
-                        {influencer.name}
-                      </h3>
-                    </div>
-                  </div>
+                      {/* User Bet Badge */}
+                      {hasBet && (
+                        <div className="absolute top-3 right-3">
+                          <Badge
+                            className={`px-2 py-1 flex items-center gap-1 ${
+                              userBetType === "yes"
+                                ? "bg-green-600"
+                                : "bg-red-600"
+                            }`}
+                          >
+                            {userBetType === "yes" ? (
+                              <Check className="h-3 w-3" />
+                            ) : (
+                              <X className="h-3 w-3" />
+                            )}
+                            You bet {userBetType}
+                          </Badge>
+                        </div>
+                      )}
 
-                  <CardContent className="pt-4 pb-2">
-                    <p className="text-gray-300 mb-4 text-sm">
-                      {influencer.description}
-                    </p>
-
-                    <div className="flex justify-between items-center mb-3">
-                      <Badge
-                        variant="outline"
-                        className="flex items-center gap-1 bg-gray-800/50 text-blue-400 border-blue-900"
-                      >
-                        <Clock className="h-3 w-3" /> {influencer.timeLimit}
-                      </Badge>
-                      <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-                        {influencer.points} points
-                      </Badge>
-                    </div>
-
-                    <div className="mb-3">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-gray-400">Popularity</span>
-                        <span className="text-gray-300">
-                          {influencer.popularity}%
-                        </span>
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <h3 className="font-bold text-xl text-white">
+                          {influencer.title}
+                        </h3>
                       </div>
-                      <Progress
-                        value={influencer.popularity}
-                        className="h-1.5"
-                        // indicatorClassName="bg-gradient-to-r from-purple-500 to-pink-500"
-                      />
                     </div>
-                  </CardContent>
 
-                  <CardFooter className="flex gap-2 pt-0">
-                    {hasBet ? (
-                      <div className="w-full p-2 bg-gray-800/50 rounded-md text-center text-sm text-gray-400">
-                        You already placed a bet on this influencer
+                    <CardContent className="pt-4 pb-2">
+                      <p className="text-gray-300 mb-4 text-sm">
+                        {influencer.description}
+                      </p>
+
+                      <div className="flex justify-between items-center mb-3">
+                        <Badge
+                          variant="outline"
+                          className="flex items-center gap-1 bg-gray-800/50 text-blue-400 border-blue-900"
+                        >
+                          <Clock className="h-3 w-3" /> {timeLeft}
+                        </Badge>
+                        <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                          {influencer.voteCost} points
+                        </Badge>
                       </div>
-                    ) : (
-                      <>
-                        <Button
-                          className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 border-0"
-                          onClick={() => handleBet(influencer, "yes")}
-                          disabled={userPoints < influencer.points}
-                        >
-                          Yes
-                        </Button>
-                        <Button
-                          className="flex-1 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 border-0"
-                          onClick={() => handleBet(influencer, "no")}
-                          disabled={userPoints < influencer.points}
-                        >
-                          No
-                        </Button>
-                      </>
-                    )}
-                  </CardFooter>
-                </Card>
-              </motion.div>
-            );
-          })}
+
+                      <div className="mb-3">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-gray-400">Yes Votes</span>
+                          <span className="text-gray-300">
+                            {influencer.yesPercentage}%
+                          </span>
+                        </div>
+                        <Progress
+                          value={influencer.yesPercentage || 50}
+                          className="h-1.5"
+                        />
+                      </div>
+                    </CardContent>
+
+                    <CardFooter className="flex gap-2 pt-0">
+                      {hasBet ? (
+                        <div className="w-full p-2 bg-gray-800/50 rounded-md text-center text-sm text-gray-400">
+                          You already placed a {userBetType?.toUpperCase()} bet
+                          on this influencer
+                        </div>
+                      ) : (
+                        <>
+                          <Button
+                            className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 border-0"
+                            onClick={() => handleBet(influencer, "yes")}
+                            disabled={points < influencer.voteCost}
+                          >
+                            Yes
+                          </Button>
+                          <Button
+                            className="flex-1 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 border-0"
+                            onClick={() => handleBet(influencer, "no")}
+                            disabled={points < influencer.voteCost}
+                          >
+                            No
+                          </Button>
+                        </>
+                      )}
+                    </CardFooter>
+                  </Card>
+                </motion.div>
+              );
+            })}
         </div>
 
         {/* No Points Message */}
-        {userPoints === 0 && (
+        {points === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="mt-8 p-6 bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl border border-gray-700 text-center"
           >
             <h3 className="text-xl font-bold text-white mb-2">
-              Youre out of points!
+              You're out of points!
             </h3>
             <p className="text-gray-400 mb-4">
               Purchase more points to continue betting on your favorite
@@ -440,6 +541,22 @@ export default function Home() {
             <Button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
               <Plus className="h-4 w-4 mr-2" /> Buy More Points
             </Button>
+          </motion.div>
+        )}
+
+        {/* No Data Message */}
+        {(!content || content.length === 0) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-8 p-6 bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl border border-gray-700 text-center"
+          >
+            <h3 className="text-xl font-bold text-white mb-2">
+              No active bets available!
+            </h3>
+            <p className="text-gray-400 mb-4">
+              Check back soon for new influencer betting opportunities.
+            </p>
           </motion.div>
         )}
       </main>
@@ -452,7 +569,7 @@ export default function Home() {
               Confirm Your Bet
             </DialogTitle>
             <DialogDescription className="text-gray-400">
-              You are about to place a bet on {selectedInfluencer?.name}
+              You are about to place a bet on {selectedInfluencer?.title}
             </DialogDescription>
           </DialogHeader>
 
@@ -471,7 +588,7 @@ export default function Home() {
             <div className="flex justify-between items-center mb-4">
               <span className="text-gray-300">Points to Deduct:</span>
               <span className="font-bold text-yellow-400 text-lg">
-                {selectedInfluencer?.points}
+                {selectedInfluencer?.voteCost}
               </span>
             </div>
 
@@ -480,7 +597,7 @@ export default function Home() {
             <div className="flex justify-between items-center mb-4">
               <span className="text-gray-300">Your Total Points:</span>
               <span className="font-bold text-yellow-400 text-lg">
-                {userPoints}
+                {points}
               </span>
             </div>
 
@@ -488,8 +605,8 @@ export default function Home() {
               <span className="text-gray-300">Balance After Bet:</span>
               <span className="font-bold text-yellow-400 text-lg">
                 {selectedInfluencer
-                  ? userPoints - selectedInfluencer.points
-                  : userPoints}
+                  ? points - selectedInfluencer.voteCost
+                  : points}
               </span>
             </div>
 
@@ -560,7 +677,7 @@ export default function Home() {
                       <Award className="h-4 w-4" />
                       <span>
                         New Balance:{" "}
-                        {userPoints - (selectedInfluencer?.points || 0)} points
+                        {points - (selectedInfluencer?.voteCost || 0)} points
                       </span>
                     </div>
                   </div>

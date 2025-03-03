@@ -15,7 +15,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useParams } from "next/navigation";
 import { useAppSelector } from "@/hooks/reduxHooks";
-import { getTournamentTeamSelectionPoints } from "@/store/userSlice";
 import {
   participateInTournament,
   resetTournamentState,
@@ -87,13 +86,23 @@ export function SelectedTeamsOverview() {
   const { isParticiapated } = useAppSelector((state) => state.tournaments);
 
   // Get the points from redux store using the same approach as SolanaNavbar
-  const points = useAppSelector((state: any) =>
-    getTournamentTeamSelectionPoints(state, tourId as string)
-  );
+  const { points } = useAppSelector((state) => state.user);
 
   const totalSelectedTeams =
     teams.sections?.reduce(
       (total, section) => total + section.selectedTeams.length,
+      0
+    ) || 0;
+
+  // Calculate total points of selected team members
+  const totalTeamPoints =
+    teams.sections?.reduce(
+      (total, section) =>
+        total +
+        section.selectedTeams.reduce(
+          (sectionTotal, team) => sectionTotal + (team.points || 0),
+          0
+        ),
       0
     ) || 0;
 
@@ -197,6 +206,7 @@ export function SelectedTeamsOverview() {
             teams,
             walletUserId: userId,
             tournamentId: tourId as string,
+            totalPoints: totalTeamPoints, // Pass total team points here
           })
         );
       } else {
@@ -354,6 +364,17 @@ export function SelectedTeamsOverview() {
                 onChange={(e) => setTeamName(e.target.value)}
                 className="w-full border-2 focus:border-blue-500 rounded-lg py-2"
               />
+
+              {/* Display total team points */}
+              <div className="flex items-center justify-between px-3 py-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <span className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                  Total Team Points:
+                </span>
+                <span className="font-bold text-blue-800 dark:text-blue-300">
+                  {totalTeamPoints}
+                </span>
+              </div>
+
               <Button
                 onClick={handleCreateTeam}
                 disabled={isCreating || loading || !teamName.trim()}

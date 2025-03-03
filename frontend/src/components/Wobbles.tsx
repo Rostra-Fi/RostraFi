@@ -7,8 +7,7 @@ import { Team } from "@/types/team.types";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useAppSelector } from "@/hooks/reduxHooks";
-import { updateTournamentTeamSelectionPoints } from "@/store/userSlice";
-import { getTournamentTeamSelectionPoints } from "@/store/userSlice";
+import { addUserPoints, removeUserPoints } from "@/store/userSlice";
 import toast from "react-hot-toast";
 import { useOutsideClick } from "../hooks/use-outside-click";
 import { useParams } from "next/navigation";
@@ -46,9 +45,8 @@ export function WobbleTeamSection({
 
   const dispatch = useDispatch();
   const { tourId } = useParams();
-  const tournamentTeamSelectionPoints = useAppSelector((state) =>
-    getTournamentTeamSelectionPoints(state, tourId as string)
-  );
+
+  const { points } = useAppSelector((state) => state.user);
 
   const handleTeamUpdate = (selectedTeam: Team[]) => {
     dispatch(
@@ -59,9 +57,6 @@ export function WobbleTeamSection({
       })
     );
   };
-
-  console.log(selectedTeam);
-  console.log(teams);
 
   useOutsideClick(ref, () => setActiveTeam(null));
 
@@ -97,12 +92,7 @@ export function WobbleTeamSection({
 
       // Restore points when removing a team member - now tournament specific
       const pointsToRestore = member.points || 250;
-      dispatch(
-        updateTournamentTeamSelectionPoints({
-          tournamentId: tourId as string,
-          points: pointsToRestore,
-        })
-      );
+      dispatch(addUserPoints(pointsToRestore));
 
       toast.success(
         `Removed ${member.name}. +${pointsToRestore} points returned.`
@@ -114,7 +104,7 @@ export function WobbleTeamSection({
     } else {
       // Check if we have enough points
       const memberPoints = member.points || 250;
-      if (tournamentTeamSelectionPoints < memberPoints) {
+      if (points < memberPoints) {
         toast.error(
           `Not enough points! You need ${memberPoints} points to select ${member.name}.`
         );
@@ -142,12 +132,8 @@ export function WobbleTeamSection({
         handleTeamUpdate(updatedTeam);
 
         // Deduct points when adding a team member - now tournament specific
-        dispatch(
-          updateTournamentTeamSelectionPoints({
-            tournamentId: tourId as string,
-            points: -(member.points || 250),
-          })
-        );
+
+        dispatch(removeUserPoints(memberPoints));
 
         toast.success(
           `Added ${member.name} to your team. -${member.points || 250} points.`
@@ -169,10 +155,7 @@ export function WobbleTeamSection({
   // Check if we can afford this team member
   const canAfford = (member: Team): boolean => {
     const memberPoints = member.points || 250;
-    return (
-      tournamentTeamSelectionPoints >= memberPoints ||
-      getMemberState(member).isSelected
-    );
+    return points >= memberPoints || getMemberState(member).isSelected;
   };
 
   // Handle opening the team details dialog
@@ -226,9 +209,7 @@ export function WobbleTeamSection({
               <span className="text-purple-400 font-medium">
                 Points Remaining:
               </span>
-              <span className="text-purple-300 font-bold">
-                {tournamentTeamSelectionPoints}
-              </span>
+              <span className="text-purple-300 font-bold">{points}</span>
             </motion.div>
           )}
         </AnimatePresence>

@@ -87,6 +87,7 @@ export const saveTeams =
     walletUserId: string;
     tournamentId: string;
     teams: { sections: Section[] };
+    totalPoints: number;
   }) =>
   async (dispatch: any) => {
     try {
@@ -105,6 +106,7 @@ export const saveTeams =
           walletUserId: teamData.walletUserId,
           tournamentId: teamData.tournamentId,
           sections: formattedTeams.sections,
+          totalPoints: teamData.totalPoints,
         }),
       });
 

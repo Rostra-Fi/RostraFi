@@ -1,25 +1,6 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-// Create a schema for tournament points
-const tournamentPointSchema = new Schema({
-  tournamentId: {
-    type: Schema.Types.ObjectId,
-    ref: 'Tournament',
-    required: true,
-  },
-  points: {
-    type: Number,
-    default: 0,
-    min: 0,
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-    immutable: true,
-  },
-});
-
 const userWalletSchema = new Schema(
   {
     walletAddress: {
@@ -34,9 +15,14 @@ const userWalletSchema = new Schema(
       default: 0,
       min: 0,
     },
-    // Track tournament-specific points
-    tournamentPoints: [tournamentPointSchema],
-    // Add tournaments array to track participated tournaments
+    // Track visited tournaments (just first visit)
+    visitedTournaments: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Tournament',
+      },
+    ],
+    // Track participated tournaments
     tournaments: [
       {
         type: Schema.Types.ObjectId,
@@ -83,38 +69,35 @@ userWalletSchema.methods.addPoints = function (pointsToAdd) {
   return this.save();
 };
 
-// Method to add tournament-specific points
-userWalletSchema.methods.addTournamentPoints = function (
+// Method to add points for tournament visit if not already visited
+userWalletSchema.methods.addPointsForTournamentVisit = function (
   tournamentId,
   pointsToAdd,
   session = null,
 ) {
   if (pointsToAdd <= 0)
     throw new Error('Points to add must be greater than zero');
-  console.log(tournamentId);
 
-  // Check if tournament points already exist
-  const existingPointIndex = this.tournamentPoints.findIndex(
-    (tp) => tp.tournamentId === tournamentId.toString(),
-  );
-
-  if (existingPointIndex >= 0) {
-    this.tournamentPoints[existingPointIndex].points += pointsToAdd;
-  } else {
-    // Add new tournament points entry
-    this.tournamentPoints.push({
-      tournamentId,
-      points: pointsToAdd,
-    });
+  // Check if user has already visited any tournament
+  if (this.visitedTournaments.length === 0) {
+    // First tournament visit ever, add points
+    this.points += pointsToAdd;
+    this.visitedTournaments.push(tournamentId);
+    this.lastActivity = Date.now();
+  } else if (this.visitedTournaments.length === 1) {
+    // User already has one visit - no need to add to the array
+    // This keeps the visitedTournaments array with only one entry maximum
+    // We don't add points as this is not the first visit
   }
-
-  // Also update total points
-  this.points += pointsToAdd;
-  this.lastActivity = Date.now();
 
   // If session is provided, use it for saving
   const saveOptions = session ? { session } : {};
   return this.save(saveOptions);
+};
+
+// Method to check if user has visited any tournament
+userWalletSchema.methods.hasVisitedAnyTournament = function () {
+  return this.visitedTournaments.length > 0;
 };
 
 // Method to add a tournament to user's participated tournaments
@@ -144,34 +127,6 @@ userWalletSchema.methods.hasParticipatedInTournament = function (tournamentId) {
   );
 };
 
-// Method to get tournament points
-userWalletSchema.methods.getTournamentPoints = function (tournamentId) {
-  const tournamentPoint = this.tournamentPoints.find(
-    (tp) => tp.tournamentId.toString() === tournamentId.toString(),
-  );
-
-  return tournamentPoint ? tournamentPoint.points : 0;
-};
-
-// Method to reset tournament points
-userWalletSchema.methods.resetTournamentPoints = function (tournamentId) {
-  const tournamentPoint = this.tournamentPoints.find(
-    (tp) => tp.tournamentId.toString() === tournamentId.toString(),
-  );
-
-  if (tournamentPoint) {
-    // Deduct points from total
-    this.points -= tournamentPoint.points;
-    if (this.points < 0) this.points = 0;
-
-    // Reset tournament points to zero
-    tournamentPoint.points = 0;
-    this.lastActivity = Date.now();
-  }
-
-  return this.save();
-};
-
 // Method to deduct points from wallet
 userWalletSchema.methods.deductPoints = function (pointsToDeduct) {
   if (pointsToDeduct <= 0)
@@ -188,12 +143,14 @@ userWalletSchema.statics.findOrCreateWallet = async function (walletAddress) {
   if (!walletAddress) throw new Error('Wallet address is required');
 
   let wallet = await this.findOne({ walletAddress });
+  let isNewWallet = false;
 
   if (!wallet) {
     wallet = await this.create({ walletAddress });
+    isNewWallet = true;
   }
 
-  return wallet;
+  return { wallet, isNewWallet };
 };
 
 const WalletUser = mongoose.model('WalletUser', userWalletSchema);

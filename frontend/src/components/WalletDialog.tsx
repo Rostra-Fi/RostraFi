@@ -1,13 +1,20 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useAppDispatch } from "@/hooks/reduxHooks";
-import { addPoints } from "@/store/userSlice";
 import { useParams } from "next/navigation";
-import { Connection, PublicKey, SystemProgram, Transaction } from "@solana/web3.js";
+import {
+  Connection,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+} from "@solana/web3.js";
+import { addUserPoints } from "@/store/userSlice";
 
 const POINTS_PER_PURCHASE = 150;
-const SOL_COST = 0.2; 
-const RECIPIENT_WALLET = new PublicKey("JCsFjtj6tem9Dv83Ks4HxsL7p8GhdLtokveqW7uWjGyi");
+const SOL_COST = 0.2;
+const RECIPIENT_WALLET = new PublicKey(
+  "JCsFjtj6tem9Dv83Ks4HxsL7p8GhdLtokveqW7uWjGyi"
+);
 const SOLANA_RPC_URL = "https://api.devnet.solana.com";
 
 export const WalletDialog = ({ isOpen, onClose }) => {
@@ -59,12 +66,18 @@ export const WalletDialog = ({ isOpen, onClose }) => {
   const buyPoints = async () => {
     try {
       if (!UserId) {
-        setMessage({ type: "error", text: "Please connect your wallet first." });
+        setMessage({
+          type: "error",
+          text: "Please connect your wallet first.",
+        });
         return;
       }
 
       if (balance < SOL_COST) {
-        setMessage({ type: "error", text: `Insufficient balance. You need at least ${SOL_COST} SOL.` });
+        setMessage({
+          type: "error",
+          text: `Insufficient balance. You need at least ${SOL_COST} SOL.`,
+        });
         return;
       }
 
@@ -89,13 +102,18 @@ export const WalletDialog = ({ isOpen, onClose }) => {
       if (!solana) throw new Error("Phantom wallet not found");
 
       const signedTransaction = await solana.signTransaction(transaction);
-      const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+      const signature = await connection.sendRawTransaction(
+        signedTransaction.serialize()
+      );
       await connection.confirmTransaction(signature, "confirmed");
 
       fetchWalletBalance(UserId);
-      dispatch(addPoints({ tournamentId: tourId, points: POINTS_PER_PURCHASE }));
+      dispatch(addUserPoints(POINTS_PER_PURCHASE));
 
-      setMessage({ type: "success", text: `Successfully purchased ${POINTS_PER_PURCHASE} points!` });
+      setMessage({
+        type: "success",
+        text: `Successfully purchased ${POINTS_PER_PURCHASE} points!`,
+      });
 
       setTimeout(() => {
         setMessage({ type: "", text: "" });
@@ -103,7 +121,10 @@ export const WalletDialog = ({ isOpen, onClose }) => {
       }, 3000);
     } catch (error) {
       console.error("Error buying points:", error);
-      setMessage({ type: "error", text: "Transaction failed. Please try again." });
+      setMessage({
+        type: "error",
+        text: "Transaction failed. Please try again.",
+      });
     } finally {
       setIsPurchasing(false);
     }
@@ -113,10 +134,16 @@ export const WalletDialog = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
       <div className="relative bg-white dark:bg-neutral-900 rounded-2xl shadow-xl w-full max-w-md m-4 z-10 overflow-hidden">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+        >
           ✕
         </button>
 
@@ -126,7 +153,9 @@ export const WalletDialog = ({ isOpen, onClose }) => {
           {message.text && (
             <div
               className={`px-4 py-3 rounded relative mb-4 ${
-                message.type === "error" ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+                message.type === "error"
+                  ? "bg-red-100 text-red-700"
+                  : "bg-green-100 text-green-700"
               }`}
             >
               {message.text}
@@ -167,7 +196,9 @@ export const WalletDialog = ({ isOpen, onClose }) => {
                   isPurchasing ? "bg-gray-500" : "bg-blue-600 hover:bg-blue-700"
                 }`}
               >
-                {isPurchasing ? "Processing..." : `Buy ${POINTS_PER_PURCHASE} Points`}
+                {isPurchasing
+                  ? "Processing..."
+                  : `Buy ${POINTS_PER_PURCHASE} Points`}
               </button>
             </div>
           )}

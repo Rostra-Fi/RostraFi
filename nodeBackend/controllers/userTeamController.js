@@ -14,7 +14,14 @@ exports.createUserTeam = async (req, res, next) => {
   session.startTransaction();
 
   try {
-    const { userId, teamName, sections, walletUserId, tournamentId } = req.body;
+    const {
+      userId,
+      teamName,
+      sections,
+      walletUserId,
+      tournamentId,
+      totalPoints,
+    } = req.body;
 
     // Check if tournament exists
     if (!tournamentId) {
@@ -97,7 +104,7 @@ exports.createUserTeam = async (req, res, next) => {
 
     // Reset tournament points if tournament ID is provided
     if (tournamentId) {
-      await walletUser.resetTournamentPoints(tournamentId);
+      await walletUser.deductPoints(totalPoints);
     }
 
     // Populate and prepare response
