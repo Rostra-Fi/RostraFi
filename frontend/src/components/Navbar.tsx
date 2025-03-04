@@ -1,12 +1,31 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { HoveredLink, Menu, MenuItem, ProductItem } from "./ui/navbar-menu";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useAppSelector } from "@/hooks/reduxHooks";
+import { useRouter } from "next/navigation";
 
 function Navbar({ className }: { className?: string }) {
   const [active, setActive] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { userId } = useAppSelector((state) => state.user);
+  const router = useRouter();
+
+  useEffect(() => {
+    const localStorageUserId = localStorage.getItem("UserId");
+    setIsAuthenticated(!!(localStorageUserId && userId));
+  }, [userId]);
+
+  const handleProfileNavigation = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (isAuthenticated) {
+      router.push(`/user/${userId}`);
+    } else {
+      alert("Please log in to access your profile");
+    }
+  };
 
   return (
     <div
@@ -49,14 +68,16 @@ function Navbar({ className }: { className?: string }) {
             />
           </div>
         </MenuItem>
-        <MenuItem setActive={setActive} active={active} item="Profile">
-          <div className="flex flex-col space-y-4 text-sm">
-            <HoveredLink href="/hobby">Hobby</HoveredLink>
-            <HoveredLink href="/individual">Individual</HoveredLink>
-            <HoveredLink href="/team">Team</HoveredLink>
-            <HoveredLink href="/enterprise">Enterprise</HoveredLink>
-          </div>
-        </MenuItem>
+        <div onClick={handleProfileNavigation}>
+          <MenuItem setActive={setActive} active={active} item="Profile">
+            <div className="flex flex-col space-y-4 text-sm">
+              <HoveredLink href="/hobby">Hobby</HoveredLink>
+              <HoveredLink href="/individual">Individual</HoveredLink>
+              <HoveredLink href="/team">Team</HoveredLink>
+              <HoveredLink href="/enterprise">Enterprise</HoveredLink>
+            </div>
+          </MenuItem>
+        </div>
       </Menu>
     </div>
   );

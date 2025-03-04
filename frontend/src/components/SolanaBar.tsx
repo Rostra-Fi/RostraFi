@@ -14,6 +14,7 @@ const SolanaNavbar = () => {
   const { tourId } = useParams();
 
   const { points } = useAppSelector((state) => state.user);
+  // const { userWalletAddress } = useAppSelector((state) => state.user);
 
   useEffect(() => {
     const handleScroll = () => {

@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const Tournament = require('../models/tournamentModel');
 const WalletUser = require('../models/walletUserModel');
 const UserTeam = require('../models/userTeamModel');
+const TournamentResult = require('../models/TournamentResultModel');
 const Team = require('../models/team');
 const TwitterData = require('../models/twitterDataModel');
 const cron = require('node-cron');
@@ -414,50 +415,84 @@ class TournamentWinnerService {
    * @param {Array} prizeDistribution - List of users with their prizes
    * @param {mongoose.ClientSession} session - MongoDB session for transaction
    */
+  // static async storeTournamentResults(
+  //   tournamentId,
+  //   prizeDistribution,
+  //   session,
+  // ) {
+  //   try {
+  //     // Create a new tournament results collection or use existing one
+  //     const TournamentResult = mongoose.model(
+  //       'TournamentResult',
+  //       new mongoose.Schema({
+  //         tournamentId: {
+  //           type: mongoose.Schema.Types.ObjectId,
+  //           ref: 'Tournament',
+  //           required: true,
+  //         },
+  //         results: [
+  //           {
+  //             walletUserId: {
+  //               type: mongoose.Schema.Types.ObjectId,
+  //               ref: 'WalletUser',
+  //               required: true,
+  //             },
+  //             userId: String,
+  //             teamName: String,
+  //             score: Number,
+  //             prize: Number,
+  //             rank: Number,
+  //             paid: {
+  //               type: Boolean,
+  //               default: false,
+  //             },
+  //           },
+  //         ],
+  //         calculatedAt: {
+  //           type: Date,
+  //           default: Date.now,
+  //         },
+  //         distributed: {
+  //           type: Boolean,
+  //           default: false,
+  //         },
+  //       }),
+  //     );
+
+  //     // Check if results already exist
+  //     const existingResult = await TournamentResult.findOne({
+  //       tournamentId,
+  //     }).session(session);
+
+  //     if (existingResult) {
+  //       // Update existing results
+  //       existingResult.results = prizeDistribution;
+  //       existingResult.calculatedAt = new Date();
+  //       await existingResult.save({ session });
+  //     } else {
+  //       // Create new results document
+  //       await TournamentResult.create(
+  //         [
+  //           {
+  //             tournamentId,
+  //             results: prizeDistribution,
+  //           },
+  //         ],
+  //         { session },
+  //       );
+  //     }
+  //   } catch (error) {
+  //     console.error('Error storing tournament results:', error);
+  //     throw new Error('Failed to store tournament results');
+  //   }
+  // }
+
   static async storeTournamentResults(
     tournamentId,
     prizeDistribution,
     session,
   ) {
     try {
-      // Create a new tournament results collection or use existing one
-      const TournamentResult = mongoose.model(
-        'TournamentResult',
-        new mongoose.Schema({
-          tournamentId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Tournament',
-            required: true,
-          },
-          results: [
-            {
-              walletUserId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'WalletUser',
-                required: true,
-              },
-              userId: String,
-              teamName: String,
-              score: Number,
-              prize: Number,
-              rank: Number,
-              paid: {
-                type: Boolean,
-                default: false,
-              },
-            },
-          ],
-          calculatedAt: {
-            type: Date,
-            default: Date.now,
-          },
-          distributed: {
-            type: Boolean,
-            default: false,
-          },
-        }),
-      );
-
       // Check if results already exist
       const existingResult = await TournamentResult.findOne({
         tournamentId,
@@ -546,7 +581,7 @@ class TournamentWinnerService {
       }
 
       // Find tournament results
-      const TournamentResult = mongoose.model('TournamentResult');
+      // const TournamentResult = mongoose.model('TournamentResult');
       const tournamentResult = await TournamentResult.findOne({
         tournamentId,
       }).session(session);
@@ -633,6 +668,7 @@ class TournamentWinnerService {
           leaderboard: [],
         };
       }
+      // console.log(tournamentResult);
 
       // Format leaderboard for API response
       const leaderboard = tournamentResult.results.map((result) => ({
@@ -645,7 +681,7 @@ class TournamentWinnerService {
         prize: result.prize,
         paid: result.paid,
       }));
-      console.log(leaderboard);
+      // console.log(leaderboard);
 
       return {
         status: 'completed',
