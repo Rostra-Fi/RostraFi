@@ -43,7 +43,7 @@ import {
   fetchUserVotes,
   voteOnContent,
 } from "@/store/contentSlice";
-import { userWalletConnect } from "@/store/userSlice";
+import { removeUserPoints, userWalletConnect } from "@/store/userSlice";
 
 // Types based on the actual data structure
 interface Influencer {
@@ -156,7 +156,10 @@ export default function Home() {
   const dispatch = useAppDispatch();
   const { content, userVotes } = useAppSelector((state) => state.content);
   const { userId } = useAppSelector((state) => state.user);
-  const userId1 = localStorage.getItem("UserId");
+  const [userId1, setUserId1] = useState<string | null>(null);
+  useEffect(() => {
+    setUserId1(localStorage.getItem("UserId"));
+  }, []);
 
   console.log("User votes:", userVotes);
   console.log("jhjshj");
@@ -240,7 +243,9 @@ export default function Home() {
       );
 
       // Deduct points
-      setUserPoints(points - selectedInfluencer.voteCost);
+      // setUserPoints(points - selectedInfluencer.voteCost);
+      const removedPoints = points - selectedInfluencer.voteCost;
+      dispatch(removeUserPoints(removedPoints));
 
       // Add to user bets locally (this will be updated by the effect when userVotes updates)
       setUserBets([

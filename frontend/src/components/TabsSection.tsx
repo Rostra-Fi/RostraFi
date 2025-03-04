@@ -89,24 +89,24 @@ export function TabsDemo() {
       content: (
         <div className="w-full overflow-hidden relative h-full rounded-2xl p-8 text-2xl md:text-5xl font-bold text-white bg-gradient-to-br from-gray-900 via-purple-900 to-black">
           <AnimatedContent
-            title="Assemble Your Empire"
+            title="Build Your Empire"
             icon={Swords}
             features={[
               {
                 title: "Elite Tier Selection",
-                description: "Handpick from S-tier, A-tier, and rising star influencers",
+                description: "Handpick star influencers",
               },
               {
                 title: "Championship Builder",
-                description: "Craft your 5-player dream team from 1000+ creators",
+                description: "Craft your dream team from 1000+ creators",
               },
               {
                 title: "Live Power Rankings",
-                description: "Real-time RP (Rostra Points) tracking for each member",
+                description: "Real-time RP tracking for each member",
               },
               {
-                title: "Meta Compositions",
-                description: "AI-powered synergy analysis for maximum points",
+                title: "Win Big",
+                description: "Top the leaderboard.",
               },
             ]}
           />
@@ -131,7 +131,7 @@ export function TabsDemo() {
                 description: "Track competing teams' moves in real-time",
               },
               {
-                title: "Victory Predictor",
+                title: "Engagement Radar",
                 description: "AI-powered win probability calculations",
               },
               {
@@ -161,8 +161,8 @@ export function TabsDemo() {
                 description: "Provably fair matches on-chain",
               },
               {
-                title: "Victory Vault",
-                description: "Auto-claim prizes to your Phantom wallet",
+                title: "Crypto Combos",
+                description: "Stack bets for massive payout boosts",
               },
               {
                 title: "Yield Generators",
@@ -184,7 +184,7 @@ export function TabsDemo() {
             features={[
               {
                 title: "Daily Spoils",
-                description: "$10k+ SOL pool distributed every 24h",
+                description: "10 SOL pool distributed every 24h",
               },
               {
                 title: "Legendary NFTs",
@@ -195,8 +195,8 @@ export function TabsDemo() {
                 description: "Climb from Bronze to Celestial ranks",
               },
               {
-                title: "Pro Circuit",
-                description: "Qualify for $100k championship tournaments",
+                title: "Prize Rush",
+                description: "Score SOL in daily and seasonal prize drops",
               },
             ]}
           />
@@ -213,8 +213,8 @@ export function TabsDemo() {
             icon={Crown}
             features={[
               {
-                title: "Alpha Access",
-                description: "Early intel on influencer performance metrics",
+                title: "VIP Vault",
+                description: "Grab rare bonuses and rewards.",
               },
               {
                 title: "Whale Benefits",
