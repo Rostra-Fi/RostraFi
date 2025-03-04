@@ -43,7 +43,7 @@ import {
   fetchUserVotes,
   voteOnContent,
 } from "@/store/contentSlice";
-import { userWalletConnect } from "@/store/userSlice";
+import { removeUserPoints, userWalletConnect } from "@/store/userSlice";
 
 // Types based on the actual data structure
 interface Influencer {
@@ -156,7 +156,10 @@ export default function Home() {
   const dispatch = useAppDispatch();
   const { content, userVotes } = useAppSelector((state) => state.content);
   const { userId } = useAppSelector((state) => state.user);
-  const userId1 = localStorage.getItem("UserId");
+  const [userId1, setUserId1] = useState<string | null>(null);
+  useEffect(() => {
+    setUserId1(localStorage.getItem("UserId"));
+  }, []);
 
   console.log("User votes:", userVotes);
   console.log("jhjshj");
@@ -240,7 +243,9 @@ export default function Home() {
       );
 
       // Deduct points
-      setUserPoints(points - selectedInfluencer.voteCost);
+      // setUserPoints(points - selectedInfluencer.voteCost);
+      // const removedPoints = points - selectedInfluencer.voteCost;
+      dispatch(removeUserPoints(selectedInfluencer.voteCost));
 
       // Add to user bets locally (this will be updated by the effect when userVotes updates)
       setUserBets([
@@ -300,7 +305,6 @@ export default function Home() {
           gravity={0.2}
         />
       )}
-
       {/* Header */}
       <header className="container mx-auto py-8 px-4">
         <div className="relative">
@@ -362,7 +366,6 @@ export default function Home() {
           </TooltipProvider>
         </div>
       </header>
-
       {/* Points Alert */}
       <AnimatePresence>
         {showPointsAlert && (
@@ -383,7 +386,6 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
-
       {/* Main Content */}
       <main className="container mx-auto py-8 px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -560,7 +562,6 @@ export default function Home() {
           </motion.div>
         )}
       </main>
-
       {/* Transaction Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="bg-gradient-to-b from-gray-900 to-gray-950 border-gray-800 text-white max-w-md">
@@ -640,7 +641,6 @@ export default function Home() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       {/* Enhanced Notification */}
       <AnimatePresence>
         {showNotification && (
@@ -698,6 +698,7 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+         
     </div>
   );
 }

@@ -13,7 +13,7 @@ class TournamentWinnerService {
    */
   static initialize() {
     // Check for tournaments nearing completion every 15 minutes
-    cron.schedule('*/15 * * * *', async () => {
+    cron.schedule('*/7 * * * *', async () => {
       console.log('Checking for tournaments nearing completion...');
       await this.checkTournamentsForWinnerCalculation();
     });
@@ -567,12 +567,17 @@ class TournamentWinnerService {
           const wallet = await WalletUser.findById(result.walletUserId).session(
             session,
           );
+          console.log(wallet);
+          console.log(tournamentId);
+          console.log(typeof tournamentId);
           if (wallet) {
             // Add tournament points equivalent to prize amount
             // This is where you'd handle the actual SOL transfer in a real implementation
             await wallet.addTournamentPoints(
               tournamentId,
-              result.prize * 100, // Convert SOL to points (arbitrary conversion)
+              result.prize * 100,
+              result.rank,
+              result.prize,
               session,
             );
 
@@ -640,6 +645,7 @@ class TournamentWinnerService {
         prize: result.prize,
         paid: result.paid,
       }));
+      console.log(leaderboard);
 
       return {
         status: 'completed',

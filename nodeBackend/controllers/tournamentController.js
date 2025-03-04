@@ -732,7 +732,9 @@ exports.participateInTournament = async (req, res) => {
       }
 
       // Find or create the wallet user
-      const user = await WalletUser.findOrCreateWallet(walletAddress);
+      // const user = await WalletUser.findOrCreateWallet(walletAddress);
+      const result = await WalletUser.findOrCreateWallet(walletAddress);
+      const user = result.wallet;
 
       // Check if user has already participated using the tournament hasParticipated method
       if (tournament.hasParticipated(user._id)) {
