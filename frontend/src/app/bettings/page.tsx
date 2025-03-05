@@ -244,8 +244,8 @@ export default function Home() {
 
       // Deduct points
       // setUserPoints(points - selectedInfluencer.voteCost);
-      // const removedPoints = points - selectedInfluencer.voteCost;
-      dispatch(removeUserPoints(selectedInfluencer.voteCost));
+      const removedPoints = points - selectedInfluencer.voteCost;
+      dispatch(removeUserPoints(removedPoints));
 
       // Add to user bets locally (this will be updated by the effect when userVotes updates)
       setUserBets([
@@ -305,6 +305,7 @@ export default function Home() {
           gravity={0.2}
         />
       )}
+
       {/* Header */}
       <header className="container mx-auto py-8 px-4">
         <div className="relative">
@@ -366,6 +367,7 @@ export default function Home() {
           </TooltipProvider>
         </div>
       </header>
+
       {/* Points Alert */}
       <AnimatePresence>
         {showPointsAlert && (
@@ -386,6 +388,7 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
+
       {/* Main Content */}
       <main className="container mx-auto py-8 px-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -562,6 +565,7 @@ export default function Home() {
           </motion.div>
         )}
       </main>
+
       {/* Transaction Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="bg-gradient-to-b from-gray-900 to-gray-950 border-gray-800 text-white max-w-md">
@@ -641,6 +645,7 @@ export default function Home() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       {/* Enhanced Notification */}
       <AnimatePresence>
         {showNotification && (
@@ -698,7 +703,6 @@ export default function Home() {
           </motion.div>
         )}
       </AnimatePresence>
-         
     </div>
   );
 }

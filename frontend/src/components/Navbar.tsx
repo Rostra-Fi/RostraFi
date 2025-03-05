@@ -1,9 +1,7 @@
 "use client";
-
 import React, { useState, useEffect } from "react";
 import { HoveredLink, Menu, MenuItem, ProductItem } from "./ui/navbar-menu";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 import { useAppSelector } from "@/hooks/reduxHooks";
 import { useRouter } from "next/navigation";
 
@@ -32,52 +30,48 @@ function Navbar({ className }: { className?: string }) {
       className={cn("fixed top-6 inset-x-0 max-w-2xl mx-auto z-40", className)}
     >
       <Menu setActive={setActive}>
+        {/* Home Menu Item */}
         <MenuItem setActive={setActive} active={active} item="Home">
           <div className="flex flex-col space-y-4 text-sm">
-            <HoveredLink href="/web-dev">Web Development</HoveredLink>
-            <HoveredLink href="/interface-design">Interface Design</HoveredLink>
-            <HoveredLink href="/seo">Search Engine Optimization</HoveredLink>
-            <HoveredLink href="/branding">Branding</HoveredLink>
+            <HoveredLink href="/">Home</HoveredLink>
+            {/* Disabled items */}
+            <div className="text-gray-500 cursor-not-allowed">Features</div>
+            <div className="text-gray-500 cursor-not-allowed">About</div>
           </div>
         </MenuItem>
-        <MenuItem setActive={setActive} active={active} item="Teams">
-          <div className="text-sm grid grid-cols-2 gap-10 p-4">
-            <ProductItem
-              title="Algochurn"
-              href="https://algochurn.com"
-              src="https://assets.aceternity.com/demos/algochurn.webp"
-              description="Prepare for tech interviews like never before."
-            />
-            <ProductItem
-              title="Tailwind Master Kit"
-              href="https://tailwindmasterkit.com"
-              src="https://assets.aceternity.com/demos/tailwindmasterkit.webp"
-              description="Production ready Tailwind css components for your next project"
-            />
-            <ProductItem
-              title="Moonbeam"
-              href="https://gomoonbeam.com"
-              src="https://assets.aceternity.com/demos/Screenshot+2024-02-21+at+11.51.31%E2%80%AFPM.png"
-              description="Never write from scratch again. Go from idea to blog in minutes."
-            />
-            <ProductItem
-              title="Rogue"
-              href="https://userogue.com"
-              src="https://assets.aceternity.com/demos/Screenshot+2024-02-21+at+11.47.07%E2%80%AFPM.png"
-              description="Respond to government RFPs, RFIs and RFQs 10x faster using AI"
-            />
+
+        {/* Betting Menu Item */}
+        <MenuItem setActive={setActive} active={active} item="Betting">
+          <div className="flex flex-col space-y-4 text-sm">
+            <HoveredLink href="http://localhost:3000/bettings">Bettings</HoveredLink>
+            {/* Disabled items */}
+            <div className="text-gray-500 cursor-not-allowed">Upcoming Matches</div>
+            <div className="text-gray-500 cursor-not-allowed">Leaderboard</div>
           </div>
         </MenuItem>
-        <div onClick={handleProfileNavigation}>
-          <MenuItem setActive={setActive} active={active} item="Profile">
-            <div className="flex flex-col space-y-4 text-sm">
-              <HoveredLink href="/hobby">Hobby</HoveredLink>
-              <HoveredLink href="/individual">Individual</HoveredLink>
-              <HoveredLink href="/team">Team</HoveredLink>
-              <HoveredLink href="/enterprise">Enterprise</HoveredLink>
-            </div>
-          </MenuItem>
-        </div>
+
+        {/* Profile Menu Item */}
+        <MenuItem setActive={setActive} active={active} item="Profile" onClick={handleProfileNavigation}>
+          <div className="flex flex-col space-y-4 text-sm">
+            <HoveredLink href="#" onClick={handleProfileNavigation}>Profile Overview</HoveredLink>
+            {/* Disabled items */}
+            <div className="text-gray-500 cursor-not-allowed">Settings</div>
+            <div className="text-gray-500 cursor-not-allowed">Tournaments</div>
+          </div>
+        </MenuItem>
+
+        {/* Leaderboard Menu Item */}
+        <MenuItem setActive={setActive} active={active} item="Leaderboard">
+          <div className="flex flex-col space-y-4 text-sm">
+            <HoveredLink href="http://localhost:3000/history">
+              Past Leaderboard
+            </HoveredLink>
+            {/* Disabled items */}
+            <div className="text-gray-500 cursor-not-allowed">Global Leaderboard</div>
+            <div className="text-gray-500 cursor-not-allowed">Monthly Rankings</div>
+            <div className="text-gray-500 cursor-not-allowed">Tournament Leaderboards</div>
+          </div>
+        </MenuItem>
       </Menu>
     </div>
   );
