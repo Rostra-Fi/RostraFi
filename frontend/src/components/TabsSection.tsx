@@ -3,7 +3,16 @@
 import Image from "next/image";
 import { Tabs } from "./ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, LineChart, Wallet, Trophy, Crown, Swords, Target, Coins } from "lucide-react";
+import {
+  Users,
+  LineChart,
+  Wallet,
+  Trophy,
+  Crown,
+  Swords,
+  Target,
+  Coins,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 
 export function TabsDemo() {
@@ -81,7 +90,6 @@ export function TabsDemo() {
     );
   };
 
-  
   const tabs = [
     {
       title: "Draft Squad",
@@ -90,19 +98,23 @@ export function TabsDemo() {
         <div className="w-full overflow-hidden relative h-full rounded-2xl p-8 text-2xl md:text-5xl font-bold text-white bg-gradient-to-br from-gray-900 via-purple-900 to-black">
           <AnimatedContent
             title="Assemble Your Empire"
+            description={""}
             icon={Swords}
             features={[
               {
                 title: "Elite Tier Selection",
-                description: "Handpick from S-tier, A-tier, and rising star influencers",
+                description:
+                  "Handpick from S-tier, A-tier, and rising star influencers",
               },
               {
                 title: "Championship Builder",
-                description: "Craft your 5-player dream team from 1000+ creators",
+                description:
+                  "Craft your 5-player dream team from 1000+ creators",
               },
               {
                 title: "Live Power Rankings",
-                description: "Real-time RP (Rostra Points) tracking for each member",
+                description:
+                  "Real-time RP (Rostra Points) tracking for each member",
               },
               {
                 title: "Meta Compositions",
@@ -124,7 +136,8 @@ export function TabsDemo() {
             features={[
               {
                 title: "Live Battlefeed",
-                description: "Second-by-second updates on influencer engagements",
+                description:
+                  "Second-by-second updates on influencer engagements",
               },
               {
                 title: "Rivalry Radar",
@@ -242,17 +255,16 @@ export function TabsDemo() {
           Build Your Influencer Empire
         </h1>
         <p className="text-xl text-gray-300 mt-2">
-          Draft. Strategize. Conquer. Win SOL prizes daily in the ultimate Web3 showdown
+          Draft. Strategize. Conquer. Win SOL prizes daily in the ultimate Web3
+          showdown
         </p>
       </div>
-      
+
       <Tabs
         tabs={tabs}
-        tabClassName="mx-1 text-lg font-semibold bg-white/5 hover:bg-white/20 transition-all duration-300 glow-hover"
-        activeTabClassName="bg-white/20 backdrop-blur-sm glow-active"
+        tabclassname="mx-1 text-lg font-semibold bg-white/5 hover:bg-white/20 transition-all duration-300 glow-hover"
+        activetabclassname="bg-white/20 backdrop-blur-sm glow-active"
       />
     </div>
   );
-
-
 }

@@ -133,12 +133,12 @@ router.post(
   async (req, res) => {
     try {
       // Check if user is admin
-      if (!req.user.isAdmin) {
-        return res.status(403).json({
-          success: false,
-          message: 'Unauthorized: Admin access required',
-        });
-      }
+      // if (!req.user.isAdmin) {
+      //   return res.status(403).json({
+      //     success: false,
+      //     message: 'Unauthorized: Admin access required',
+      //   });
+      // }
 
       const { tournamentId } = req.params;
 

@@ -1052,7 +1052,9 @@ export default function ProfilePage() {
                         <Trophy className="h-6 w-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg">{tournament.name}</h3>
+                        <h3 className="font-bold text-lg">
+                          {tournament.tournamentId.name}
+                        </h3>
                         <div className="flex items-center gap-2">
                           {tournament.isActive && tournament.isOngoing ? (
                             <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
@@ -1067,10 +1069,12 @@ export default function ProfilePage() {
                           )}
                           <span className="text-xs text-white/60">
                             {new Date(
-                              tournament.startDate
+                              tournament.tournamentId.startDate
                             ).toLocaleDateString()}{" "}
                             -{" "}
-                            {new Date(tournament.endDate).toLocaleDateString()}
+                            {new Date(
+                              tournament.tournamentId.endDate
+                            ).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
@@ -1107,7 +1111,9 @@ export default function ProfilePage() {
                         Current Status
                       </div>
                       <div className="font-bold">
-                        {tournament.isOngoing ? "Ongoing" : "Completed"}
+                        {tournament.tournamentId.isOngoing
+                          ? "Ongoing"
+                          : "Completed"}
                       </div>
                     </div>
                   </div>

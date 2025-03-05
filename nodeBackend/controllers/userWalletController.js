@@ -27,11 +27,9 @@ exports.getWallet = catchAsync(async (req, res) => {
 exports.getUserTournaments = catchAsync(async (req, res, next) => {
   const { address } = req.params;
 
-  // Find the wallet and populate the tournaments array with tournament details
+  // Find the wallet and populate the tournaments array with ALL tournament details
   const wallet = await WalletUser.findOne({ walletAddress: address }).populate({
-    path: 'tournaments',
-    select:
-      'name description startDate endDate isActive pointsForVisit pointsForParticipation totalVisitors totalParticipants',
+    path: 'tournaments.tournamentId',
   });
 
   if (!wallet) {
@@ -39,37 +37,50 @@ exports.getUserTournaments = catchAsync(async (req, res, next) => {
   }
 
   // Get all user teams for this wallet user in a single query
+  console.log(wallet);
   const userTeams = await UserTeam.find({
     walletUserId: wallet._id,
-    // isActive: true,
   }).populate({
     path: 'sections.selectedTeams',
   });
+  console.log('userTeams:', userTeams);
 
   // Create a map of tournament ID to user team for quick lookup
   const tournamentTeamMap = {};
   userTeams.forEach((team) => {
-    tournamentTeamMap[team.tournamentId.toString()] = team;
+    if (team.tournamentId) {
+      tournamentTeamMap[team.tournamentId.toString()] = team;
+    }
   });
 
   // For each tournament, add the user-specific points and team
-  const tournamentsWithDetails = wallet.tournaments.map((tournament) => {
-    const tournamentId = tournament._id.toString();
-    // const tournamentPoints = wallet.getTournamentPoints(tournament._id);
+  const tournamentsWithDetails = wallet.tournaments
+    .map((tournament) => {
+      // Add null check for tournamentId
+      if (!tournament.tournamentId) {
+        return null; // or you could return a placeholder object
+      }
 
-    // Get the user team for this tournament from our map
-    const userTeam = tournamentTeamMap[tournamentId] || null;
+      const tournamentId = tournament.tournamentId._id.toString();
+      console.log('TournamentIds:', tournamentId);
 
-    // Convert tournament to plain object if it's a Mongoose document
-    const tournamentObj = tournament.toObject
-      ? tournament.toObject()
-      : tournament;
+      // Get the user team for this tournament from our map
+      const userTeam = tournamentTeamMap[tournamentId] || null;
+      console.log(userTeam);
 
-    return {
-      ...tournamentObj,
-      userTeam: userTeam,
-    };
-  });
+      // Convert tournament to plain object if it's a Mongoose document
+      const tournamentObj = tournament.toObject
+        ? tournament.toObject()
+        : tournament;
+
+      return {
+        ...tournamentObj,
+        userTeam: userTeam,
+        // Spread the entire tournament document to include all fields
+        tournamentDetails: tournament.tournamentId,
+      };
+    })
+    .filter((tournament) => tournament !== null); // Remove any null entries
 
   res.status(200).json({
     success: true,

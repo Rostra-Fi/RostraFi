@@ -348,7 +348,7 @@ export default function Home() {
                             <div className="flex items-center gap-2 mb-2">
                               <span className="bg-purple-500/80 text-white text-xs font-bold px-2 py-1 rounded flex items-center">
                                 <Zap className="h-3 w-3 mr-1" />{" "}
-                                {tournament.prizePool} USDT
+                                {tournament.prizePool} Sol
                               </span>
                             </div>
                             <h3 className="text-2xl font-bold mb-2">
@@ -562,7 +562,7 @@ export default function Home() {
                                       </td>
                                       <td className="px-6 py-4">
                                         <span className="text-amber-500 font-bold">
-                                          {entry.prize} USDT
+                                          {entry.prize} Sol
                                         </span>
                                       </td>
                                       <td className="px-6 py-4">

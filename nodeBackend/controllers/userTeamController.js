@@ -316,8 +316,6 @@ exports.getUserTeams = async (req, res, next) => {
       (team) => team.tournamentId && team.tournamentId.isActive === true,
     );
 
-    console.log(activeTeams);
-
     // Check if there are any active tournament teams
     if (!activeTeams.length) {
       return res.status(200).json({
@@ -331,7 +329,7 @@ exports.getUserTeams = async (req, res, next) => {
       return next(new AppError('No teams found for this user', 404));
     }
 
-    // Process each tournament based on registration end date
+    // Process each tournament based on start date
     const processedTeams = await Promise.all(
       activeTeams.map(async (team) => {
         // Convert Mongoose document to plain JavaScript object for manipulation
@@ -345,48 +343,19 @@ exports.getUserTeams = async (req, res, next) => {
           })),
         );
 
-        // Check if registration end date exists and if one hour has passed since registration ended
-        const registrationEndDate = team.tournamentId.registrationEndDate;
+        // Check if tournament has started
         const now = new Date();
-        const oneHourAfterRegistrationEnd = registrationEndDate
-          ? new Date(new Date(registrationEndDate).getTime() + 60 * 60 * 1000)
-          : null;
+        const tournamentStartDate = new Date(team.tournamentId.startDate);
 
-        // If registrationEndDate exists and one hour hasn't passed since registration ended
-        if (registrationEndDate && now < oneHourAfterRegistrationEnd) {
+        // If tournament has not started, return basic tournament data
+        if (now < tournamentStartDate) {
           console.log(
-            `Registration recently ended for tournament ${teamObj.tournamentId.name}, returning basic data`,
+            `Tournament ${teamObj.tournamentId.name} has not started yet, returning basic data`,
           );
-
-          // Schedule the queue initialization for when registration end date + 1 hour is reached
-          const timeUntilQueueInit = oneHourAfterRegistrationEnd - now;
-          if (timeUntilQueueInit > 0) {
-            setTimeout(async () => {
-              try {
-                console.log(
-                  `Initializing queue for tournament ${team.tournamentId._id} after registration end + 1 hour`,
-                );
-                await twitterService.initializeQueueForTournament(
-                  team.tournamentId._id,
-                  allTeams,
-                  team.tournamentId.startDate,
-                  team.tournamentId.endDate,
-                  registrationEndDate,
-                );
-              } catch (error) {
-                console.error(
-                  `Error initializing queue for tournament ${team.tournamentId._id}:`,
-                  error,
-                );
-              }
-            }, timeUntilQueueInit);
-          }
-
-          // Return only basic tournament and team data
           return teamObj;
         }
 
-        // If registration has ended more than one hour ago or no registration end date is set
+        // If tournament has started, process and initialize queue
         try {
           // Initialize or update the queue for this tournament
           await twitterService.initializeQueueForTournament(
@@ -394,7 +363,7 @@ exports.getUserTeams = async (req, res, next) => {
             allTeams,
             team.tournamentId.startDate,
             team.tournamentId.endDate,
-            registrationEndDate,
+            team.tournamentId.registrationEndDate,
           );
 
           // Get the current Twitter stats from our database

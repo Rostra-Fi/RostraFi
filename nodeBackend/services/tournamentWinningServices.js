@@ -14,7 +14,7 @@ class TournamentWinnerService {
    */
   static initialize() {
     // Check for tournaments nearing completion every 15 minutes
-    cron.schedule('*/7 * * * *', async () => {
+    cron.schedule('*/15 * * * *', async () => {
       console.log('Checking for tournaments nearing completion...');
       await this.checkTournamentsForWinnerCalculation();
     });
@@ -301,6 +301,10 @@ class TournamentWinnerService {
   static calculatePrizeDistribution(rankedUsers, prizePool, participantCount) {
     // Define prize distribution percentages based on rank
     const prizeDistribution = [];
+    console.log('CalculatePrizeDistribution');
+    console.log(rankedUsers);
+    console.log(prizePool);
+    console.log(participantCount);
 
     // Distribute prizes only if we have enough participants
     if (rankedUsers.length > 0) {
