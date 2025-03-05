@@ -63,7 +63,7 @@ function Navbar({ className }: { className?: string }) {
         {/* Leaderboard Menu Item */}
         <MenuItem setActive={setActive} active={active} item="Leaderboard">
           <div className="flex flex-col space-y-4 text-sm">
-            <HoveredLink href="http://localhost:3000/leaderboards">
+            <HoveredLink href="http://localhost:3000/history">
               Past Leaderboard
             </HoveredLink>
             {/* Disabled items */}
