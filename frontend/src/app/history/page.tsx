@@ -192,50 +192,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 z-0 bg-gradient-to-b from-purple-900/20 to-black"></div>
-        <div className="absolute inset-0 z-0 bg-[url('/placeholder.svg?height=1080&width=1920')] bg-cover bg-center opacity-20 mix-blend-overlay"></div>
-
-        <header className="relative z-10 container mx-auto py-6 flex justify-between items-center">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="flex items-center gap-2"
-          >
-            <Trophy className="h-8 w-8 text-amber-500" />
-            <span className="text-2xl font-bold tracking-tight">IMPERIUM</span>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <Button className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-bold">
-              Connect Wallet
-            </Button>
-          </motion.div>
-        </header>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-          className="relative z-10 container mx-auto pt-16 pb-24 px-4"
-        >
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 max-w-4xl">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">
-              LEGENDARY
-            </span>{" "}
-            TOURNAMENTS
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mb-10">
-            Explore the epic battles of the past, where champions were crowned
-            and legends were born.
-          </p>
-        </motion.div>
-      </div>
 
       {/* Past Tournaments */}
       <section className="py-16 relative overflow-hidden">
@@ -789,22 +745,7 @@ export default function Home() {
         </Dialog>
       </AnimatePresence>
 
-      {/* Footer */}
-      <footer className="border-t border-gray-800 py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center gap-2 mb-6 md:mb-0">
-              <Trophy className="h-8 w-8 text-amber-500" />
-              <span className="text-2xl font-bold tracking-tight">
-                IMPERIUM
-              </span>
-            </div>
-            <div className="text-gray-400">
-              © {new Date().getFullYear()} Imperium. All rights reserved.
-            </div>
-          </div>
-        </div>
-      </footer>
+     
     </div>
   );
 }
