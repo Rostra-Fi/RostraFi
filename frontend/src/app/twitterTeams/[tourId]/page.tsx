@@ -58,6 +58,7 @@ export default function Page() {
   const { userId, userWalletAddress, currentTournament } = useAppSelector(
     (state) => state.user
   );
+  console.log(currentTournament);
   const dispatch = useAppDispatch();
 
   useEffect(() => {
