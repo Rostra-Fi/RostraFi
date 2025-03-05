@@ -126,12 +126,12 @@ tournamentSchema.pre('save', function (next) {
 
 // Method to check if a user has visited
 tournamentSchema.methods.hasVisited = function (userId) {
-  return this.visited.some((id) => id.toString() === userId.toString());
+  return this.visited.some((id) => id.toString() === userId);
 };
 
 // Method to check if a user has participated
 tournamentSchema.methods.hasParticipated = function (userId) {
-  return this.participated.some((id) => id.toString() === userId.toString());
+  return this.participated.some((id) => id.toString() === userId);
 };
 
 // Method to add a visitor and return whether they're a first-time visitor

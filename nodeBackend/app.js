@@ -19,6 +19,7 @@ const walletUserRouter = require('./routes/walletUserRoutes');
 const tournamentRouter = require('./routes/tournamentRoutes');
 const voteRouter = require('./routes/voteRoutes');
 const contentRoutes = require('./routes/contentRoutes');
+const dummyDataRoutes = require('./routes/dummyDataRoutes');
 
 const app = express();
 
@@ -74,6 +75,7 @@ app.use('/api/v1/userTeams', userTeamRouter);
 app.use('/api/v1/compitition', tournamentRouter);
 app.use('/api/v1/vote', voteRouter);
 app.use('/api/v1/content', contentRoutes);
+app.use('/api/v1/dummy', dummyDataRoutes);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));

@@ -2,6 +2,7 @@ const TwitterQueue = require('../models/twitterQueueModel');
 const TwitterData = require('../models/twitterDataModel');
 const { TwitterApi } = require('twitter-api-v2');
 const cron = require('node-cron');
+const Tournament = require('../models/tournamentModel');
 
 const twitterClient = new TwitterApi({
   appKey: process.env.TWITTER_API_KEY,
@@ -185,21 +186,30 @@ const processNextTeamInQueue = async () => {
     const now = new Date();
 
     // Find an active queue that isn't being processed or was started more than 20 minutes ago
-    // (in case a previous job crashed)
     const queue = await TwitterQueue.findOne({
       isActive: true,
-      $or: [
-        { processingStartTime: null },
-        { processingStartTime: { $lt: new Date(now - 20 * 60 * 1000) } },
-      ],
+      // $or: [
+      //   { processingStartTime: null },
+      //   { processingStartTime: { $lt: new Date(now - 20 * 60 * 1000) } },
+      // ],
     }).sort({ 'teamsToProcess.lastProcessed': 1 });
-
-    console.log('queue', queue);
 
     if (!queue) {
       console.log(
         'No active queues to process or all queues are currently being processed',
       );
+      return;
+    }
+
+    // Check if the tournament is still active
+    const tournament = await Tournament.findById(queue.tournamentId);
+
+    if (!tournament || !tournament.isActive || !tournament.isOngoing) {
+      console.log(
+        'Tournament is not active or ongoing. Skipping queue processing.',
+      );
+      queue.isActive = false;
+      await queue.save();
       return;
     }
 
@@ -234,7 +244,6 @@ const processNextTeamInQueue = async () => {
     );
 
     try {
-      console.log(queue.startDate);
       // Fetch Twitter data for this team
       const twitterStats = await fetchTweetsForUser(
         teamToProcess.twitterId,
@@ -245,8 +254,6 @@ const processNextTeamInQueue = async () => {
         },
         queue.startDate,
       );
-
-      console.log(twitterStats);
 
       // Update or create Twitter data record
       await TwitterData.findOneAndUpdate(
@@ -429,17 +436,20 @@ const cleanupInactiveTournamentData = async () => {
   try {
     // Find inactive queues
     const inactiveQueues = await TwitterQueue.find({ isActive: false });
+    console.log(inactiveQueues);
 
-    for (const queue of inactiveQueues) {
-      // Remove Twitter data for this tournament
-      await TwitterData.deleteMany({ tournamentId: queue.tournamentId });
+    if (inactiveQueues.length > 0) {
+      for (const queue of inactiveQueues) {
+        // Remove Twitter data for this tournament
+        await TwitterData.deleteMany({ tournamentId: queue.tournamentId });
 
-      // Remove the queue itself
-      await TwitterQueue.findByIdAndDelete(queue._id);
+        // Remove the queue itself
+        await TwitterQueue.findByIdAndDelete(queue._id);
 
-      console.log(
-        `Cleaned up data for inactive tournament: ${queue.tournamentId}`,
-      );
+        console.log(
+          `Cleaned up data for inactive tournament: ${queue.tournamentId}`,
+        );
+      }
     }
   } catch (error) {
     console.error('Error cleaning up inactive tournament data:', error);
@@ -448,13 +458,13 @@ const cleanupInactiveTournamentData = async () => {
 
 const setupCronJobs = () => {
   // Process next team in queue every 15 minutes
-  cron.schedule('*/16 * * * *', async () => {
+  cron.schedule('*/30 * * * *', async () => {
     console.log('Running scheduled Twitter data processing...');
     await processNextTeamInQueue();
   });
 
   // Clean up inactive tournament data daily at midnight
-  cron.schedule('0 0 * * *', async () => {
+  cron.schedule('*/20 * * * *', async () => {
     console.log('Running inactive tournament data cleanup...');
     await cleanupInactiveTournamentData();
   });

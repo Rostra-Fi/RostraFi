@@ -50,6 +50,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { NotificationComponent } from "@/components/Notification";
 
 // WobbleCard component
 const WobbleCard = ({
@@ -402,6 +403,7 @@ const TournamentCard = ({ tournament }) => {
   console.log(tournament);
 
   const endDate = new Date(tournament.tournamentId.endDate);
+  const startDate = new Date(tournament.tournamentId.startDate);
   const now = new Date();
   const remainingDays = Math.ceil(
     (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
@@ -415,6 +417,23 @@ const TournamentCard = ({ tournament }) => {
     } else {
       return `Ends in ${remainingDays} days`;
     }
+  };
+
+  const getStartTimeStatus = () => {
+    const daysUntilStart = Math.ceil(
+      (startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    if (now < startDate) {
+      if (daysUntilStart <= 0) {
+        return "Starting soon";
+      } else if (daysUntilStart === 1) {
+        return "Starts tomorrow";
+      } else {
+        return `Starts in ${daysUntilStart} days`;
+      }
+    }
+    return null;
   };
 
   // Combine all teams from all sections
@@ -493,7 +512,9 @@ const TournamentCard = ({ tournament }) => {
               </Badge>
             </div>
             <div className="flex justify-between items-center mt-1">
-              <div className="text-sm text-white/70">{getTimeStatus()}</div>
+              <div className="text-sm text-white/70">
+                {getStartTimeStatus() || getTimeStatus()}
+              </div>
               <div className="text-sm text-white/70">
                 Prize: {tournament.tournamentId.prizePool} SOL
               </div>
@@ -501,6 +522,21 @@ const TournamentCard = ({ tournament }) => {
           </div>
         </div>
         <div className="p-4">
+          {/* If tournament hasn't started, show a special message */}
+          {now < startDate && (
+            <Card className="bg-gradient-to-br from-[#111] to-black border-white/10 mb-6">
+              <CardContent className="p-4 text-center">
+                <div className="flex items-center justify-center gap-2 text-white">
+                  <Clock className="h-5 w-5 text-white/70" />
+                  <span className="font-medium">Tournament Starts Soon</span>
+                </div>
+                <div className="text-sm text-white/50 mt-2">
+                  Start Date: {startDate.toLocaleDateString()}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex items-center gap-2 mb-3">
             <div className="bg-white/10 rounded-full p-1.5">
               <Trophy className="h-4 w-4 text-white" />
@@ -683,7 +719,10 @@ export default function ProfilePage() {
   const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0.3]);
   const dispatch = useAppDispatch();
-  const { userId } = useParams();
+  // const { userId } = useParams();
+
+  const params = useParams();
+  const userId = params?.userId as string | undefined;
 
   // State for dialog controls
   const [walletDialogOpen, setWalletDialogOpen] = useState(false);
@@ -904,6 +943,7 @@ export default function ProfilePage() {
             </div>
           </motion.div>
         </motion.div>
+        <NotificationComponent userId={`${userId}`} />
 
         {/* Stats Section */}
         <motion.div
@@ -1052,7 +1092,9 @@ export default function ProfilePage() {
                         <Trophy className="h-6 w-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg">{tournament.name}</h3>
+                        <h3 className="font-bold text-lg">
+                          {tournament.tournamentDetails.name}
+                        </h3>
                         <div className="flex items-center gap-2">
                           {tournament.isActive && tournament.isOngoing ? (
                             <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
@@ -1067,10 +1109,12 @@ export default function ProfilePage() {
                           )}
                           <span className="text-xs text-white/60">
                             {new Date(
-                              tournament.startDate
+                              tournament.tournamentDetails.startDate
                             ).toLocaleDateString()}{" "}
                             -{" "}
-                            {new Date(tournament.endDate).toLocaleDateString()}
+                            {new Date(
+                              tournament.tournamentDetails.endDate
+                            ).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
@@ -1107,7 +1151,9 @@ export default function ProfilePage() {
                         Current Status
                       </div>
                       <div className="font-bold">
-                        {tournament.isOngoing ? "Ongoing" : "Completed"}
+                        {tournament.tournamentDetails.isOngoing
+                          ? "Ongoing"
+                          : "Completed"}
                       </div>
                     </div>
                   </div>

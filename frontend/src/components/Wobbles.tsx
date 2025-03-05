@@ -192,12 +192,9 @@ export function WobbleTeamSection({
   };
 
   return (
-    <div className="px-4 md:px-8 lg:px-12 max-w-7xl mx-auto">
+    <div className="px-2 md:px-4 lg:px-6 max-w-full mx-auto">
       {/* Section Header */}
-      <div className="mb-8 flex justify-between items-center">
-        {/* <h2 className="text-2xl font-bold text-white">{sectionName}</h2> */}
-
-        {/* Points info only shows when users interact with team selection */}
+      <div className="mb-4 flex justify-between items-center">
         <AnimatePresence>
           {showPointsInfo && (
             <motion.div
@@ -215,72 +212,74 @@ export function WobbleTeamSection({
         </AnimatePresence>
       </div>
 
-      {/* Team Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Team Grid - Optimized for more cards per row */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 sm:gap-3">
         {teams.map((member) => {
           const isSelected = getMemberState(member).isSelected;
           const canSelectTeam = canAfford(member) || isSelected;
 
           return (
-            <WobbleCard
+            <motion.div
               key={`card-${member.name}-${id}`}
-              containerClassName={`min-h-[250px] h-80 w-52 relative transition-all duration-300 overflow-hidden ${
-                isSelected
-                  ? "ring-4 ring-green-500 ring-opacity-50"
-                  : !canSelectTeam
-                  ? "opacity-70 grayscale"
-                  : ""
-              }`}
-              className="cursor-pointer relative"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{
+                duration: 0.3,
+                delay: teams.indexOf(member) * 0.1,
+              }}
             >
-              {/* Background color - using the specified RGB value */}
-              <div className="absolute inset-0 bg-[rgb(21,22,22)] bg-opacity-100"></div>
+              <WobbleCard
+                containerClassName={`w-full h-[280px] relative transition-all duration-300 overflow-hidden ${
+                  isSelected
+                    ? "ring-4 ring-green-500 ring-opacity-50"
+                    : !canSelectTeam
+                    ? "opacity-70 grayscale"
+                    : ""
+                }`}
+                className="cursor-pointer relative"
+              >
+                {/* Rest of the card content remains the same as in the previous implementation */}
+                <div className="absolute inset-0 bg-[rgb(21,22,22)] bg-opacity-100"></div>
 
-              {/* Image - now 60% of card height */}
-              <div className="absolute inset-0 h-3/5 overflow-hidden">
-                {member.image && (
-                  <div className="relative w-full h-full">
-                    <Image
-                      src={member.image}
-                      layout="fill"
-                      objectFit=""
-                      alt={member.name}
-                      className="opacity-100"
-                    />
-                    {/* Bottom gradient for smooth transition to content */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[rgb(21,22,22)]"></div>
-                  </div>
-                )}
-              </div>
+                <div className="absolute inset-0 h-3/5 overflow-hidden">
+                  {member.image && (
+                    <div className="relative w-full h-full">
+                      <Image
+                        src={member.image}
+                        layout="fill"
+                        objectFit="cover"
+                        alt={member.name}
+                        className="opacity-100"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[rgb(21,22,22)]"></div>
+                    </div>
+                  )}
+                </div>
 
-              {/* Content - positioned in the bottom 40% with left alignment */}
-              <div className="relative z-10 p-4 flex flex-col h-full">
-                {/* Push content to bottom portion */}
-                <div className="mt-auto pt-28">
-                  <h2 className="text-lg font-semibold text-white mb-1 truncate text-left pl-1">
-                    {member.name}
-                  </h2>
+                <div className="relative z-10 p-4 flex flex-col h-full">
+                  <div className="mt-auto pt-28">
+                    <h2 className="text-lg font-semibold text-white mb-1 truncate text-left pl-1">
+                      {member.name}
+                    </h2>
 
-                  {/* Points display */}
-                  <div className="flex items-center gap-1 text-yellow-300 font-medium mb-3 pl-1">
-                    <Coins size={16} />
-                    <span>{member.points || 250}</span>
-                  </div>
+                    <div className="flex items-center gap-1 text-yellow-300 font-medium mb-3 pl-1">
+                      <Coins size={16} />
+                      <span>{member.points || 250}</span>
+                    </div>
 
-                  {/* Selection button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (canSelectTeam) {
-                        if (isSelected) {
-                          handleTeamSelection(member);
-                        } else {
-                          handleOpenDialog(member);
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (canSelectTeam) {
+                          if (isSelected) {
+                            handleTeamSelection(member);
+                          } else {
+                            handleOpenDialog(member);
+                          }
                         }
-                      }
-                    }}
-                    disabled={!canSelectTeam && !isSelected}
-                    className={`w-full py-2 rounded-lg font-medium transition-all
+                      }}
+                      disabled={!canSelectTeam && !isSelected}
+                      className={`w-full py-2 rounded-lg font-medium transition-all
                       ${
                         isSelected
                           ? "bg-red-500/80 hover:bg-red-500 text-white"
@@ -289,12 +288,13 @@ export function WobbleTeamSection({
                           : "bg-green-500/80 hover:bg-green-500 text-white"
                       }
                     `}
-                  >
-                    {isSelected ? "Remove" : "Select"}
-                  </button>
+                    >
+                      {isSelected ? "Remove" : "Select"}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </WobbleCard>
+              </WobbleCard>
+            </motion.div>
           );
         })}
       </div>

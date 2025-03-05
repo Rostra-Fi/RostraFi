@@ -3,62 +3,82 @@ const mongoose = require('mongoose');
 const Tournament = require('../models/tournamentModel');
 const WalletUser = require('../models/walletUserModel');
 const UserTeam = require('../models/userTeamModel');
+const TournamentResult = require('../models/TournamentResultModel');
 const Team = require('../models/team');
 const TwitterData = require('../models/twitterDataModel');
 const cron = require('node-cron');
+const io = require('../server');
 
 class TournamentWinnerService {
   /**
    * Initializes the service by setting up cron jobs
    */
   static initialize() {
-    // Check for tournaments nearing completion every 15 minutes
+    // Check for tournaments nearing completion and ready for distribution every 15 minutes
     cron.schedule('*/15 * * * *', async () => {
-      console.log('Checking for tournaments nearing completion...');
-      await this.checkTournamentsForWinnerCalculation();
+      console.log(
+        'Checking for tournaments nearing completion or needing distribution...',
+      );
+      await this.processTournamentLifecycle();
     });
 
-    console.log('Tournament winner calculation service initialized');
+    console.log('Tournament winner service initialized');
   }
 
-  /**
-   * Checks for tournaments that are nearing completion
-   * and schedules winner calculations
-   */
-  static async checkTournamentsForWinnerCalculation() {
+  static async processTournamentLifecycle() {
     try {
-      const activeTournaments = await Tournament.getActiveTournaments();
-      console.log(activeTournaments);
+      const now = new Date();
 
-      for (const tournament of activeTournaments) {
-        const now = new Date();
-        const oneHourBeforeEnd = new Date(tournament.endDate);
-        oneHourBeforeEnd.setHours(oneHourBeforeEnd.getHours() - 1);
-        console.log(oneHourBeforeEnd);
+      // Find tournaments that are active and in the pre-calculation window
+      const tournamentsNearingCompletion = await Tournament.find({
+        isActive: true,
+        endDate: {
+          $gt: new Date(now.getTime() - 60 * 60 * 1000), // 1 hour before now
+          // $lte: new Date(now.getTime() + 60 * 60 * 1000), // 1 hour after now
+        },
+      });
 
-        // If we're within the calculation window (one hour before end)
-        if (now >= oneHourBeforeEnd && now <= tournament.endDate) {
-          // Calculate winners if not already calculated
-          console.log(
-            `Tournament ${tournament.name} is nearing completion. Calculating winners...`,
-          );
+      // Process tournaments nearing completion
+      for (const tournament of tournamentsNearingCompletion) {
+        // Check if winners have already been calculated
+        const existingResult = await TournamentResult.findOne({
+          tournamentId: tournament._id,
+          calculatedAt: { $exists: true },
+        });
+
+        if (!existingResult) {
+          console.log(`Calculating winners for tournament ${tournament.name}`);
           await this.calculateTournamentWinners(tournament._id);
         }
-        // await this.calculateTournamentWinners(tournament._id);
+      }
+
+      // Find tournaments that have ended and need distribution
+      const completedTournaments = await Tournament.find({
+        isActive: true,
+        endDate: { $lte: now },
+      });
+      console.log(completedTournaments);
+
+      // Process and distribute prizes for completed tournaments
+      for (const tournament of completedTournaments) {
+        // Check if results have already been distributed
+        const existingResult = await TournamentResult.findOne({
+          tournamentId: tournament._id,
+          distributed: true,
+        });
+        console.log('existing resultd', existingResult);
+
+        if (!existingResult) {
+          console.log(`Distributing prizes for tournament ${tournament.name}`);
+          await this.calculateAndDistributeTournamentWinners(tournament._id);
+        }
       }
     } catch (error) {
-      console.error(
-        'Error checking tournaments for winner calculation:',
-        error,
-      );
+      console.error('Error processing tournament lifecycle:', error);
     }
   }
 
-  /**
-   * Calculates winners for a specific tournament using existing Twitter data
-   * @param {ObjectId} tournamentId - Tournament ID
-   */
-  static async calculateTournamentWinners(tournamentId) {
+  static async calculateAndDistributeTournamentWinners(tournamentId) {
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -66,21 +86,109 @@ class TournamentWinnerService {
       // Get tournament data
       const tournament =
         await Tournament.findById(tournamentId).session(session);
-      if (!tournament || !tournament.isOngoing) {
-        throw new Error('Tournament not found or not ongoing');
+      if (!tournament || !tournament.isActive) {
+        throw new Error('Tournament not found or not active');
       }
 
       // Check if tournament has enough participants
       if (tournament.participated.length < 1) {
         console.log(
-          `Tournament ${tournament.name} doesn't have enough participants for prize distribution`,
+          `Tournament ${tournament.name} doesn't have enough participants`,
         );
-        await session.commitTransaction();
-        session.endSession();
+        await this.markTournamentAsCompleted(tournament, session);
         return;
       }
 
-      // Get all user teams for this tournament
+      // Fetch user teams and calculate winners
+      const userTeams = await UserTeam.find({
+        tournamentId: tournamentId,
+        isActive: true,
+      })
+        .populate({
+          path: 'sections.selectedTeams',
+          model: 'Team',
+          select: 'twitterId name followers points',
+        })
+        .session(session);
+
+      if (userTeams.length === 0) {
+        console.log(
+          `No active user teams found for tournament ${tournament.name}`,
+        );
+        await this.markTournamentAsCompleted(tournament, session);
+        return;
+      }
+
+      // Fetch Twitter engagement data
+      const teamEngagementData =
+        await this.fetchTwitterEngagementFromDatabase(tournamentId);
+
+      // Calculate user scores
+      const userScores = await this.calculateUserScores(
+        userTeams,
+        teamEngagementData,
+      );
+
+      // Sort and distribute prizes
+      const rankedUsers = userScores.sort((a, b) => b.score - a.score);
+      const prizeDistribution = this.calculatePrizeDistribution(
+        rankedUsers,
+        tournament.prizePool,
+        tournament.participated.length,
+      );
+
+      // Store and distribute results
+      // await this.storeTournamentResults(
+      //   tournamentId,
+      //   prizeDistribution,
+      //   session,
+      // );
+      await this.distributePrizes(tournamentId, session);
+
+      // Mark tournament as completed
+      // await this.markTournamentAsCompleted(tournament, session);
+
+      await session.commitTransaction();
+      console.log(`Successfully processed tournament ${tournament.name}`);
+    } catch (error) {
+      await session.abortTransaction();
+      console.error(`Error processing tournament winners: ${error.message}`);
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
+  static async markTournamentAsCompleted(tournament, session) {
+    tournament.isActive = false;
+    // tournament.status = 'completed';
+    await tournament.save({ session });
+  }
+
+  /**
+   * Calculates winners for a specific tournament using existing Twitter data
+   * @param {ObjectId} tournamentId - Tournament ID
+   */
+
+  static async calculateTournamentWinners(tournamentId) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Existing winner calculation logic
+      const tournament =
+        await Tournament.findById(tournamentId).session(session);
+
+      // Check participant requirements
+      if (tournament.participated.length < 1) {
+        console.log(
+          `Tournament ${tournament.name} doesn't have enough participants`,
+        );
+        await session.commitTransaction();
+        return;
+      }
+
+      // Fetch user teams
       const userTeams = await UserTeam.find({
         tournamentId: tournamentId,
         isActive: true,
@@ -97,39 +205,33 @@ class TournamentWinnerService {
           `No active user teams found for tournament ${tournament.name}`,
         );
         await session.commitTransaction();
-        session.endSession();
         return;
       }
 
-      // Fetch Twitter engagement data from TwitterData model
+      // Fetch Twitter engagement data
       const teamEngagementData =
         await this.fetchTwitterEngagementFromDatabase(tournamentId);
 
-      // Calculate scores for each user team based on Twitter engagement
+      // Calculate user scores
       const userScores = await this.calculateUserScores(
         userTeams,
         teamEngagementData,
       );
 
-      // Sort users by score in descending order
+      // Sort and distribute prizes
       const rankedUsers = userScores.sort((a, b) => b.score - a.score);
-
-      // Distribute prizes based on rankings and prize pool
       const prizeDistribution = this.calculatePrizeDistribution(
         rankedUsers,
         tournament.prizePool,
         tournament.participated.length,
       );
 
-      // Store results in database
+      // Store tournament results
       await this.storeTournamentResults(
         tournamentId,
         prizeDistribution,
         session,
       );
-
-      // Schedule prize distribution at tournament end
-      await this.schedulePrizeDistribution(tournamentId, tournament.endDate);
 
       await session.commitTransaction();
       console.log(
@@ -300,6 +402,10 @@ class TournamentWinnerService {
   static calculatePrizeDistribution(rankedUsers, prizePool, participantCount) {
     // Define prize distribution percentages based on rank
     const prizeDistribution = [];
+    console.log('CalculatePrizeDistribution');
+    console.log(rankedUsers);
+    console.log(prizePool);
+    console.log(participantCount);
 
     // Distribute prizes only if we have enough participants
     if (rankedUsers.length > 0) {
@@ -317,7 +423,7 @@ class TournamentWinnerService {
       if (rankedUsers.length >= 1) {
         prizeDistribution.push({
           ...rankedUsers[0],
-          prize: prizePool * 0.1,
+          prize: prizePool * 0.2,
           rank: 1,
         });
       }
@@ -414,50 +520,84 @@ class TournamentWinnerService {
    * @param {Array} prizeDistribution - List of users with their prizes
    * @param {mongoose.ClientSession} session - MongoDB session for transaction
    */
+  // static async storeTournamentResults(
+  //   tournamentId,
+  //   prizeDistribution,
+  //   session,
+  // ) {
+  //   try {
+  //     // Create a new tournament results collection or use existing one
+  //     const TournamentResult = mongoose.model(
+  //       'TournamentResult',
+  //       new mongoose.Schema({
+  //         tournamentId: {
+  //           type: mongoose.Schema.Types.ObjectId,
+  //           ref: 'Tournament',
+  //           required: true,
+  //         },
+  //         results: [
+  //           {
+  //             walletUserId: {
+  //               type: mongoose.Schema.Types.ObjectId,
+  //               ref: 'WalletUser',
+  //               required: true,
+  //             },
+  //             userId: String,
+  //             teamName: String,
+  //             score: Number,
+  //             prize: Number,
+  //             rank: Number,
+  //             paid: {
+  //               type: Boolean,
+  //               default: false,
+  //             },
+  //           },
+  //         ],
+  //         calculatedAt: {
+  //           type: Date,
+  //           default: Date.now,
+  //         },
+  //         distributed: {
+  //           type: Boolean,
+  //           default: false,
+  //         },
+  //       }),
+  //     );
+
+  //     // Check if results already exist
+  //     const existingResult = await TournamentResult.findOne({
+  //       tournamentId,
+  //     }).session(session);
+
+  //     if (existingResult) {
+  //       // Update existing results
+  //       existingResult.results = prizeDistribution;
+  //       existingResult.calculatedAt = new Date();
+  //       await existingResult.save({ session });
+  //     } else {
+  //       // Create new results document
+  //       await TournamentResult.create(
+  //         [
+  //           {
+  //             tournamentId,
+  //             results: prizeDistribution,
+  //           },
+  //         ],
+  //         { session },
+  //       );
+  //     }
+  //   } catch (error) {
+  //     console.error('Error storing tournament results:', error);
+  //     throw new Error('Failed to store tournament results');
+  //   }
+  // }
+
   static async storeTournamentResults(
     tournamentId,
     prizeDistribution,
     session,
   ) {
     try {
-      // Create a new tournament results collection or use existing one
-      const TournamentResult = mongoose.model(
-        'TournamentResult',
-        new mongoose.Schema({
-          tournamentId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Tournament',
-            required: true,
-          },
-          results: [
-            {
-              walletUserId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'WalletUser',
-                required: true,
-              },
-              userId: String,
-              teamName: String,
-              score: Number,
-              prize: Number,
-              rank: Number,
-              paid: {
-                type: Boolean,
-                default: false,
-              },
-            },
-          ],
-          calculatedAt: {
-            type: Date,
-            default: Date.now,
-          },
-          distributed: {
-            type: Boolean,
-            default: false,
-          },
-        }),
-      );
-
       // Check if results already exist
       const existingResult = await TournamentResult.findOne({
         tournamentId,
@@ -546,7 +686,7 @@ class TournamentWinnerService {
       }
 
       // Find tournament results
-      const TournamentResult = mongoose.model('TournamentResult');
+      // const TournamentResult = mongoose.model('TournamentResult');
       const tournamentResult = await TournamentResult.findOne({
         tournamentId,
       }).session(session);
@@ -560,6 +700,8 @@ class TournamentWinnerService {
         return;
       }
 
+      const notificationResults = [];
+
       // Distribute prizes to winners
       for (const result of tournamentResult.results) {
         if (result.prize > 0) {
@@ -567,15 +709,38 @@ class TournamentWinnerService {
           const wallet = await WalletUser.findById(result.walletUserId).session(
             session,
           );
+          console.log(wallet);
+          console.log(tournamentId);
+          console.log(typeof tournamentId);
           if (wallet) {
             // Add tournament points equivalent to prize amount
             // This is where you'd handle the actual SOL transfer in a real implementation
             await wallet.addTournamentPoints(
               tournamentId,
-              result.prize * 100, // Convert SOL to points (arbitrary conversion)
+              result.prize * 100,
+              result.rank,
+              result.prize,
               session,
             );
 
+            const notification = {
+              userId: wallet._id,
+              tournamentId: tournament._id,
+              tournamentName: tournament.name,
+              rank: result.rank,
+              prize: result.prize,
+              message: this.generateCongratulationsMessage(
+                result.rank,
+                result.prize,
+              ),
+            };
+
+            // Emit real-time notification
+            if (io) {
+              io.to(wallet._id.toString()).emit('prizeDisbursed', notification);
+            }
+
+            notificationResults.push(notification);
             // Mark as paid in results
             result.paid = true;
           }
@@ -596,6 +761,7 @@ class TournamentWinnerService {
       console.log(
         `Successfully distributed prizes for tournament ${tournament.name}`,
       );
+      return notificationResults;
     } catch (error) {
       await session.abortTransaction();
       console.error(`Error distributing prizes: ${error.message}`);
@@ -603,6 +769,25 @@ class TournamentWinnerService {
     } finally {
       session.endSession();
     }
+  }
+
+  static generateCongratulationsMessage(rank, prize) {
+    const rankEmojis = ['🥇', '🥈', '🥉', '🎉', '🌟'];
+    const emoji = rankEmojis[Math.min(rank - 1, 4)] || '🎊';
+
+    const messages = [
+      `${emoji} Congratulations! You've won the top prize of ${prize} SOL!`,
+      `${emoji} Awesome job! You secured the ${this.getOrdinal(rank)} place with ${prize} SOL!`,
+      `${emoji} Great performance! You've earned ${prize} SOL in the tournament!`,
+    ];
+
+    return messages[Math.min(rank - 1, 2)] || messages[2];
+  }
+
+  static getOrdinal(n) {
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
   }
 
   /**
@@ -628,6 +813,7 @@ class TournamentWinnerService {
           leaderboard: [],
         };
       }
+      // console.log(tournamentResult);
 
       // Format leaderboard for API response
       const leaderboard = tournamentResult.results.map((result) => ({
@@ -640,6 +826,7 @@ class TournamentWinnerService {
         prize: result.prize,
         paid: result.paid,
       }));
+      // console.log(leaderboard);
 
       return {
         status: 'completed',

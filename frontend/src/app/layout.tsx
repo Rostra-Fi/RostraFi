@@ -6,6 +6,7 @@ import { ReduxProvider } from "@/providers/ReduxProvider";
 import AppWalletProvider from "../components/AppWalletProvider";
 import { Toaster } from "react-hot-toast";
 import { Toaster as ToasterAll } from "@/components/ui/toaster";
+import ClientSide from "@/components/ClientSide";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,7 +35,7 @@ export default function RootLayout({
       >
         <AppWalletProvider>
           <ReduxProvider>
-            {children}
+            <ClientSide>{children}</ClientSide>
             <ToasterAll />
             <Toaster position="top-center" />
           </ReduxProvider>

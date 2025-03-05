@@ -22,11 +22,21 @@ const userWalletSchema = new Schema(
         ref: 'Tournament',
       },
     ],
-    // Track participated tournaments
+    // Track participated tournaments with additional details
     tournaments: [
       {
-        type: Schema.Types.ObjectId,
-        ref: 'Tournament',
+        tournamentId: {
+          type: Schema.Types.ObjectId,
+          ref: 'Tournament',
+        },
+        rank: {
+          type: Number,
+          default: null,
+        },
+        prize: {
+          type: Number,
+          default: 0,
+        },
       },
     ],
     isActive: {
@@ -125,6 +135,47 @@ userWalletSchema.methods.hasParticipatedInTournament = function (tournamentId) {
   return this.tournaments.some(
     (id) => id.toString() === tournamentId.toString(),
   );
+};
+
+userWalletSchema.methods.addTournamentPoints = function (
+  tournamentId,
+  pointsToAdd,
+  rank = null,
+  prize = 0,
+  session = null,
+) {
+  if (pointsToAdd <= 0)
+    throw new Error('Points to add must be greater than zero');
+
+  // Add points to total wallet points
+  this.points += pointsToAdd;
+  console.log('working');
+
+  // Check if tournament already exists in the tournaments array
+  console.log(this.tournaments);
+  const existingTournamentIndex = this.tournaments.findIndex(
+    (t) => t._id.toString() === tournamentId.toString(),
+  );
+  console.log('something');
+
+  if (existingTournamentIndex !== -1) {
+    // Update existing tournament entry
+    this.tournaments[existingTournamentIndex].rank = rank;
+    this.tournaments[existingTournamentIndex].prize = prize;
+  } else {
+    // Add new tournament entry
+    this.tournaments.push({
+      tournamentId,
+      rank,
+      prize,
+    });
+  }
+
+  this.lastActivity = Date.now();
+
+  // If session is provided, use it for saving
+  const saveOptions = session ? { session } : {};
+  return this.save(saveOptions);
 };
 
 // Method to deduct points from wallet
