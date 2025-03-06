@@ -20,7 +20,7 @@ export const useSocketNotifications = (userId: string) => {
 
     // Create socket connection
     const newSocket = io(
-      process.env.NEXT_PUBLIC_BACKEND_URL || "http://127.0.0.1:3001",
+      process.env.NEXT_PUBLIC_BACKEND_URL || "https://be1.rostrafi.fun",
       {
         withCredentials: true,
         // Add any additional connection options
