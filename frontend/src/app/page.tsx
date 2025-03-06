@@ -80,7 +80,7 @@ export default function Home() {
       zIndex: 9999,
     };
 
-    function fire(particleRatio, opts) {
+    function fire(particleRatio: number, opts: any) {
       confetti({
         ...defaults,
         ...opts,

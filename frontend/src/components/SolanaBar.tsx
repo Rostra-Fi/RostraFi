@@ -11,7 +11,9 @@ const SolanaNavbar = () => {
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [walletAddress, setWalletAddress] = useState("");
 
-  const { tourId } = useParams();
+  // const { tourId } = useParams();
+  const params = useParams();
+  const tourId = params?.tourId as string | undefined;
 
   const { points } = useAppSelector((state) => state.user);
   // const { userWalletAddress } = useAppSelector((state) => state.user);
@@ -48,7 +50,7 @@ const SolanaNavbar = () => {
     }
   };
 
-  const fetchWalletBalance = async (address) => {
+  const fetchWalletBalance = async (address: string) => {
     try {
       const { solana } = window as any;
 

@@ -43,22 +43,32 @@ function Navbar({ className }: { className?: string }) {
         {/* Betting Menu Item */}
         <MenuItem setActive={setActive} active={active} item="Betting">
           <div className="flex flex-col space-y-4 text-sm">
-            <HoveredLink href="http://localhost:3000/bettings">Bettings</HoveredLink>
+            <HoveredLink href="http://localhost:3000/bettings">
+              Bettings
+            </HoveredLink>
             {/* Disabled items */}
-            <div className="text-gray-500 cursor-not-allowed">Upcoming Matches</div>
+            <div className="text-gray-500 cursor-not-allowed">
+              Upcoming Matches
+            </div>
             <div className="text-gray-500 cursor-not-allowed">Leaderboard</div>
           </div>
         </MenuItem>
 
         {/* Profile Menu Item */}
-        <MenuItem setActive={setActive} active={active} item="Profile" onClick={handleProfileNavigation}>
-          <div className="flex flex-col space-y-4 text-sm">
-            <HoveredLink href="#" onClick={handleProfileNavigation}>Profile Overview</HoveredLink>
-            {/* Disabled items */}
-            <div className="text-gray-500 cursor-not-allowed">Settings</div>
-            <div className="text-gray-500 cursor-not-allowed">Tournaments</div>
-          </div>
-        </MenuItem>
+        <div onClick={handleProfileNavigation}>
+          <MenuItem setActive={setActive} active={active} item="Profile">
+            <div className="flex flex-col space-y-4 text-sm">
+              <HoveredLink href="#" onClick={handleProfileNavigation}>
+                Profile Overview
+              </HoveredLink>
+              {/* Disabled items */}
+              <div className="text-gray-500 cursor-not-allowed">Settings</div>
+              <div className="text-gray-500 cursor-not-allowed">
+                Tournaments
+              </div>
+            </div>
+          </MenuItem>
+        </div>
 
         {/* Leaderboard Menu Item */}
         <MenuItem setActive={setActive} active={active} item="Leaderboard">
@@ -67,9 +77,15 @@ function Navbar({ className }: { className?: string }) {
               Past Leaderboard
             </HoveredLink>
             {/* Disabled items */}
-            <div className="text-gray-500 cursor-not-allowed">Global Leaderboard</div>
-            <div className="text-gray-500 cursor-not-allowed">Monthly Rankings</div>
-            <div className="text-gray-500 cursor-not-allowed">Tournament Leaderboards</div>
+            <div className="text-gray-500 cursor-not-allowed">
+              Global Leaderboard
+            </div>
+            <div className="text-gray-500 cursor-not-allowed">
+              Monthly Rankings
+            </div>
+            <div className="text-gray-500 cursor-not-allowed">
+              Tournament Leaderboards
+            </div>
           </div>
         </MenuItem>
       </Menu>

@@ -44,6 +44,7 @@ import { useParams } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
 import {
   fetchUserTournaments,
+  Tournament,
   userCurrentTournaments,
   userWalletConnect,
 } from "@/store/userSlice";
@@ -51,6 +52,109 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NotificationComponent } from "@/components/Notification";
+
+// Add these interfaces at the top of your file
+interface Team {
+  _id: string;
+  id: string;
+  name: string;
+  image: string;
+  description?: string;
+  points: number;
+  twitterId: string;
+  createdAt: string;
+  updatedAt: string;
+  audio?: string;
+  followers?: number;
+}
+
+interface SectionId {
+  _id: string;
+  id: string;
+  name: string;
+}
+
+interface TournamentSection {
+  _id: string;
+  id: string;
+  name: string;
+  sectionId: SectionId;
+  selectedTeams: Team[];
+}
+
+interface TournamentId {
+  _id: string;
+  id: string;
+  name: string;
+  endDate: string;
+  startDate: string;
+  icon: string;
+  image: string;
+  isActive: boolean;
+  isOngoing: boolean;
+  isRegistrationOpen: boolean;
+  platform: string;
+  prizePool: number;
+  registrationEndDate: string;
+}
+
+interface UserCurrentTournament {
+  _id: string;
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  isActive: boolean;
+  sections: TournamentSection[];
+  teamName: string;
+  totalFollowers: number;
+  tournamentId: TournamentId;
+  userId: string;
+  walletUserId: string;
+  twitterStats?: TwitterStats1;
+  __v: number;
+}
+
+interface TwitterStats1 {
+  posts: number;
+  likes: number;
+  comments: number;
+  retweets: number;
+  views: number;
+  recentTweets: Tweet[];
+}
+
+interface TwitterStats {
+  viewCount: number;
+  likeCount: number;
+  replyCount: number;
+  retweetCount: number;
+  tweetCount: number;
+}
+
+interface Tweet {
+  id: string;
+  content: string;
+  createdAt: string;
+  author: TweetAuthor;
+  metrics: {
+    likeCount: number;
+    replyCount: number;
+    retweetCount: number;
+    viewCount: number;
+  };
+}
+
+interface TweetAuthor {
+  name: string;
+  image: string;
+  section: string;
+}
+
+interface TwitterData {
+  stats: TwitterStats;
+  tweets: Tweet[];
+  lastUpdated: string;
+}
 
 // WobbleCard component
 const WobbleCard = ({
@@ -127,11 +231,19 @@ const Noise = () => {
   );
 };
 
+interface TeamCardProps {
+  team: Team;
+  section: {
+    name: string;
+  };
+  tournament: string; // tournamentId
+}
+
 // TeamCard component
 // Modified TeamCard component with Twitter API integration
-const TeamCard = ({ team, section, tournament }) => {
+const TeamCard = ({ team, section, tournament }: TeamCardProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [twitterData, setTwitterData] = useState(null);
+  const [twitterData, setTwitterData] = useState<TwitterData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Function to fetch Twitter data when team card is clicked
@@ -180,7 +292,7 @@ const TeamCard = ({ team, section, tournament }) => {
     fetchTwitterData();
   };
 
-  const sectionColors = {
+  const sectionColors: { [key: string]: string } = {
     diamond:
       "from-blue-900 to-blue-800 bg-blue-500/20 text-blue-300 border-blue-500/30",
     premium:
@@ -397,8 +509,12 @@ const TeamCard = ({ team, section, tournament }) => {
   );
 };
 
+interface TournamentCardProps {
+  tournament: UserCurrentTournament;
+}
+
 // Tournament Card component
-const TournamentCard = ({ tournament }) => {
+const TournamentCard = ({ tournament }: TournamentCardProps) => {
   const [loading, setLoading] = useState(false);
   console.log(tournament);
 
@@ -455,10 +571,10 @@ const TournamentCard = ({ tournament }) => {
   };
 
   // Format time since tweet was posted
-  const formatTimeSince = (dateString) => {
+  const formatTimeSince = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
     if (seconds < 60) return `${seconds}s ago`;
 
@@ -713,6 +829,77 @@ const TournamentCard = ({ tournament }) => {
   );
 };
 
+// Define base interfaces for nested objects
+interface TournamentDetails {
+  createdAt: string;
+  endDate: string;
+  icon: string;
+  id: string;
+  image: string;
+  isActive: boolean;
+  isOngoing: boolean;
+  isRegistrationOpen: boolean;
+  name: string;
+  participated: string[];
+  platform: string;
+  pointsForVisit: number;
+  prizePool: number;
+  registrationEndDate: string;
+  registrationTimeLimit: number;
+  startDate: string;
+  timeLimit: number;
+  updatedAt: string;
+  visited: string[];
+  __v: number;
+  _id: string;
+}
+
+interface TeamMember {
+  audio?: string;
+  createdAt: string;
+  description: string;
+  followers: number;
+  id: string;
+  image: string;
+  name: string;
+  points: number;
+  twitterId: string;
+  updatedAt: string;
+  __v: number;
+  _id: string;
+}
+
+interface Section {
+  id: string;
+  name: string;
+  sectionId: string;
+  selectedTeams: TeamMember[];
+  _id: string;
+}
+
+interface UserTeam {
+  createdAt: string;
+  id: string;
+  isActive: boolean;
+  sections: Section[];
+  teamName: string;
+  totalFollowers: number;
+  tournamentId: string;
+  updatedAt: string;
+  userId: string;
+  walletUserId: string;
+  __v: number;
+  _id: string;
+}
+
+// Main interface for the tournament data
+interface UserTournament {
+  userTeam: UserTeam;
+  tournamentDetails: TournamentDetails;
+  isActive: boolean;
+  isOngoing: boolean;
+}
+
 export default function ProfilePage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: containerRef });
@@ -733,8 +920,10 @@ export default function ProfilePage() {
   const { userCurrentTournament, points, tournaments, userTournaments } =
     useAppSelector((state) => state.user);
 
+  const typedUserTournaments: UserTournament[] = userTournaments || [];
   const walletUserId = localStorage.getItem("UserId");
-  console.log(userTournaments);
+  console.log("userTournaments:", userTournaments);
+  console.log("userCurrentTournament:", userCurrentTournament);
 
   useEffect(() => {
     dispatch(userWalletConnect(walletUserId as string));
@@ -1018,9 +1207,12 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-8">
-            {userCurrentTournament?.map((tournament, index) => (
-              <TournamentCard key={index} tournament={tournament} />
-            ))}
+            {Array.isArray(userCurrentTournament) &&
+              userCurrentTournament.map(
+                (tournament: UserCurrentTournament, index: number) => (
+                  <TournamentCard key={index} tournament={tournament} />
+                )
+              )}
           </div>
         </motion.div>
       </div>
@@ -1079,9 +1271,9 @@ export default function ProfilePage() {
             </DialogTitle>
           </DialogHeader>
 
-          {userTournaments && userTournaments.length > 0 ? (
+          {typedUserTournaments && userTournaments.length > 0 ? (
             <div className="space-y-4">
-              {userTournaments.map((tournament, index) => (
+              {typedUserTournaments.map((tournament, index) => (
                 <div
                   key={index}
                   className="bg-black/40 rounded-lg p-4 space-y-3"
@@ -1323,7 +1515,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Dark Mode</span>
-                  <SwitchCamera defaultChecked />
+                  <SwitchCamera />
                 </div>
               </div>
             </div>

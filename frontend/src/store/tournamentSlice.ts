@@ -62,6 +62,7 @@ export const tournamentSlice = createSlice({
       action: PayloadAction<Tournament[]>
     ) => {
       state.openRegistrationTournaments = action.payload;
+      console.log(action.payload);
     },
     setTournamentCount: (state, action: PayloadAction<number>) => {
       state.count = action.payload;

@@ -18,7 +18,15 @@ const TREASURY_WALLET = new PublicKey(
 );
 const SOLANA_RPC_URL = "https://api.devnet.solana.com";
 
-export const WalletDialog = ({ isOpen, onClose }) => {
+interface WalletDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const WalletDialog: React.FC<WalletDialogProps> = ({
+  isOpen,
+  onClose,
+}) => {
   const [walletAddress, setWalletAddress] = useState("");
   const [balance, setBalance] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -26,7 +34,9 @@ export const WalletDialog = ({ isOpen, onClose }) => {
   const [message, setMessage] = useState({ type: "", text: "" });
 
   const dispatch = useAppDispatch();
-  const { tourId } = useParams();
+  // const { tourId } = useParams();
+  const params = useParams();
+  const tourId = params?.tourId as string | undefined;
 
   const { points } = useAppSelector((state) => state.user);
 
@@ -56,7 +66,7 @@ export const WalletDialog = ({ isOpen, onClose }) => {
     }
   };
 
-  const fetchWalletBalance = async (address) => {
+  const fetchWalletBalance = async (address: string) => {
     try {
       const connection = new Connection(SOLANA_RPC_URL, "confirmed");
       const publicKey = new PublicKey(address);
@@ -194,7 +204,11 @@ export const WalletDialog = ({ isOpen, onClose }) => {
       console.error("Error exchanging points:", error);
       setMessage({
         type: "error",
-        text: error.message || "Transaction failed. Please try again.",
+        text:
+          (error instanceof Error
+            ? error.message
+            : "Transaction failed. Please try again.") ||
+          "Transaction failed. Please try again.",
       });
     } finally {
       setIsProcessing(false);

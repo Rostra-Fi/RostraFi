@@ -30,6 +30,8 @@ export interface Section {
   name: string;
   sectionId: string;
   selectedTeams: Team[];
+  // _id: string;
+  // teams: Team[];
 }
 
 export interface TeamState {

@@ -3,13 +3,49 @@
 import Image from "next/image";
 import { Tabs } from "./ui/tabs";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, LineChart, Wallet, Trophy, Crown, Swords, Target, Coins } from "lucide-react";
-import { useState, useEffect } from "react";
+import {
+  Users,
+  LineChart,
+  Wallet,
+  Trophy,
+  Crown,
+  Swords,
+  Target,
+  Coins,
+  LucideIcon,
+} from "lucide-react";
+import { useState, useEffect, ReactNode, JSX } from "react";
 
-export function TabsDemo() {
-  const [hoveredIndex, setHoveredIndex] = useState(null);
+// Define types for the feature items
+interface Feature {
+  title: string;
+  description: string;
+}
 
-  const AnimatedContent = ({ title, icon: Icon, description, features }) => {
+// Define types for the animated content props
+interface AnimatedContentProps {
+  title: string;
+  icon: LucideIcon;
+  description?: string;
+  features: Feature[];
+}
+
+// Define types for tab items
+interface TabItem {
+  title: string;
+  value: string;
+  content: ReactNode;
+}
+
+export function TabsDemo(): JSX.Element {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+
+  const AnimatedContent = ({
+    title,
+    icon: Icon,
+    description,
+    features,
+  }: AnimatedContentProps): JSX.Element => {
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -81,8 +117,7 @@ export function TabsDemo() {
     );
   };
 
-  
-  const tabs = [
+  const tabs: TabItem[] = [
     {
       title: "Draft Squad",
       value: "team",
@@ -124,7 +159,8 @@ export function TabsDemo() {
             features={[
               {
                 title: "Live Battlefeed",
-                description: "Second-by-second updates on influencer engagements",
+                description:
+                  "Second-by-second updates on influencer engagements",
               },
               {
                 title: "Rivalry Radar",
@@ -242,10 +278,11 @@ export function TabsDemo() {
           Build Your Influencer Empire
         </h1>
         <p className="text-xl text-gray-300 mt-2">
-          Draft. Strategize. Conquer. Win SOL prizes daily in the ultimate Web3 showdown
+          Draft. Strategize. Conquer. Win SOL prizes daily in the ultimate Web3
+          showdown
         </p>
       </div>
-      
+
       <Tabs
         tabs={tabs}
         tabClassName="mx-1 text-lg font-semibold bg-white/5 hover:bg-white/20 transition-all duration-300 glow-hover"
@@ -253,6 +290,4 @@ export function TabsDemo() {
       />
     </div>
   );
-
-
 }

@@ -27,6 +27,7 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { userWalletAddress } = useAppSelector((state) => state.user);
+  console.log(tournamentData);
 
   const calculateTimeRemaining = () => {
     const now = new Date();
@@ -248,6 +249,8 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
           : "Tournament Ended";
     }
   };
+
+  console.log(tournamentData);
 
   return (
     <CardContainer className="inter-var">

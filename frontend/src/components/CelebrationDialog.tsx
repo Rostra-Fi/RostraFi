@@ -5,7 +5,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { X } from "lucide-react";
 
-export const CelebrationDialog = ({ points, onClose }) => {
+interface CelebrationDialogProps {
+  points: number;
+  onClose?: () => void;
+}
+
+export const CelebrationDialog = ({
+  points,
+  onClose,
+}: CelebrationDialogProps) => {
   const [isOpen, setIsOpen] = useState(true);
 
   useEffect(() => {
@@ -38,7 +46,7 @@ export const CelebrationDialog = ({ points, onClose }) => {
       zIndex: 9999,
     };
 
-    function fire(particleRatio, opts) {
+    function fire(particleRatio: number, opts: any) {
       confetti({
         ...defaults,
         ...opts,

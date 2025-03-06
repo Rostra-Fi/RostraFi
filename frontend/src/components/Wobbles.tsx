@@ -40,11 +40,13 @@ export function WobbleTeamSection({
   const [selectionStates, setSelectionStates] = useState<SelectionMap>({});
   const [showPointsInfo, setShowPointsInfo] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null!);
   const id = useId();
 
   const dispatch = useDispatch();
-  const { tourId } = useParams();
+  // const { tourId } = useParams();
+  const params = useParams();
+  const tourId = params?.tourId as string | undefined;
 
   const { points } = useAppSelector((state) => state.user);
 

@@ -34,7 +34,7 @@ class TournamentWinnerService {
         isActive: true,
         endDate: {
           $gt: new Date(now.getTime() - 60 * 60 * 1000), // 1 hour before now
-          // $lte: new Date(now.getTime() + 60 * 60 * 1000), // 1 hour after now
+          $lte: new Date(now.getTime() + 60 * 60 * 1000), // 1 hour after now
         },
       });
 

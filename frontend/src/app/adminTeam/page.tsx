@@ -23,6 +23,7 @@ interface Section {
   id: string;
   name: string;
   teams: Team[];
+  _id: string;
 }
 
 export default function AdminDashboard() {

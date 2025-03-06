@@ -2,13 +2,11 @@
 
 import { useState, useEffect } from "react";
 import GlowingContainer from "@/components/GlowingContainer";
-import { InfluencersTeamSection } from "@/components/InfluencersTeamSection";
 import { RulesModel } from "@/components/RulesModel";
 import { TeamsHeader } from "@/components/TeamsHeader";
 import { TeamSection } from "@/components/teamsSection";
 import { ColourfulText } from "@/components/ui/colourful-text";
 import { Cover } from "@/components/ui/cover";
-import { Section } from "../../../types/team.types";
 import { SelectedTeamsOverview } from "@/components/SelectedTeamsOverview";
 import { AuroraBack } from "@/components/aroraBack";
 import SolanaNavbar from "@/components/SolanaBar";
@@ -19,6 +17,22 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { WobbleTeamSection } from "@/components/Wobbles";
 
+export interface Team {
+  _id: string;
+  name: string;
+  image: string;
+  description: string;
+  followers: number;
+  points: number;
+}
+export interface Section {
+  name: string;
+  sectionId: string;
+  // selectedTeams: Team[];
+  _id: string;
+  teams: Team[];
+}
+
 export default function Page() {
   const [teamsData, setTeamsData] = useState<Section[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,7 +40,10 @@ export default function Page() {
   const [showCelebration, setShowCelebration] = useState(false);
   const [isParticipant, setIsParticipant] = useState(false);
   const [pointsAwarded, setPointsAwarded] = useState(0);
-  const { tourId } = useParams();
+  // const { tourId } = useParams();
+
+  const params = useParams();
+  const tourId = params?.tourId as string | undefined;
 
   useEffect(() => {
     async function fetchTeamsData() {

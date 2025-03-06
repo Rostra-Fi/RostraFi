@@ -1,5 +1,79 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+////////
+
+interface TournamentDetails {
+  createdAt: string;
+  endDate: string;
+  icon: string;
+  id: string;
+  image: string;
+  isActive: boolean;
+  isOngoing: boolean;
+  isRegistrationOpen: boolean;
+  name: string;
+  participated: string[];
+  platform: string;
+  pointsForVisit: number;
+  prizePool: number;
+  registrationEndDate: string;
+  registrationTimeLimit: number;
+  startDate: string;
+  timeLimit: number;
+  updatedAt: string;
+  visited: string[];
+  __v: number;
+  _id: string;
+}
+
+interface TeamMember {
+  audio?: string;
+  createdAt: string;
+  description: string;
+  followers: number;
+  id: string;
+  image: string;
+  name: string;
+  points: number;
+  twitterId: string;
+  updatedAt: string;
+  __v: number;
+  _id: string;
+}
+
+interface Section1 {
+  id: string;
+  name: string;
+  sectionId: string;
+  selectedTeams: TeamMember[];
+  _id: string;
+}
+
+interface UserTeam {
+  createdAt: string;
+  id: string;
+  isActive: boolean;
+  sections: Section1[];
+  teamName: string;
+  totalFollowers: number;
+  tournamentId: string;
+  updatedAt: string;
+  userId: string;
+  walletUserId: string;
+  __v: number;
+  _id: string;
+}
+
+// Main interface for the tournament data
+interface UserTournament1 {
+  userTeam: UserTeam;
+  tournamentDetails: TournamentDetails;
+  isActive: boolean;
+  isOngoing: boolean;
+}
+
+///////
+
 interface Section {
   name: string;
   sectionId: {
@@ -21,21 +95,43 @@ interface Team {
   points: number;
 }
 
-interface Tournament {
-  _id: string;
-  name: string;
-  startDate: string;
+export interface Tournament {
+  // _id: string;
+  // name: string;
+  // startDate: string;
+  // endDate: string;
+  // prizePool: number;
+  // image: string;
+  // icon: string;
+  // platform: string;
+  // isActive: boolean;
+  // isOngoing: boolean;
+  // id: string;
+
+  createdAt: string;
   endDate: string;
-  prizePool: number;
-  image: string;
   icon: string;
-  platform: string;
+  id: string;
+  image: string;
   isActive: boolean;
   isOngoing: boolean;
-  id: string;
+  isRegistrationOpen: boolean;
+  name: string;
+  participated: string[];
+  platform: string;
+  pointsForVisit: number;
+  prizePool: number;
+  registrationEndDate: string;
+  registrationTimeLimit: number;
+  startDate: string;
+  timeLimit: number;
+  updatedAt: string;
+  visited: string[];
+  __v: number;
+  _id: string;
 }
 
-interface UserTournament {
+export interface UserTournament {
   _id: string;
   userId: string;
   walletUserId: string;
@@ -57,7 +153,7 @@ interface UserState {
   points: number;
   tournaments: number;
   isNewUser: boolean;
-  userTournaments: Tournament[];
+  userTournaments: UserTournament1[];
   isActive: boolean;
   lastActivity: string;
   createdAt: string;
@@ -107,7 +203,7 @@ export const userSlice = createSlice({
     setCurrentTournament: (state, action: PayloadAction<string>) => {
       state.currentTournament = action.payload;
     },
-    setUserTournaments: (state, action: PayloadAction<Tournament[]>) => {
+    setUserTournaments: (state, action: PayloadAction<UserTournament1[]>) => {
       state.userTournaments = action.payload;
     },
     setUserPoints: (state, action: PayloadAction<number>) => {

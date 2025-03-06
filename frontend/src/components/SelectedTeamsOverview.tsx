@@ -76,9 +76,11 @@ export function SelectedTeamsOverview() {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dispatch = useDispatch<any>();
   const router = useRouter();
-  const { tourId } = useParams();
+  // const { tourId } = useParams();
+  const params = useParams();
+  const tourId = params?.tourId as string | undefined;
 
-  const { teams, loading, success, error } = useSelector(
+  const { teams, loading, success } = useSelector(
     (state: RootState) => state.teams
   );
 
