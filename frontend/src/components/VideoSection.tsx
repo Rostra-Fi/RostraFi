@@ -16,14 +16,14 @@ export const VideoSection = () => {
           {/* Video container */}
           <div className="relative aspect-video rounded-[2.5rem] overflow-hidden">
             <div className="rounded-[2.5rem]">
-              {/* Video */}
+              {/* Video - removed muted attribute to enable sound */}
               <video
                 autoPlay
                 loop
-                muted
                 className="w-full h-full object-cover rounded-[2.5rem]"
+                controls
               >
-                <source src="https://res.cloudinary.com/da0u0otap/video/upload/v1738828192/fjihc58sqhj9kd2evs5w.mp4" />
+                <source src="https://res.cloudinary.com/djohjwkn6/video/upload/v1741290976/RostraFi_pvn5pk.mp4" />
                 Your browser does not support the video tag.
               </video>
             </div>
