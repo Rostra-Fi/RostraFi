@@ -11,11 +11,9 @@ import { Cover } from "@/components/ui/cover";
 import { Section } from "../../../types/team.types";
 import { SelectedTeamsOverview } from "@/components/SelectedTeamsOverview";
 import { AuroraBack } from "@/components/aroraBack";
-// import AnimatedScrollButton from "@/components/AnimatedScrollButton";
 import SolanaNavbar from "@/components/SolanaBar";
 import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
 import { addUserPoints, userWalletConnect } from "@/store/userSlice";
-
 import CelebrationDialog from "@/components/CelebrationDialog";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -27,7 +25,6 @@ export default function Page() {
   const [error, setError] = useState<string | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const [isParticipant, setIsParticipant] = useState(false);
-
   const [pointsAwarded, setPointsAwarded] = useState(0);
   const { tourId } = useParams();
 
@@ -71,7 +68,6 @@ export default function Page() {
       if (!tournamentId || !userWalletAddress || !userId) return;
 
       try {
-        // Add a loading state to prevent duplicate calls
         const requestUrl = `http://127.0.0.1:3001/api/v1/compitition/tournaments/${tournamentId}/visit`;
 
         const response = await fetch(requestUrl, {
@@ -91,10 +87,9 @@ export default function Page() {
           throw new Error(data.message || "Failed to record tournament visit");
         }
 
-        // Check if isVisited is true and show celebration
         console.log(data);
         if (data.isFirstVisit) {
-          setPointsAwarded(data.pointsAwarded || 0); // Default to 100 if not provided
+          setPointsAwarded(data.pointsAwarded || 0);
           setShowCelebration(true);
           dispatch(addUserPoints(data.pointsAwarded));
         }
@@ -114,12 +109,11 @@ export default function Page() {
       }
     };
 
-    // Only call this once when the component mounts
     isVisited();
   }, [tourId, userWalletAddress, userId, dispatch]);
 
   const handleCloseCelebration = () => {
-    console.log("Closing celebration"); // Add this for debugging
+    console.log("Closing celebration");
     setShowCelebration(false);
   };
 
@@ -129,8 +123,6 @@ export default function Page() {
     <div className="bg-black mb-6 ">
       <SolanaNavbar />
       <TeamsHeader />
-      {/* <AnimatedScrollButton /> */}
-
       <AuroraBack />
 
       {isParticipant ? (

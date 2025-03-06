@@ -249,3 +249,17 @@
 .glow-effect {
   animation: glow 3s infinite ease-in-out;
 }
+
+
+/* Add to your global CSS */
+.wobble-team-button {
+  padding: 1rem 2rem !important;
+  font-size: 1.25rem !important;
+  transition: all 0.3s ease !important;
+}
+
+.wobble-team-button.selected {
+  background: #48bb78 !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 0 25px rgba(72, 187, 120, 0.5) !important;
+}

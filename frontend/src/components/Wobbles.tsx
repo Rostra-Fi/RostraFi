@@ -229,7 +229,7 @@ export function WobbleTeamSection({
               }}
             >
               <WobbleCard
-                containerClassName={`w-full h-[280px] relative transition-all duration-300 overflow-hidden ${
+                containerClassName={`w-full h-[320px] relative transition-all duration-300 overflow-hidden ${
                   isSelected
                     ? "ring-4 ring-green-500 ring-opacity-50"
                     : !canSelectTeam
