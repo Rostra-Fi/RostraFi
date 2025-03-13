@@ -6,17 +6,20 @@ import { useParams } from "next/navigation";
 import {
   Connection,
   PublicKey,
-  SystemProgram,
   Transaction,
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
+import * as splToken from "@solana/spl-token";
 
 const POINTS_PER_PURCHASE = 150;
-const SOL_AMOUNT = 0.2;
+const SONIC_AMOUNT = 2; // Adjust this as needed for equivalent value
 const TREASURY_WALLET = new PublicKey(
   "JCsFjtj6tem9Dv83Ks4HxsL7p8GhdLtokveqW7uWjGyi"
 );
-const SOLANA_RPC_URL = "https://api.devnet.solana.com";
+const SONIC_TOKEN_ADDRESS = new PublicKey(
+  "SonicxvLud67EceaEzCLRnMTBqzYUUYNr93DBkBdDES"
+);
+const SOLANA_RPC_URL = "https://mainnet.helius-rpc.com/?api-key=a969d395-9864-418f-8a64-65c1ef2107f9";
 
 interface WalletDialogProps {
   isOpen: boolean;
@@ -28,13 +31,13 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
   onClose,
 }) => {
   const [walletAddress, setWalletAddress] = useState("");
-  const [balance, setBalance] = useState(0);
+  const [sonicBalance, setSonicBalance] = useState(0);
+  const [solBalance, setSolBalance] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactionType, setTransactionType] = useState("buy"); // "buy" points or "exchange" points
   const [message, setMessage] = useState({ type: "", text: "" });
 
   const dispatch = useAppDispatch();
-  // const { tourId } = useParams();
   const params = useParams();
   const tourId = params?.tourId as string | undefined;
 
@@ -59,21 +62,42 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
       const storedWalletAddress = localStorage.getItem("UserId");
       if (storedWalletAddress) {
         setWalletAddress(storedWalletAddress);
-        fetchWalletBalance(storedWalletAddress);
+        fetchWalletBalances(storedWalletAddress);
       }
     } catch (error) {
       console.error("Error loading wallet from localStorage:", error);
     }
   };
 
-  const fetchWalletBalance = async (address: string) => {
+  const fetchWalletBalances = async (address: string) => {
     try {
       const connection = new Connection(SOLANA_RPC_URL, "confirmed");
       const publicKey = new PublicKey(address);
-      const balanceInLamports = await connection.getBalance(publicKey);
-      setBalance(balanceInLamports / LAMPORTS_PER_SOL);
+      
+      // Fetch SOL balance (still needed for transaction fees)
+      const solBalanceInLamports = await connection.getBalance(publicKey);
+      setSolBalance(solBalanceInLamports / LAMPORTS_PER_SOL);
+      
+      // Fetch Sonic token balance
+      try {
+        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(
+          publicKey,
+          { mint: SONIC_TOKEN_ADDRESS }
+        );
+        
+        if (tokenAccounts.value.length > 0) {
+          const tokenAccount = tokenAccounts.value[0];
+          const amount = tokenAccount.account.data.parsed.info.tokenAmount.uiAmount;
+          setSonicBalance(amount);
+        } else {
+          setSonicBalance(0);
+        }
+      } catch (err) {
+        console.error("Error fetching Sonic token balance:", err);
+        setSonicBalance(0);
+      }
     } catch (error) {
-      console.error("Error fetching balance:", error);
+      console.error("Error fetching balances:", error);
     }
   };
 
@@ -87,10 +111,18 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
         return;
       }
 
-      if (balance < SOL_AMOUNT) {
+      if (sonicBalance < SONIC_AMOUNT) {
         setMessage({
           type: "error",
-          text: `Insufficient balance. You need at least ${SOL_AMOUNT} SOL.`,
+          text: `Insufficient balance. You need at least ${SONIC_AMOUNT} SONIC.`,
+        });
+        return;
+      }
+
+      if (solBalance < 0.00001) {
+        setMessage({
+          type: "error",
+          text: "Insufficient SOL for transaction fees.",
         });
         return;
       }
@@ -100,15 +132,49 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
 
       const connection = new Connection(SOLANA_RPC_URL, "confirmed");
       const fromPublicKey = new PublicKey(walletAddress);
-      const transaction = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: fromPublicKey,
-          toPubkey: TREASURY_WALLET,
-          lamports: SOL_AMOUNT * LAMPORTS_PER_SOL,
-        })
+      
+      // Find the user's token account for Sonic
+      const userTokenAccounts = await connection.getParsedTokenAccountsByOwner(
+        fromPublicKey,
+        { mint: SONIC_TOKEN_ADDRESS }
+      );
+      
+      if (userTokenAccounts.value.length === 0) {
+        throw new Error("Sonic token account not found");
+      }
+      
+      const userTokenAccount = new PublicKey(userTokenAccounts.value[0].pubkey);
+      
+      // Find or create token account for the treasury
+      let treasuryTokenAccount;
+      try {
+        const treasuryTokenAccounts = await connection.getParsedTokenAccountsByOwner(
+          TREASURY_WALLET,
+          { mint: SONIC_TOKEN_ADDRESS }
+        );
+        
+        if (treasuryTokenAccounts.value.length > 0) {
+          treasuryTokenAccount = new PublicKey(treasuryTokenAccounts.value[0].pubkey);
+        } else {
+          // This would require creating a token account for the treasury
+          // This is complex and would typically be handled by the backend
+          throw new Error("Treasury doesn't have a Sonic token account");
+        }
+      } catch (err) {
+        throw new Error("Failed to find treasury token account");
+      }
+      
+      // Create the token transfer instruction
+      const transferInstruction = splToken.createTransferInstruction(
+        userTokenAccount,
+        treasuryTokenAccount,
+        fromPublicKey,
+        SONIC_AMOUNT * Math.pow(10, 9) // Assuming 9 decimals, adjust if different
       );
 
+      const transaction = new Transaction().add(transferInstruction);
       transaction.feePayer = fromPublicKey;
+      
       const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
 
@@ -121,7 +187,7 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
       );
       await connection.confirmTransaction(signature, "confirmed");
 
-      fetchWalletBalance(walletAddress);
+      fetchWalletBalances(walletAddress);
       dispatch(addUserPoints(POINTS_PER_PURCHASE));
 
       setMessage({
@@ -144,7 +210,7 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
     }
   };
 
-  const exchangePointsForSol = async () => {
+  const exchangePointsForSonic = async () => {
     try {
       if (!walletAddress) {
         setMessage({
@@ -178,7 +244,8 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
         body: JSON.stringify({
           points: POINTS_PER_PURCHASE,
           publicKey,
-          solAmount: SOL_AMOUNT,
+          tokenAmount: SONIC_AMOUNT,
+          tokenAddress: SONIC_TOKEN_ADDRESS.toString(),
         }),
       });
 
@@ -192,11 +259,11 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
 
       setMessage({
         type: "success",
-        text: `${POINTS_PER_PURCHASE} points exchanged for ${SOL_AMOUNT} SOL!`,
+        text: `${POINTS_PER_PURCHASE} points exchanged for ${SONIC_AMOUNT} SONIC!`,
       });
 
       setTimeout(() => {
-        fetchWalletBalance(walletAddress);
+        fetchWalletBalances(walletAddress);
         setMessage({ type: "", text: "" });
         onClose();
       }, 5000);
@@ -248,8 +315,13 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
           )}
 
           <div className="flex justify-between items-center mb-2">
-            <span className="text-gray-500">Wallet Balance</span>
-            <span className="font-medium">{balance.toFixed(3)} SOL</span>
+            <span className="text-gray-500">SONIC Balance</span>
+            <span className="font-medium">{sonicBalance.toFixed(3)} SONIC</span>
+          </div>
+
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-gray-500">SOL Balance</span>
+            <span className="font-medium">{solBalance.toFixed(3)} SOL</span>
           </div>
 
           <div className="flex justify-between items-center mb-6">
@@ -297,7 +369,7 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
                 <div className="bg-gray-100 rounded-lg p-4">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-gray-500">Cost</span>
-                    <span className="font-medium">{SOL_AMOUNT} SOL</span>
+                    <span className="font-medium">{SONIC_AMOUNT} SONIC</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-500">Points Earned</span>
@@ -313,15 +385,15 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-500">SOL Received</span>
-                    <span className="font-medium">{SOL_AMOUNT} SOL</span>
+                    <span className="text-sm text-gray-500">SONIC Received</span>
+                    <span className="font-medium">{SONIC_AMOUNT} SONIC</span>
                   </div>
                 </div>
               )}
 
               <button
                 onClick={
-                  transactionType === "buy" ? buyPoints : exchangePointsForSol
+                  transactionType === "buy" ? buyPoints : exchangePointsForSonic
                 }
                 disabled={isProcessing}
                 className={`w-full py-2 rounded-lg text-white ${
@@ -332,7 +404,7 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
                   ? "Processing..."
                   : transactionType === "buy"
                   ? `Buy ${POINTS_PER_PURCHASE} Points`
-                  : `Exchange for ${SOL_AMOUNT} SOL`}
+                  : `Exchange for ${SONIC_AMOUNT} SONIC`}
               </button>
             </div>
           )}

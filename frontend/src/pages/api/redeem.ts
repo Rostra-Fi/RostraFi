@@ -7,7 +7,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-        const { points, publicKey } = req.body;
+        const { points, publicKey, tokenAmount, tokenAddress } = req.body;
         
         if (!points || !publicKey) {
             return res.status(400).json({ error: 'Missing required fields' });
@@ -16,8 +16,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const redemptionData = {
             publicKey,
             points,
+            tokenAmount: tokenAmount || null,
+            tokenAddress: tokenAddress || null,
             timestamp: new Date().toISOString(),
-            status: 'pending'
+            status: 'pending',
+            tokenType: tokenAddress ? 'SONIC' : 'SOL'
         };
 
         await redisClient.zAdd('redemptions', {
