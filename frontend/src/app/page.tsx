@@ -15,6 +15,7 @@ import {
   fetchOpenRegistrationTournaments,
   fetchTournaments,
 } from "@/store/tournamentSlice";
+import { useUser } from "@civic/auth-web3/react";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -27,6 +28,8 @@ export default function Home() {
   const { isNewUser, points } = useAppSelector((state) => state.user);
   const [showDialog, setShowDialog] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const user = useUser();
+  console.log("user civic", user);
 
   useEffect(() => {
     dispatch(fetchTournaments());

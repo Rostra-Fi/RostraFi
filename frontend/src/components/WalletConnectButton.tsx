@@ -5,10 +5,15 @@ import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { useEffect } from "react";
 import { userWalletConnect } from "@/store/userSlice";
 import { useAppDispatch } from "@/hooks/reduxHooks";
+import { useUser } from "@civic/auth-web3/react";
 
 export const WalletConnectButton = () => {
-  const { publicKey, disconnecting } = useWallet();
+  // const user = useUser();
+
+  const { publicKey, wallet, disconnecting } = useWallet();
+  console.log("wallet", wallet);
   const dispatch = useAppDispatch();
+  console.log("publicKey", publicKey);
 
   useEffect(() => {
     if (publicKey) {

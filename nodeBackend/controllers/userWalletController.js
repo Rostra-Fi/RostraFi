@@ -92,10 +92,9 @@ exports.getWallet = catchAsync(async (req, res) => {
 exports.getUserTournaments = catchAsync(async (req, res, next) => {
   const { address } = req.params;
 
-  // Find the wallet and populate the tournaments array with tournament details
   const wallet = await WalletUser.findOne({ walletAddress: address }).populate({
-    path: 'tournaments._id', // Changed from 'tournaments.tournamentId'
-    model: 'Tournament', // Ensure you're using the correct model name
+    path: 'tournaments._id',
+    model: 'Tournament',
   });
 
   if (!wallet) {
@@ -103,16 +102,13 @@ exports.getUserTournaments = catchAsync(async (req, res, next) => {
   }
   console.log('Wallet:', wallet);
 
-  // Get all user teams for this wallet user in a single query
   const userTeams = await UserTeam.find({
     walletUserId: wallet._id,
   }).populate({
     path: 'sections.selectedTeams',
-    // Add any additional population if needed
   });
   console.log('User Teams:', userTeams);
 
-  // Create a map of tournament ID to user team for quick lookup
   const tournamentTeamMap = {};
   userTeams.forEach((team) => {
     if (team.tournamentId) {
@@ -122,7 +118,6 @@ exports.getUserTournaments = catchAsync(async (req, res, next) => {
 
   console.log('Map:', tournamentTeamMap);
 
-  // For each tournament, add the user-specific points and team
   const tournamentsWithDetails = wallet.tournaments
     .map((tournament) => {
       // Add null check for tournament details
@@ -133,10 +128,8 @@ exports.getUserTournaments = catchAsync(async (req, res, next) => {
       const tournamentId = tournament._id._id.toString();
       console.log('tournamentId:', tournamentId);
 
-      // Get the user team for this tournament from our map
       const userTeam = tournamentTeamMap[tournamentId] || null;
 
-      // Convert tournament to plain object if it's a Mongoose document
       const tournamentObj = tournament.toObject
         ? tournament.toObject()
         : tournament;
@@ -144,12 +137,12 @@ exports.getUserTournaments = catchAsync(async (req, res, next) => {
       return {
         // ...tournamentObj,
         userTeam: userTeam,
-        tournamentDetails: tournament._id, // This will be the full tournament details
+        tournamentDetails: tournament._id,
         rank: tournament.rank,
         prize: tournament.prize,
       };
     })
-    .filter((tournament) => tournament !== null); // Remove any null entries
+    .filter((tournament) => tournament !== null);
 
   res.status(200).json({
     success: true,
@@ -161,19 +154,16 @@ exports.getUserTournaments = catchAsync(async (req, res, next) => {
 exports.registerOrRetrieveWallet = catchAsync(async (req, res, next) => {
   const { walletAddress } = req.body;
 
-  // Validate request body
   if (!walletAddress) {
     return next(new AppError('Wallet address is required', 400));
   }
 
-  // Find or create wallet
   const { wallet, isNewWallet } =
     await WalletUser.findOrCreateWallet(walletAddress);
 
   let message = 'Wallet retrieved successfully';
   let statusCode = 200;
 
-  // If new wallet, add bonus points
   if (isNewWallet) {
     await wallet.addPoints(150);
     statusCode = 201;
@@ -191,29 +181,24 @@ exports.registerOrRetrieveWallet = catchAsync(async (req, res, next) => {
 exports.addPoints = catchAsync(async (req, res) => {
   const { walletAddress, points } = req.body;
 
-  // Validate request body
   if (!walletAddress || points === undefined) {
     return next(new AppError('Wallet address and points are required', 400));
   }
 
-  // Validate Solana wallet address
   if (!isValidSolanaAddress(walletAddress)) {
     return next(new AppError('Invalid Solana wallet address', 400));
   }
 
-  // Validate points
   if (typeof points !== 'number' || points <= 0) {
     return next(new AppError('Points must be a positive number', 400));
   }
 
-  // Find wallet
   const wallet = await WalletUser.findOne({ walletAddress });
 
   if (!wallet) {
     return next(new AppError('Wallet not found', 404));
   }
 
-  // Add points to wallet
   await wallet.addPoints(points);
 
   res.status(200).json({
@@ -226,34 +211,28 @@ exports.addPoints = catchAsync(async (req, res) => {
 exports.deductPoints = catchAsync(async (req, res, next) => {
   const { walletAddress, points } = req.body;
 
-  // Validate request body
   if (!walletAddress || points === undefined) {
     return next(new AppError('Wallet address and points are required', 400));
   }
 
-  // Validate Solana wallet address
   if (!isValidSolanaAddress(walletAddress)) {
     return next(new AppError('Invalid Solana wallet address', 400));
   }
 
-  // Validate points
   if (typeof points !== 'number' || points <= 0) {
     return next(new AppError('Points must be a positive number', 400));
   }
 
-  // Find wallet
   const wallet = await WalletUser.findOne({ walletAddress });
 
   if (!wallet) {
     return next(new AppError('Wallet not found', 404));
   }
 
-  // Check if wallet has enough points
   if (wallet.points < points) {
     return next(new AppError(400, 'Insufficient points balance'));
   }
 
-  // Deduct points from wallet
   await wallet.deductPoints(points);
 
   res.status(200).json({
@@ -266,7 +245,6 @@ exports.deductPoints = catchAsync(async (req, res, next) => {
 exports.getWalletPoints = catchAsync(async (req, res, next) => {
   const { address } = req.params;
 
-  // Validate Solana wallet address
   if (!isValidSolanaAddress(address)) {
     return next(new AppError(400, 'Invalid Solana wallet address'));
   }

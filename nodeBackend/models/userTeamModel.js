@@ -20,7 +20,6 @@ const UserTeamSchema = new mongoose.Schema(
       minlength: 3,
       maxlength: 50,
     },
-    // Changed to array of sections
     sections: [
       {
         name: {
@@ -41,7 +40,6 @@ const UserTeamSchema = new mongoose.Schema(
         ],
       },
     ],
-    // Added tournament reference
     tournamentId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Tournament',

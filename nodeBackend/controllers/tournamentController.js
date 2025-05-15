@@ -77,16 +77,12 @@ exports.createTournament = async (req, res) => {
       prizePool,
     } = req.body;
 
-    // Set the base date (either provided startDate or current date)
     const baseDate = startDate ? new Date(startDate) : new Date();
 
-    // Calculate registration end date
     const registrationEnd = new Date(baseDate);
 
-    // Calculate tournament start date (same as registration end)
     const start = new Date(registrationEnd);
 
-    // Calculate tournament end date
     const endDate = new Date(start);
     endDate.setHours(endDate.getHours() + (timeLimit || 24));
 
@@ -126,23 +122,20 @@ exports.getAllTournaments = async (req, res) => {
     const now = new Date();
 
     if (active === 'true') {
-      // Get active tournaments that have started but registration is closed
       tournaments = await Tournament.find({
         isActive: true,
-        startDate: { $lte: now }, // Tournament has started
-        registrationEndDate: { $lt: now }, // Registration period is over
+        startDate: { $lte: now },
+        registrationEndDate: { $lt: now },
       })
         .sort({ startDate: -1 })
         .populate('visited', 'walletAddress points')
         .populate('participated', 'walletAddress points');
     } else if (active === 'false') {
-      // Get inactive tournaments
       tournaments = await Tournament.find({ isActive: false })
         .sort({ startDate: -1 })
         .populate('visited', 'walletAddress points')
         .populate('participated', 'walletAddress points');
     } else {
-      // Get all tournaments (default)
       tournaments = await Tournament.find({})
         .sort({ startDate: -1 })
         .populate('visited', 'walletAddress points')
@@ -166,7 +159,6 @@ exports.getTournamentParticipants = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Find tournament by id and populate the participants array
     const tournament = await Tournament.findById(id).populate({
       path: 'participated',
       select:
@@ -174,7 +166,6 @@ exports.getTournamentParticipants = async (req, res) => {
       model: 'WalletUser',
     });
 
-    // Check if tournament exists
     if (!tournament) {
       return res.status(404).json({
         success: false,
@@ -182,7 +173,6 @@ exports.getTournamentParticipants = async (req, res) => {
       });
     }
 
-    // Return the participants array
     return res.status(200).json({
       success: true,
       count: tournament.participated.length,
@@ -210,9 +200,6 @@ exports.getOpenRegistrationTournaments = async (req, res) => {
   try {
     const now = new Date();
 
-    // Find tournaments where:
-    // 1. The tournament is active
-    // 2. Current time is before registration end date
     const tournaments = await Tournament.find({
       isActive: true,
       registrationEndDate: { $gte: now },
@@ -236,7 +223,6 @@ exports.getOpenRegistrationTournaments = async (req, res) => {
   }
 };
 
-// Get a single tournament by ID
 exports.getTournamentById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -435,7 +421,6 @@ exports.visitTournament = async (req, res) => {
 
     console.log(tournamentId, walletAddress, userId);
 
-    // Input validation
     if (!walletAddress) {
       return res.status(400).json({
         success: false,
@@ -443,7 +428,6 @@ exports.visitTournament = async (req, res) => {
       });
     }
 
-    // Find the tournament
     const tournament = await Tournament.findById(tournamentId);
     if (!tournament) {
       return res.status(404).json({
@@ -452,7 +436,6 @@ exports.visitTournament = async (req, res) => {
       });
     }
 
-    // Check tournament status
     const now = new Date();
     if (!tournament.isActive || now > tournament.registrationEndDate) {
       return res.status(400).json({
@@ -461,7 +444,6 @@ exports.visitTournament = async (req, res) => {
       });
     }
 
-    // Find the user
     const user = await WalletUser.findById(userId);
     if (!user) {
       return res.status(404).json({
@@ -470,7 +452,6 @@ exports.visitTournament = async (req, res) => {
       });
     }
 
-    // First check if user has already participated and return early if true
     if (tournament.hasParticipated(user._id)) {
       return res.status(200).json({
         success: true,
@@ -480,7 +461,6 @@ exports.visitTournament = async (req, res) => {
       });
     }
 
-    // Check if user already visited this tournament - outside of transaction
     if (tournament.hasVisited(user._id)) {
       return res.status(200).json({
         success: true,
@@ -490,11 +470,9 @@ exports.visitTournament = async (req, res) => {
       });
     }
 
-    // Start transaction
     session = await mongoose.startSession();
     session.startTransaction();
 
-    // Atomic update to mark visit
     const updatedTournament = await Tournament.findOneAndUpdate(
       {
         _id: tournamentId,
@@ -510,7 +488,6 @@ exports.visitTournament = async (req, res) => {
       },
     );
 
-    // If no document was updated, user already visited (race condition)
     if (!updatedTournament) {
       await session.abortTransaction();
       session.endSession();
@@ -547,7 +524,6 @@ exports.visitTournament = async (req, res) => {
       data: updatedTournament,
     });
   } catch (error) {
-    // Only abort if session exists and is active
     console.log(error);
     if (session && session.inTransaction()) {
       try {
@@ -698,7 +674,6 @@ exports.participateInTournament = async (req, res) => {
     session.startTransaction();
 
     try {
-      // Get the tournament
       const tournament =
         await Tournament.findById(tournamentId).session(session);
 
@@ -711,7 +686,6 @@ exports.participateInTournament = async (req, res) => {
         });
       }
 
-      // Check if tournament is active and ongoing
       if (!tournament.isActive) {
         await session.abortTransaction();
         session.endSession();
@@ -731,12 +705,10 @@ exports.participateInTournament = async (req, res) => {
         });
       }
 
-      // Find or create the wallet user
       // const user = await WalletUser.findOrCreateWallet(walletAddress);
       const result = await WalletUser.findOrCreateWallet(walletAddress);
       const user = result.wallet;
 
-      // Check if user has already participated using the tournament hasParticipated method
       if (tournament.hasParticipated(user._id)) {
         await session.abortTransaction();
         session.endSession();
@@ -747,20 +719,14 @@ exports.participateInTournament = async (req, res) => {
         });
       }
 
-      // If not already visited, add as visitor first and give visit points
       if (!tournament.hasVisited(user._id)) {
         tournament.addVisitor(user._id);
       }
 
-      // Add user to participated array in tournament
       tournament.addParticipant(user._id);
       await tournament.save({ session });
 
-      // Add tournament to user's participated tournaments array
       await user.addTournament(tournament._id, session);
-
-      // Note: We don't add additional points for participation as per your requirement
-      // Points are only awarded once upon first visit
 
       await session.commitTransaction();
       session.endSession();
@@ -783,7 +749,6 @@ exports.participateInTournament = async (req, res) => {
   }
 };
 
-// Remove a user from tournament participation
 exports.leaveFromTournament = async (req, res) => {
   try {
     const { tournamentId } = req.params;
@@ -803,12 +768,10 @@ exports.leaveFromTournament = async (req, res) => {
       });
     }
 
-    // Start session for transaction
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      // Get the tournament
       const tournament =
         await Tournament.findById(tournamentId).session(session);
 
@@ -821,7 +784,6 @@ exports.leaveFromTournament = async (req, res) => {
         });
       }
 
-      // Check if tournament is active and ongoing
       if (!tournament.isActive) {
         await session.abortTransaction();
         session.endSession();
@@ -841,7 +803,6 @@ exports.leaveFromTournament = async (req, res) => {
         });
       }
 
-      // Find the wallet user
       const user = await WalletUser.findOne({ walletAddress });
 
       if (!user) {
@@ -853,7 +814,6 @@ exports.leaveFromTournament = async (req, res) => {
         });
       }
 
-      // Check if user has participated
       if (!tournament.hasParticipated(user._id)) {
         await session.abortTransaction();
         session.endSession();
@@ -863,11 +823,9 @@ exports.leaveFromTournament = async (req, res) => {
         });
       }
 
-      // Remove user from participated array
       tournament.removeParticipant(user._id);
       await tournament.save({ session });
 
-      // Reset the tournament points
       await user.resetTournamentPoints(tournament._id);
 
       await session.commitTransaction();
@@ -891,7 +849,6 @@ exports.leaveFromTournament = async (req, res) => {
   }
 };
 
-// Deactivate expired tournaments (could be run by a scheduler)
 exports.deactivateExpiredTournaments = async (req, res) => {
   try {
     const result = await Tournament.deactivateExpiredTournaments();
@@ -932,7 +889,6 @@ exports.updateTournament = async (req, res) => {
       });
     }
 
-    // Update fields if provided
     if (name) tournament.name = name;
     if (timeLimit) tournament.timeLimit = timeLimit;
     if (startDate) tournament.startDate = new Date(startDate);

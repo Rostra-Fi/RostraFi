@@ -15,14 +15,12 @@ const userWalletSchema = new Schema(
       default: 0,
       min: 0,
     },
-    // Track visited tournaments (just first visit)
     visitedTournaments: [
       {
         type: Schema.Types.ObjectId,
         ref: 'Tournament',
       },
     ],
-    // Track participated tournaments with additional details
     tournaments: [
       {
         tournamentId: {
@@ -64,13 +62,11 @@ const userWalletSchema = new Schema(
   },
 );
 
-// Pre-save middleware to update the 'updatedAt' field
 userWalletSchema.pre('save', function (next) {
   this.updatedAt = Date.now();
   next();
 });
 
-// Method to add points to wallet
 userWalletSchema.methods.addPoints = function (pointsToAdd) {
   if (pointsToAdd <= 0)
     throw new Error('Points to add must be greater than zero');
@@ -79,7 +75,6 @@ userWalletSchema.methods.addPoints = function (pointsToAdd) {
   return this.save();
 };
 
-// Method to add points for tournament visit if not already visited
 userWalletSchema.methods.addPointsForTournamentVisit = function (
   tournamentId,
   pointsToAdd,
@@ -88,34 +83,25 @@ userWalletSchema.methods.addPointsForTournamentVisit = function (
   if (pointsToAdd <= 0)
     throw new Error('Points to add must be greater than zero');
 
-  // Check if user has already visited any tournament
   if (this.visitedTournaments.length === 0) {
-    // First tournament visit ever, add points
     this.points += pointsToAdd;
     this.visitedTournaments.push(tournamentId);
     this.lastActivity = Date.now();
   } else if (this.visitedTournaments.length === 1) {
-    // User already has one visit - no need to add to the array
-    // This keeps the visitedTournaments array with only one entry maximum
-    // We don't add points as this is not the first visit
   }
 
-  // If session is provided, use it for saving
   const saveOptions = session ? { session } : {};
   return this.save(saveOptions);
 };
 
-// Method to check if user has visited any tournament
 userWalletSchema.methods.hasVisitedAnyTournament = function () {
   return this.visitedTournaments.length > 0;
 };
 
-// Method to add a tournament to user's participated tournaments
 userWalletSchema.methods.addTournament = function (
   tournamentId,
   session = null,
 ) {
-  // Check if user has already participated in this tournament
   const alreadyParticipated = this.tournaments.some(
     (id) => id.toString() === tournamentId.toString(),
   );
@@ -125,12 +111,10 @@ userWalletSchema.methods.addTournament = function (
     this.lastActivity = Date.now();
   }
 
-  // If session is provided, use it for saving
   const saveOptions = session ? { session } : {};
   return this.save(saveOptions);
 };
 
-// Method to check if user has participated in a tournament
 userWalletSchema.methods.hasParticipatedInTournament = function (tournamentId) {
   return this.tournaments.some(
     (id) => id.toString() === tournamentId.toString(),
@@ -147,11 +131,9 @@ userWalletSchema.methods.addTournamentPoints = function (
   if (pointsToAdd <= 0)
     throw new Error('Points to add must be greater than zero');
 
-  // Add points to total wallet points
   this.points += pointsToAdd;
   console.log('working');
 
-  // Check if tournament already exists in the tournaments array
   console.log(this.tournaments);
   const existingTournamentIndex = this.tournaments.findIndex(
     (t) => t._id.toString() === tournamentId.toString(),
@@ -159,11 +141,9 @@ userWalletSchema.methods.addTournamentPoints = function (
   console.log('something');
 
   if (existingTournamentIndex !== -1) {
-    // Update existing tournament entry
     this.tournaments[existingTournamentIndex].rank = rank;
     this.tournaments[existingTournamentIndex].prize = prize;
   } else {
-    // Add new tournament entry
     this.tournaments.push({
       tournamentId,
       rank,
@@ -173,12 +153,10 @@ userWalletSchema.methods.addTournamentPoints = function (
 
   this.lastActivity = Date.now();
 
-  // If session is provided, use it for saving
   const saveOptions = session ? { session } : {};
   return this.save(saveOptions);
 };
 
-// Method to deduct points from wallet
 userWalletSchema.methods.deductPoints = function (pointsToDeduct) {
   if (pointsToDeduct <= 0)
     throw new Error('Points to deduct must be greater than zero');

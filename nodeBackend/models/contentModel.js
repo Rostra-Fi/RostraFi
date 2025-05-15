@@ -52,7 +52,7 @@ const contentSchema = new Schema(
     },
     endDate: {
       type: Date,
-      // Default to 7 days from creation if not specified
+
       // default: function () {
       //   const date = new Date(this.startDate || Date.now());
       //   date.setDate(date.getDate() + 7);

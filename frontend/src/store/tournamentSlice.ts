@@ -199,7 +199,7 @@ export const fetchTournaments = () => async (dispatch: any) => {
   try {
     dispatch(setLoading(true));
     const response = await fetch(
-      "https://be1.rostrafi.fun/api/v1/compitition/tournaments?active=true",
+      "http://127.0.0.1:3001/api/v1/compitition/tournaments?active=true",
       {
         method: "GET",
         headers: {
@@ -233,7 +233,7 @@ export const fetchOpenRegistrationTournaments = () => async (dispatch: any) => {
   try {
     dispatch(setOpenRegistrationLoading(true));
     const response = await fetch(
-      "https://be1.rostrafi.fun/api/v1/compitition/tournaments/open-registration",
+      "http://127.0.0.1:3001/api/v1/compitition/tournaments/open-registration",
       {
         method: "GET",
       }
@@ -267,7 +267,7 @@ export const fetchTournamentById =
     try {
       dispatch(setLoading(true));
       const response = await fetch(
-        `https://be1.rostrafi.fun/api/v1/tournaments/${tournamentId}`,
+        `http://127.0.0.1:3001/api/v1/tournaments/${tournamentId}`,
         {
           method: "GET",
           headers: {
@@ -300,7 +300,7 @@ export const visitTournament =
     try {
       dispatch(setLoading(true));
       const response = await fetch(
-        `https://be1.rostrafi.fun/api/v1/compitition/tournaments/${tournamentId}/visit`,
+        `http://127.0.0.1:3001/api/v1/compitition/tournaments/${tournamentId}/visit`,
         {
           method: "POST",
           headers: {
@@ -337,7 +337,7 @@ export const participateInTournament =
     try {
       dispatch(setLoading(true));
       const response = await fetch(
-        `https://be1.rostrafi.fun/api/v1/compitition/tournaments/${tournamentId}/participate`,
+        `http://127.0.0.1:3001/api/v1/compitition/tournaments/${tournamentId}/participate`,
         {
           method: "POST",
           headers: {

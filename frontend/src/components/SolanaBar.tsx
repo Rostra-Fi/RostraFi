@@ -40,6 +40,7 @@ const SolanaNavbar = () => {
   const loadWalletFromLocalStorage = () => {
     try {
       const storedWalletAddress = localStorage.getItem("UserId");
+      console.log("Stored Wallet Address:", storedWalletAddress);
 
       if (storedWalletAddress) {
         setWalletAddress(storedWalletAddress);

@@ -64,7 +64,6 @@ const fetchTweetsForUser = async (twitterId, team, startTime) => {
   } catch (error) {
     console.error(`Error fetching tweets for Twitter ID ${twitterId}:`, error);
 
-    // If rate limited, throw specific error to handle it properly
     if (error.code === 429) {
       const resetTime = error.rateLimit?.reset
         ? new Date(error.rateLimit.reset * 1000)
@@ -86,8 +85,6 @@ const fetchTweetsForUser = async (twitterId, team, startTime) => {
   }
 };
 
-// Function to initialize or update the queue for a tournament
-
 const initializeQueueForTournament = async (
   tournamentId,
   allTeams,
@@ -95,11 +92,9 @@ const initializeQueueForTournament = async (
   endDate,
 ) => {
   try {
-    // Check if queue already exists
     let queue = await TwitterQueue.findOne({ tournamentId });
 
     if (!queue) {
-      // Create new queue
       queue = new TwitterQueue({
         tournamentId,
         teamsToProcess: allTeams.map((team) => ({
@@ -118,19 +113,16 @@ const initializeQueueForTournament = async (
         processingStartTime: null,
       });
     } else {
-      // Create a map of existing teams by twitterId for quick lookup
       const existingTeamsMap = new Map(
         queue.teamsToProcess
-          .filter((team) => team.twitterId) // Filter out any that might not have twitterId
+          .filter((team) => team.twitterId)
           .map((team) => [team.twitterId, team]),
       );
 
-      // Create a new teamsToProcess array
       const updatedTeamsToProcess = [];
 
-      // Process all current teams - update existing ones and add new ones
       for (const team of allTeams) {
-        if (!team.twitterId) continue; // Skip teams without twitter ID
+        if (!team.twitterId) continue;
 
         if (existingTeamsMap.has(team.twitterId)) {
           // Update existing team but preserve priority and lastProcessed
@@ -165,7 +157,6 @@ const initializeQueueForTournament = async (
       if (startDate) queue.startDate = startDate;
       if (endDate) queue.endDate = endDate;
 
-      // Check if tournament is still active
       const now = new Date();
       if (queue.endDate && now > new Date(queue.endDate)) {
         queue.isActive = false;
@@ -185,7 +176,6 @@ const processNextTeamInQueue = async () => {
   try {
     const now = new Date();
 
-    // Find an active queue that isn't being processed or was started more than 20 minutes ago
     const queue = await TwitterQueue.findOne({
       isActive: true,
       // $or: [
@@ -201,7 +191,6 @@ const processNextTeamInQueue = async () => {
       return;
     }
 
-    // Check if the tournament is still active
     const tournament = await Tournament.findById(queue.tournamentId);
 
     if (!tournament || !tournament.isActive || !tournament.isOngoing) {
@@ -213,13 +202,10 @@ const processNextTeamInQueue = async () => {
       return;
     }
 
-    // Mark queue as being processed
     queue.processingStartTime = now;
     await queue.save();
 
-    // Find the next team to process (sort by lastProcessed to ensure all teams get processed)
     queue.teamsToProcess.sort((a, b) => {
-      // If one has never been processed, it goes first
       if (!a.lastProcessed && b.lastProcessed) return -1;
       if (a.lastProcessed && !b.lastProcessed) return 1;
       // If both have never been processed or both have been processed,
@@ -228,7 +214,6 @@ const processNextTeamInQueue = async () => {
       return a.lastProcessed?.getTime() - b.lastProcessed?.getTime();
     });
 
-    // Get the next team to process
     const teamToProcess = queue.teamsToProcess[0];
     console.log('Team to process', teamToProcess);
 
@@ -244,7 +229,6 @@ const processNextTeamInQueue = async () => {
     );
 
     try {
-      // Fetch Twitter data for this team
       const twitterStats = await fetchTweetsForUser(
         teamToProcess.twitterId,
         {
@@ -255,7 +239,6 @@ const processNextTeamInQueue = async () => {
         queue.startDate,
       );
 
-      // Update or create Twitter data record
       await TwitterData.findOneAndUpdate(
         {
           tournamentId: queue.tournamentId,
@@ -281,10 +264,8 @@ const processNextTeamInQueue = async () => {
         { upsert: true, new: true },
       );
 
-      // Update the team's lastProcessed time
       teamToProcess.lastProcessed = now;
 
-      // Save the queue
       queue.processingStartTime = null;
       await queue.save();
 
@@ -303,7 +284,6 @@ const processNextTeamInQueue = async () => {
         );
       }
 
-      // Release the queue for processing
       queue.processingStartTime = null;
       await queue.save();
     }
@@ -312,10 +292,8 @@ const processNextTeamInQueue = async () => {
   }
 };
 
-// Function to get aggregated Twitter stats for a tournament
 const getAggregatedTwitterStats = async (tournamentId) => {
   try {
-    // Get all Twitter data for this tournament
     const allTwitterData = await TwitterData.find({ tournamentId });
 
     if (!allTwitterData.length) {
@@ -324,7 +302,6 @@ const getAggregatedTwitterStats = async (tournamentId) => {
 
     // console.log('ALL Twitter aggregation:', allTwitterData);
 
-    // Aggregate all results
     const aggregatedStats = {
       posts: 0,
       likes: 0,
@@ -360,12 +337,12 @@ const getAggregatedTwitterStats = async (tournamentId) => {
       aggregatedStats.recentTweets.push(...teamTweets);
     });
 
-    // Sort recent tweets by date (newest first)
+    // recent tweets by date (newest first)
     aggregatedStats.recentTweets.sort(
       (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
     );
 
-    // Keep only the most recent tweets (e.g., top 5)
+    // most recent tweets (e.g., top 5)
     aggregatedStats.recentTweets = aggregatedStats.recentTweets.slice(0, 5);
 
     return aggregatedStats;
@@ -378,7 +355,6 @@ const getAggregatedTwitterStats = async (tournamentId) => {
   }
 };
 
-// Generate fallback data if API calls fail
 const generateFallbackData = (allTeams = []) => {
   const teamCount = Math.max(allTeams.length, 1);
 
@@ -391,7 +367,6 @@ const generateFallbackData = (allTeams = []) => {
     recentTweets: [],
   };
 
-  // Generate fake stats
   for (let i = 0; i < teamCount; i++) {
     fallbackStats.posts += Math.floor(Math.random() * 20) + 5;
     fallbackStats.likes += Math.floor(Math.random() * 2000) + 200;
@@ -400,7 +375,6 @@ const generateFallbackData = (allTeams = []) => {
     fallbackStats.views += Math.floor(Math.random() * 5000) + 500;
   }
 
-  // Generate fake recent tweets
   const fallbackTweets = Array.from({ length: 3 }).map((_, i) => ({
     id: `fallback-${i}`,
     author:
@@ -431,19 +405,15 @@ const generateFallbackData = (allTeams = []) => {
   return fallbackStats;
 };
 
-// Cleanup function to remove data for inactive tournaments
 const cleanupInactiveTournamentData = async () => {
   try {
-    // Find inactive queues
     const inactiveQueues = await TwitterQueue.find({ isActive: false });
     console.log(inactiveQueues);
 
     if (inactiveQueues.length > 0) {
       for (const queue of inactiveQueues) {
-        // Remove Twitter data for this tournament
         await TwitterData.deleteMany({ tournamentId: queue.tournamentId });
 
-        // Remove the queue itself
         await TwitterQueue.findByIdAndDelete(queue._id);
 
         console.log(
@@ -457,13 +427,11 @@ const cleanupInactiveTournamentData = async () => {
 };
 
 const setupCronJobs = () => {
-  // Process next team in queue every 15 minutes
   cron.schedule('*/30 * * * *', async () => {
     console.log('Running scheduled Twitter data processing...');
     await processNextTeamInQueue();
   });
 
-  // Clean up inactive tournament data daily at midnight
   cron.schedule('*/20 * * * *', async () => {
     console.log('Running inactive tournament data cleanup...');
     await cleanupInactiveTournamentData();

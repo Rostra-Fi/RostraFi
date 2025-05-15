@@ -6,9 +6,6 @@ const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
 const { VoteTypeEnum } = require('../models/voteModel').schema.statics;
 
-/**
- * Create a new vote or update existing vote
- */
 exports.createVote = catchAsync(async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -38,7 +35,6 @@ exports.createVote = catchAsync(async (req, res, next) => {
       return next(new AppError('Voting is closed for this content', 400));
     }
 
-    // Find the user wallet
     const userWallet = await UserWallet.findById(userId).session(session);
     if (!userWallet) {
       await session.abortTransaction();
@@ -46,21 +42,18 @@ exports.createVote = catchAsync(async (req, res, next) => {
       return next(new AppError('User wallet not found', 404));
     }
 
-    // Check if user has enough points
     if (userWallet.points < content.voteCost) {
       await session.abortTransaction();
       session.endSession();
       return next(new AppError('Not enough points to vote', 400));
     }
 
-    // Check if user has already voted on this content
     const existingVote = await Vote.findOne({
       user: userId,
       content: contentId,
     }).session(session);
 
     if (existingVote) {
-      // If the vote type is the same, return error
       if (existingVote.voteType === voteType) {
         await session.abortTransaction();
         session.endSession();
@@ -72,28 +65,22 @@ exports.createVote = catchAsync(async (req, res, next) => {
         );
       }
 
-      // Change vote type - first remove the old vote count
       if (existingVote.voteType === VoteTypeEnum.YES) {
         content.yesVotes = Math.max(0, content.yesVotes - 1);
       } else {
         content.noVotes = Math.max(0, content.noVotes - 1);
       }
 
-      // Then add the new vote
       if (voteType === VoteTypeEnum.YES) {
         content.yesVotes += 1;
       } else {
         content.noVotes += 1;
       }
 
-      // Update the existing vote
       existingVote.voteType = voteType;
       existingVote.updatedAt = Date.now();
       await existingVote.save({ session });
-
-      // No need to deduct points again since user already paid
     } else {
-      // Create a new vote
       const newVote = new Vote({
         user: userId,
         content: contentId,
@@ -103,7 +90,6 @@ exports.createVote = catchAsync(async (req, res, next) => {
         updatedAt: Date.now(),
       });
 
-      // Update content vote counts
       if (voteType === VoteTypeEnum.YES) {
         content.yesVotes += 1;
       } else {
@@ -111,7 +97,6 @@ exports.createVote = catchAsync(async (req, res, next) => {
       }
       content.totalVotes += 1;
 
-      // Deduct points from user wallet
       userWallet.points -= content.voteCost;
       userWallet.lastActivity = Date.now();
 
@@ -119,10 +104,8 @@ exports.createVote = catchAsync(async (req, res, next) => {
       await userWallet.save({ session });
     }
 
-    // Save the updated content
     await content.save({ session });
 
-    // Commit the transaction
     await session.commitTransaction();
     session.endSession();
 
@@ -137,9 +120,6 @@ exports.createVote = catchAsync(async (req, res, next) => {
   }
 });
 
-/**
- * Get all votes by a specific user
- */
 exports.getVotesByUser = catchAsync(async (req, res, next) => {
   const { userId } = req.params;
 
@@ -154,9 +134,6 @@ exports.getVotesByUser = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * Get all votes for a specific content
- */
 exports.getVotesByContent = catchAsync(async (req, res, next) => {
   const { contentId } = req.params;
 
@@ -171,9 +148,6 @@ exports.getVotesByContent = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * Get yes votes by a specific user across all content
- */
 exports.getYesVotesByUser = catchAsync(async (req, res, next) => {
   const { userId } = req.params;
 
@@ -191,9 +165,6 @@ exports.getYesVotesByUser = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * Get no votes by a specific user across all content
- */
 exports.getNoVotesByUser = catchAsync(async (req, res, next) => {
   const { userId } = req.params;
 

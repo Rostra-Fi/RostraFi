@@ -23,18 +23,15 @@ exports.createUserTeam = async (req, res, next) => {
       totalPoints,
     } = req.body;
 
-    // Check if tournament exists
     if (!tournamentId) {
       return next(new AppError('Invalid tournament ID', 400));
     }
 
-    // Check if wallet user exists
     const walletUser = await WalletUser.findById(walletUserId).session(session);
     if (!walletUser) {
       return next(new AppError('Wallet user not found', 404));
     }
 
-    // Check existing team name for user
     const existingTeam = await UserTeam.findOne({
       userId,
       teamName,
@@ -45,7 +42,6 @@ exports.createUserTeam = async (req, res, next) => {
       return next(new AppError('Team name already exists for this user', 400));
     }
 
-    // Validate all sections and their teams
     const validatedSections = await Promise.all(
       sections.map(async (section) => {
         const existingSection = await Section.findById(section.sectionId)
@@ -67,7 +63,6 @@ exports.createUserTeam = async (req, res, next) => {
           );
         }
 
-        // Validate selected teams exist in section
         const validTeamIds = new Set(
           existingSection.teams.map((team) => team._id.toString()),
         );
@@ -91,23 +86,20 @@ exports.createUserTeam = async (req, res, next) => {
       }),
     );
 
-    // Create user team with validated sections
     const userTeam = new UserTeam({
       walletUserId,
       userId,
       teamName,
       sections: validatedSections,
-      tournamentId, // Associate team with tournament if provided
+      tournamentId,
     });
 
     await userTeam.save({ session });
 
-    // Reset tournament points if tournament ID is provided
     if (tournamentId) {
       await walletUser.deductPoints(totalPoints);
     }
 
-    // Populate and prepare response
     const populatedTeam = await UserTeam.findById(userTeam._id)
       .populate('sections.sectionId')
       .populate('sections.selectedTeams')
@@ -141,7 +133,6 @@ exports.getTwitterDataByTournamentAndTwitterId = async (req, res) => {
     const { tournamentId, twitterId } = req.params;
     console.log(tournamentId, twitterId);
 
-    // Validate input parameters
     if (!tournamentId || !twitterId) {
       return res.status(400).json({
         success: false,
@@ -149,7 +140,6 @@ exports.getTwitterDataByTournamentAndTwitterId = async (req, res) => {
       });
     }
 
-    // Find Twitter data that matches both tournamentId and twitterId
     const twitterData = await TwitterData.findOne({
       tournamentId,
       twitterId,
@@ -157,7 +147,6 @@ exports.getTwitterDataByTournamentAndTwitterId = async (req, res) => {
 
     console.log(twitterData);
 
-    // Check if data exists
     if (!twitterData) {
       return res.status(404).json({
         success: false,
@@ -166,7 +155,6 @@ exports.getTwitterDataByTournamentAndTwitterId = async (req, res) => {
       });
     }
 
-    // Return the fetched data
     return res.status(200).json({
       success: true,
       data: twitterData,
@@ -287,7 +275,6 @@ exports.getUserTeams = async (req, res, next) => {
   try {
     const { userId, walletUserId } = req.params;
 
-    // Check if wallet user exists
     const walletUser = await WalletUser.findById(walletUserId);
     if (!walletUser) {
       return next(new AppError('Wallet user not found', 404));
@@ -311,12 +298,10 @@ exports.getUserTeams = async (req, res, next) => {
       },
     ]);
 
-    // Filter teams to get only those with active tournaments
     const activeTeams = teams.filter(
       (team) => team.tournamentId && team.tournamentId.isActive === true,
     );
 
-    // Check if there are any active tournament teams
     if (!activeTeams.length) {
       return res.status(200).json({
         status: 'success',
@@ -329,13 +314,10 @@ exports.getUserTeams = async (req, res, next) => {
       return next(new AppError('No teams found for this user', 404));
     }
 
-    // Process each tournament based on start date
     const processedTeams = await Promise.all(
       activeTeams.map(async (team) => {
-        // Convert Mongoose document to plain JavaScript object for manipulation
         const teamObj = team.toObject();
 
-        // Extract all selected teams from all sections
         const allTeams = teamObj.sections.flatMap((section) =>
           section.selectedTeams.map((selectedTeam) => ({
             ...selectedTeam,
@@ -343,7 +325,6 @@ exports.getUserTeams = async (req, res, next) => {
           })),
         );
 
-        // Check if tournament has started
         const now = new Date();
         const tournamentStartDate = new Date(team.tournamentId.startDate);
 
@@ -355,9 +336,7 @@ exports.getUserTeams = async (req, res, next) => {
           return teamObj;
         }
 
-        // If tournament has started, process and initialize queue
         try {
-          // Initialize or update the queue for this tournament
           await twitterService.initializeQueueForTournament(
             team.tournamentId._id,
             allTeams,
@@ -366,7 +345,6 @@ exports.getUserTeams = async (req, res, next) => {
             team.tournamentId.registrationEndDate,
           );
 
-          // Get the current Twitter stats from our database
           const twitterStats = await twitterService.getAggregatedTwitterStats(
             team.tournamentId._id,
           );
@@ -376,7 +354,6 @@ exports.getUserTeams = async (req, res, next) => {
             `Error processing Twitter data for tournament ${teamObj.tournamentId.name}:`,
             error,
           );
-          // Fallback to sample data if there's an error
           teamObj.twitterStats = twitterService.generateFallbackData(allTeams);
         }
 
@@ -402,7 +379,6 @@ exports.updateUserTeam = async (req, res, next) => {
     const { teamId } = req.params;
     const { userId, sections, walletUserId } = req.body;
 
-    // Check if wallet user exists
     const walletUser = await WalletUser.findById(walletUserId).session(session);
     if (!walletUser) {
       return next(new AppError('Wallet user not found', 404));
@@ -418,9 +394,7 @@ exports.updateUserTeam = async (req, res, next) => {
       return next(new AppError('Team not found or unauthorized', 404));
     }
 
-    // For each section in the request, validate and update
     if (sections && sections.length > 0) {
-      // Validate all sections and their teams
       const validatedSections = await Promise.all(
         sections.map(async (section) => {
           const existingSection = await Section.findById(section.sectionId)

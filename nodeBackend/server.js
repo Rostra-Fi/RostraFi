@@ -34,24 +34,17 @@ const port = process.env.PORT || 3000;
 // Create HTTP server from Express app
 const server = http.createServer(app);
 
-// Initialize Socket.io with CORS
 const io = new Server(server, {
   cors: {
-    origin: [
-      'http://localhost:3000', // Next.js default port
-      'https://your-production-frontend-domain.com',
-    ],
+    origin: ['http://localhost:3000'],
     methods: ['GET', 'POST'],
-    // allowedHeaders: ['Authorization'],
     credentials: true,
   },
 });
 
-// Socket.io connection handler
 io.on('connection', (socket) => {
   console.log('New client connected');
 
-  // User joins their personal room
   socket.on('join', (userId) => {
     socket.join(userId);
     console.log(`User ${userId} joined their personal notification room`);
@@ -62,7 +55,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Attach io to the app for global access
 app.set('io', io);
 
 server.listen(port, () => {
@@ -77,5 +69,4 @@ process.on('unhandledRejection', (err) => {
   });
 });
 
-// Export io for use in other files if needed
 module.exports = { io };

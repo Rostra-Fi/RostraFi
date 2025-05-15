@@ -27,19 +27,14 @@ const updateExpiredContent = async () => {
   }
 };
 
-/**
- * Create new content
- */
 exports.createContent = catchAsync(async (req, res, next) => {
   const { title, description, image, points, voteCost, startDate, duration } =
     req.body;
 
-  // Validate required fields
   if (!title || !description) {
     return next(new AppError('Title and description are required', 400));
   }
 
-  // Calculate dates
   const start = startDate ? new Date(startDate) : new Date();
   let end;
 
@@ -121,9 +116,6 @@ exports.getAllContent = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * Get content by ID
- */
 exports.getContentById = catchAsync(async (req, res, next) => {
   const { id } = req.params;
 
@@ -133,7 +125,6 @@ exports.getContentById = catchAsync(async (req, res, next) => {
     return next(new AppError('Content not found', 404));
   }
 
-  // Check if the content has expired and update if needed
   if (new Date() > new Date(content.endDate) && content.isActive) {
     content.isActive = false;
     await content.save();
@@ -145,9 +136,6 @@ exports.getContentById = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * Update content
- */
 exports.updateContent = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   const {
@@ -166,7 +154,6 @@ exports.updateContent = catchAsync(async (req, res, next) => {
     return next(new AppError('Content not found', 404));
   }
 
-  // Check if the content has already expired
   if (new Date() > new Date(content.endDate)) {
     content.isActive = false;
     await content.save();
@@ -188,7 +175,6 @@ exports.updateContent = catchAsync(async (req, res, next) => {
     const newStartDate = new Date(startDate);
     content.startDate = newStartDate;
 
-    // Recalculate endDate if duration is provided or use existing duration
     if (duration) {
       content.duration = duration;
       const newEndDate = new Date(newStartDate);
@@ -200,7 +186,6 @@ exports.updateContent = catchAsync(async (req, res, next) => {
       content.endDate = newEndDate;
     }
   } else if (duration) {
-    // Only duration is provided
     content.duration = duration;
     const newEndDate = new Date(content.startDate);
     newEndDate.setDate(newEndDate.getDate() + parseInt(duration));
@@ -217,9 +202,6 @@ exports.updateContent = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * Delete content
- */
 exports.deleteContent = catchAsync(async (req, res, next) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -253,9 +235,6 @@ exports.deleteContent = catchAsync(async (req, res, next) => {
   }
 });
 
-/**
- * Get trending content (most votes)
- */
 exports.getTrendingContent = catchAsync(async (req, res, next) => {
   const { limit = 10 } = req.query;
 
@@ -273,9 +252,6 @@ exports.getTrendingContent = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * Get active content ending soon
- */
 exports.getContentEndingSoon = catchAsync(async (req, res, next) => {
   const { limit = 10, hoursThreshold = 24 } = req.query;
 

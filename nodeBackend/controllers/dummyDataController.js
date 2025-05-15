@@ -2,17 +2,14 @@ const TwitterQueue = require('../models/twitterQueueModel');
 const TwitterData = require('../models/twitterDataModel');
 const mongoose = require('mongoose');
 
-// Controller for TwitterQueue
 exports.createTwitterQueue = async (req, res) => {
   try {
     const { tournamentId, teamsToProcess } = req.body;
 
-    // Validate tournamentId
     if (!mongoose.Types.ObjectId.isValid(tournamentId)) {
       return res.status(400).json({ message: 'Invalid Tournament ID' });
     }
 
-    // Validate teams
     const processedTeams = teamsToProcess.map((team) => ({
       teamId: mongoose.Types.ObjectId.isValid(team.teamId)
         ? team.teamId
@@ -57,7 +54,6 @@ exports.createTwitterData = async (req, res) => {
       tweets,
     } = req.body;
 
-    // Validate IDs
     if (!mongoose.Types.ObjectId.isValid(tournamentId)) {
       return res.status(400).json({ message: 'Invalid Tournament ID' });
     }
@@ -66,7 +62,6 @@ exports.createTwitterData = async (req, res) => {
       return res.status(400).json({ message: 'Invalid Team ID' });
     }
 
-    // Prepare tweets with validation
     const processedTweets = (tweets || []).map((tweet) => ({
       id: tweet.id || '',
       content: tweet.content || '',
@@ -103,7 +98,6 @@ exports.createTwitterData = async (req, res) => {
   }
 };
 
-// Get all Twitter Queues
 exports.getAllTwitterQueues = async (req, res) => {
   try {
     const queues = await TwitterQueue.find();
@@ -113,7 +107,6 @@ exports.getAllTwitterQueues = async (req, res) => {
   }
 };
 
-// Get all Twitter Data
 exports.getAllTwitterData = async (req, res) => {
   try {
     const data = await TwitterData.find();
@@ -123,7 +116,6 @@ exports.getAllTwitterData = async (req, res) => {
   }
 };
 
-// Get TwitterData by TeamId
 exports.getTwitterDataByTeamId = async (req, res) => {
   try {
     const { teamId } = req.params;

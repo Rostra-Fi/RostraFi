@@ -18,6 +18,7 @@ export default {
         aurora: "aurora 60s linear infinite",
         pop: "pop 0.2s ease-out", // New
         "trophy-bounce": "trophy-bounce 1s ease-in-out infinite", // New
+        spotlight: "spotlight 2s ease .75s 1 forwards",
       },
       colors: {
         background: "hsl(var(--background))",
@@ -69,6 +70,16 @@ export default {
           },
           to: {
             backgroundPosition: "350% 50%, 350% 50%",
+          },
+        },
+        spotlight: {
+          "0%": {
+            opacity: "0",
+            transform: "translate(-72%, -62%) scale(0.5)",
+          },
+          "100%": {
+            opacity: "1",
+            transform: "translate(-50%,-40%) scale(1)",
           },
         },
         pop: {

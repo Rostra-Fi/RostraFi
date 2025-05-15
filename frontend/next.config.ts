@@ -1,5 +1,8 @@
 // next.config.js
-const nextConfig = {
+import { createCivicAuthPlugin } from "@civic/auth-web3/nextjs";
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
   env: {
     REDIS_HOST: process.env.REDIS_HOST,
     REDIS_PORT: process.env.REDIS_PORT,
@@ -27,4 +30,9 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+const withCivicAuth = createCivicAuthPlugin({
+  clientId: process.env.NEXT_PUBLIC_CIVIC_CLIENT_ID || "",
+  enableSolanaWalletAdapter: true,
+});
+
+export default withCivicAuth(nextConfig);

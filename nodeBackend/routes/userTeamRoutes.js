@@ -6,7 +6,6 @@ const { RATE_LIMIT } = require('../utils/constants');
 
 const router = express.Router();
 
-// Apply rate limiting
 const limiter = rateLimit(RATE_LIMIT);
 router.use(limiter);
 

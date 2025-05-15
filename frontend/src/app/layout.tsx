@@ -7,6 +7,7 @@ import AppWalletProvider from "../components/AppWalletProvider";
 import { Toaster } from "react-hot-toast";
 import { Toaster as ToasterAll } from "@/components/ui/toaster";
 import ClientSide from "@/components/ClientSide";
+import { CivicAuthProvider } from "@civic/auth-web3/nextjs";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

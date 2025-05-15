@@ -1,10 +1,8 @@
-// tournament-winner-routes.js
 const express = require('express');
 const router = express.Router();
 const TournamentWinnerService = require('../services/tournamentWinningServices');
 const Tournament = require('../models/tournamentModel');
 
-// Get tournament leaderboard
 router.get('/tournaments/:tournamentId/leaderboard', async (req, res) => {
   try {
     const { tournamentId } = req.params;
@@ -43,13 +41,11 @@ router.get('/tournaments/:tournamentId/leaderboard', async (req, res) => {
   }
 });
 
-// Manually trigger winner calculation (admin only)
 router.post(
   '/admin/tournaments/:tournamentId/calculate-winners',
 
   async (req, res) => {
     try {
-      // Check if user is admin (implement your admin check)
       if (!req.user) {
         return res.status(403).json({
           success: false,
@@ -59,7 +55,6 @@ router.post(
 
       const { tournamentId } = req.params;
 
-      // Validate tournament existence
       const tournament = await Tournament.findById(tournamentId);
       if (!tournament) {
         return res.status(404).json({
@@ -68,7 +63,6 @@ router.post(
         });
       }
 
-      // Schedule calculation
       await TournamentWinnerService.calculateTournamentWinners(tournamentId);
 
       return res.status(200).json({
@@ -85,7 +79,6 @@ router.post(
   },
 );
 
-// Manually trigger prize distribution (admin only)
 router.post(
   '/admin/tournaments/:tournamentId/distribute-prizes',
 
@@ -101,7 +94,6 @@ router.post(
 
       const { tournamentId } = req.params;
 
-      // Validate tournament existence
       const tournament = await Tournament.findById(tournamentId);
       if (!tournament) {
         return res.status(404).json({
@@ -110,7 +102,6 @@ router.post(
         });
       }
 
-      // Check if tournament has ended
       const now = new Date();
       if (now < tournament.endDate) {
         return res.status(400).json({
@@ -119,7 +110,6 @@ router.post(
         });
       }
 
-      // Distribute prizes
       await TournamentWinnerService.distributePrizes(tournamentId);
 
       return res.status(200).json({

@@ -45,10 +45,8 @@ const voteSchema = new Schema(
   },
 );
 
-// Compound index to ensure a user can only vote once per content
 voteSchema.index({ user: 1, content: 1 }, { unique: true });
 
-// Export the enum for use in controllers
 voteSchema.statics.VoteTypeEnum = VoteTypeEnum;
 
 const Vote = mongoose.model('Vote', voteSchema);
