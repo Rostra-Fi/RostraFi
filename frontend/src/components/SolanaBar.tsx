@@ -1,9 +1,9 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useAppSelector } from "@/hooks/reduxHooks";
 import { useParams } from "next/navigation";
 import { WalletDialog } from "@/components/WalletDialog";
-import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const SolanaNavbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -11,12 +11,10 @@ const SolanaNavbar = () => {
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [walletAddress, setWalletAddress] = useState("");
 
-  // const { tourId } = useParams();
   const params = useParams();
   const tourId = params?.tourId as string | undefined;
 
   const { points } = useAppSelector((state) => state.user);
-  // const { userWalletAddress } = useAppSelector((state) => state.user);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -53,20 +51,17 @@ const SolanaNavbar = () => {
 
   const fetchWalletBalance = async (address: string) => {
     try {
-      const { solana } = window as any;
+      // Use the Connection class from @solana/web3.js instead of solana.Connection
+      const connection = new Connection(
+        "https://api.devnet.solana.com",
+        "confirmed"
+      );
 
-      if (solana && address) {
-        const connection = new solana.Connection(
-          "https://api.devnet.solana.com",
-          "confirmed"
-        );
+      const publicKey = new PublicKey(address);
+      const balanceInLamports = await connection.getBalance(publicKey);
 
-        const publicKey = new solana.PublicKey(address);
-        const balanceInLamports = await connection.getBalance(publicKey);
-
-        const balanceInSol = balanceInLamports / 1000000000;
-        setBalance(balanceInSol.toFixed(3));
-      }
+      const balanceInSol = balanceInLamports / LAMPORTS_PER_SOL;
+      setBalance(balanceInSol.toFixed(3));
     } catch (error) {
       console.error("Error fetching balance:", error);
     }
@@ -97,6 +92,7 @@ const SolanaNavbar = () => {
               className="flex gap-1 items-center bg-slate-300 text-black font-medium px-4 py-1 rounded-full h-8 ml-2"
             >
               <span>Wallet</span>
+              {balance && <span>({balance} SOL)</span>}
             </button>
           </div>
         </div>

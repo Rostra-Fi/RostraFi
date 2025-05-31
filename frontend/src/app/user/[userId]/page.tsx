@@ -30,6 +30,7 @@ import {
   Medal,
   Gamepad2,
 } from "lucide-react";
+import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -56,6 +57,7 @@ import { Label } from "@/components/ui/label";
 import { NotificationComponent } from "@/components/Notification";
 import BadgeSystem from "@/components/BadgeSystem";
 import GamesDialog from "@/components/GameDialog";
+import { WalletDialog } from "@/components/WalletDialog";
 
 // Add these interfaces at the top of your file
 interface Team {
@@ -970,6 +972,7 @@ export default function ProfilePage() {
   const [transactionsDialogOpen, setTransactionsDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
   const [gamesDialogOpen, setGamesDialogOpen] = useState(false);
+  const [balance, setBalance] = useState<string | null>("0");
 
   const { userCurrentTournament, points, tournaments, userTournaments } =
     useAppSelector((state) => state.user);
@@ -981,6 +984,36 @@ export default function ProfilePage() {
 
   const handleBadgeCountUpdate = (count: number) => {
     setBadgeCount(count);
+  };
+
+  const fetchWalletBalance = async (address: string) => {
+    try {
+      // Use the Connection class from @solana/web3.js instead of solana.Connection
+      const connection = new Connection(
+        "https://api.devnet.solana.com",
+        "confirmed"
+      );
+
+      const publicKey = new PublicKey(address);
+      const balanceInLamports = await connection.getBalance(publicKey);
+
+      const balanceInSol = balanceInLamports / LAMPORTS_PER_SOL;
+      // console.log("Wallet balance in SOL:", balanceInSol);
+      setBalance(balanceInSol.toFixed(3));
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (walletUserId) {
+      fetchWalletBalance(walletUserId);
+    }
+  }, []);
+
+  const handleOpenWalletDialog = () => {
+    fetchWalletBalance(walletUserId as string);
+    setWalletDialogOpen(false);
   };
 
   const fetchGameData = async (walletAddress: string) => {
@@ -1175,7 +1208,7 @@ export default function ProfilePage() {
                 onClick={() => setWalletDialogOpen(true)}
               >
                 <Wallet className="h-4 w-4 text-white/70" />
-                <span>2.5 SOL</span>
+                <span>{balance}</span>
               </motion.div>
 
               {/* Points */}
@@ -1347,6 +1380,11 @@ export default function ProfilePage() {
         </motion.div>
       </div>
 
+      <WalletDialog
+        isOpen={walletDialogOpen}
+        onClose={handleOpenWalletDialog}
+      />
+
       <BadgeSystem
         walletAddress={walletUserId as string}
         userId={userId}
@@ -1358,47 +1396,6 @@ export default function ProfilePage() {
         onOpenChange={setGamesDialogOpen}
         gameData={gameData}
       />
-
-      {/* Wallet Dialog */}
-      <Dialog open={walletDialogOpen} onOpenChange={setWalletDialogOpen}>
-        <DialogContent className="bg-[#111] border border-white/10 text-white">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold flex items-center gap-2">
-              <Wallet className="h-5 w-5" />
-              Wallet Details
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="bg-black/40 rounded-lg p-4">
-              <div className="text-white/60 text-sm mb-1">Balance</div>
-              <div className="text-2xl font-bold">2.5 SOL</div>
-              <div className="text-white/60 text-sm mt-1">≈ $250.00 USD</div>
-            </div>
-
-            <div className="bg-black/40 rounded-lg p-4">
-              <div className="text-white/60 text-sm mb-1">Wallet Address</div>
-              <div className="text-sm font-mono bg-black/60 p-2 rounded border border-white/5 flex justify-between items-center">
-                <span>Dg3A...y42k</span>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex gap-2 justify-end mt-4">
-              <Button
-                variant="outline"
-                className="bg-white/5 hover:bg-white/10 border-white/10 text-white"
-              >
-                Deposit
-              </Button>
-              <Button className="bg-white text-black hover:bg-white/90">
-                Withdraw
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Tournament Dialog - Updated */}
       <Dialog

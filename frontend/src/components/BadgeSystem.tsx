@@ -568,10 +568,10 @@ const BadgeSystem: React.FC<BadgeSystemProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 ml-[5.4rem] mt-10">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center ml-[5.4rem] gap-3">
+        <div className="flex items-center  gap-3">
           <Trophy className="w-6 h-6 text-white/70" />
           <h2 className="text-xl font-bold text-white">Achievement Badges</h2>
           {badges.length > 0 && (
