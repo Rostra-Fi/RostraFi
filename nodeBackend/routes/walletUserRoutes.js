@@ -15,4 +15,8 @@ router.post('/points/deduct', walletUserController.deductPoints);
 
 router.get('/:address/points', walletUserController.getWalletPoints);
 
+router.put('/:walletAddress/points', walletUserController.updateWalletPoints);
+
+router.route('/:walletAddress/games').get(walletUserController.getUserGames);
+
 module.exports = router;

@@ -22,12 +22,18 @@ import confetti from "canvas-confetti";
 import { X, Award, Trophy } from "lucide-react";
 import { setIsNewUser } from "@/store/userSlice";
 import dynamic from "next/dynamic";
+import RetroGameCompletionPopup from "@/components/GameComplitionPopup";
 
 export default function Home() {
   const dispatch = useAppDispatch();
   const { isNewUser, points } = useAppSelector((state) => state.user);
   const [showDialog, setShowDialog] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [gameCompletionInfo, setGameCompletionInfo] = useState<{
+    pointsEarned: number;
+    gameWon: boolean;
+    gameName: string;
+  } | null>(null);
   const user = useUser();
   console.log("user civic", user);
 
@@ -35,6 +41,28 @@ export default function Home() {
     dispatch(fetchTournaments());
     dispatch(fetchOpenRegistrationTournaments());
   }, [dispatch]);
+
+  useEffect(() => {
+    // Use window.location to get search params
+    const params = new URLSearchParams(window.location.search);
+    console.log(params.toString());
+    const pointsEarned = params.get("pointsEarned");
+    const gameWon = params.get("gameWon");
+    const gameName = params.get("gameName");
+
+    if (pointsEarned && gameWon && gameName) {
+      // Set game completion info
+      setGameCompletionInfo({
+        pointsEarned: parseInt(pointsEarned),
+        gameWon: gameWon === "true",
+        gameName: gameName,
+      });
+
+      // Clean up URL params after processing
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, []);
 
   useEffect(() => {
     setIsMounted(true);
@@ -73,6 +101,10 @@ export default function Home() {
   const handleCloseDialog = () => {
     setShowDialog(false);
     dispatch(setIsNewUser(false));
+  };
+
+  const handleCloseGameCompletion = () => {
+    setGameCompletionInfo(null);
   };
 
   const createConfetti = (intensity = 1) => {
@@ -128,6 +160,15 @@ export default function Home() {
         <WalletConnectButton />
       </div>
       <HomeBackGround />
+
+      {gameCompletionInfo && (
+        <RetroGameCompletionPopup
+          pointsEarned={gameCompletionInfo.pointsEarned}
+          gameWon={gameCompletionInfo.gameWon}
+          gameName={gameCompletionInfo.gameName}
+          onClose={handleCloseGameCompletion}
+        />
+      )}
 
       {/* Welcome Dialog for New Users */}
       {isMounted && (

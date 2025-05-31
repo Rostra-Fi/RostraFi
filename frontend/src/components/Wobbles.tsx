@@ -13,7 +13,16 @@ import { useOutsideClick } from "../hooks/use-outside-click";
 import { useParams } from "next/navigation";
 import { WobbleCard } from "@/components/ui/wobble-card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Coins } from "lucide-react";
+import {
+  Coins,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  AlertTriangle,
+  Target,
+  ExternalLink,
+} from "lucide-react";
+import { sentiment_results, getSentimentStyling } from "@/services/sentiment";
 
 type SelectionState = {
   isPending: boolean;
@@ -40,6 +49,7 @@ export function WobbleTeamSection({
   const [selectionStates, setSelectionStates] = useState<SelectionMap>({});
   const [showPointsInfo, setShowPointsInfo] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [hoveredTeam, setHoveredTeam] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null!);
   const id = useId();
 
@@ -219,6 +229,11 @@ export function WobbleTeamSection({
         {teams.map((member) => {
           const isSelected = getMemberState(member).isSelected;
           const canSelectTeam = canAfford(member) || isSelected;
+          const sentiment =
+            sentiment_results[member.name as keyof typeof sentiment_results] ||
+            "Neutral";
+          const sentimentStyle = getSentimentStyling(sentiment);
+          const SentimentIcon = sentimentStyle.icon;
 
           return (
             <motion.div
@@ -229,7 +244,35 @@ export function WobbleTeamSection({
                 duration: 0.3,
                 delay: teams.indexOf(member) * 0.1,
               }}
+              className="relative"
+              onMouseEnter={() => setHoveredTeam(member.name)}
+              onMouseLeave={() => setHoveredTeam(null)}
             >
+              {/* Sentiment Tooltip */}
+              <AnimatePresence>
+                {hoveredTeam === member.name && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                    className={`absolute -top-16 left-1/2 transform -translate-x-1/2 z-50 px-3 py-2 rounded-lg border backdrop-blur-md ${sentimentStyle.bgColor} ${sentimentStyle.borderColor}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <SentimentIcon
+                        size={16}
+                        className={sentimentStyle.color}
+                      />
+                      <span
+                        className={`font-semibold text-sm ${sentimentStyle.color}`}
+                      >
+                        {sentiment}
+                      </span>
+                    </div>
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-800"></div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               <WobbleCard
                 containerClassName={`w-full h-[320px] relative transition-all duration-300 overflow-hidden ${
                   isSelected
@@ -240,6 +283,20 @@ export function WobbleTeamSection({
                 }`}
                 className="cursor-pointer relative"
               >
+                {/* Sentiment indicator badge */}
+                <div
+                  className={`absolute top-3 right-3 z-20 px-2 py-1 rounded-full backdrop-blur-md border ${sentimentStyle.bgColor} ${sentimentStyle.borderColor}`}
+                >
+                  <div className="flex items-center gap-1">
+                    <SentimentIcon size={12} className={sentimentStyle.color} />
+                    <span
+                      className={`text-xs font-medium ${sentimentStyle.color}`}
+                    >
+                      {sentiment}
+                    </span>
+                  </div>
+                </div>
+
                 {/* Rest of the card content remains the same as in the previous implementation */}
                 <div className="absolute inset-0 bg-[rgb(21,22,22)] bg-opacity-100"></div>
 
@@ -322,10 +379,67 @@ export function WobbleTeamSection({
               <div className="md:w-1/2 p-8 flex flex-col">
                 <h2 className="text-2xl font-bold mb-2">{activeTeam.name}</h2>
 
-                <div className="flex items-center gap-2 text-yellow-300 font-medium mb-6">
+                <div className="flex items-center gap-2 text-yellow-300 font-medium mb-4">
                   <Coins size={20} />
                   <span>{activeTeam.points || 250} points</span>
                 </div>
+
+                {/* Sentiment Analysis Section */}
+                {(() => {
+                  const sentiment =
+                    sentiment_results[
+                      activeTeam.name as keyof typeof sentiment_results
+                    ] || "Neutral";
+                  const sentimentStyle = getSentimentStyling(sentiment);
+                  const SentimentIcon = sentimentStyle.icon;
+
+                  return (
+                    <div
+                      className={`mb-6 p-4 rounded-lg border backdrop-blur-md ${sentimentStyle.bgColor} ${sentimentStyle.borderColor}`}
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <SentimentIcon
+                          size={20}
+                          className={sentimentStyle.color}
+                        />
+                        <span
+                          className={`font-bold text-lg ${sentimentStyle.color}`}
+                        >
+                          Market Sentiment: {sentiment}
+                        </span>
+                      </div>
+                      <p className="text-gray-300 text-sm">
+                        {sentimentStyle.description}
+                      </p>
+                    </div>
+                  );
+                })()}
+                {activeTeam.audio && (
+                  <div className="mb-6">
+                    <a
+                      href={activeTeam.audio}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30 hover:bg-blue-500/20 transition-all duration-300 group"
+                    >
+                      <div className="p-2 rounded-full bg-blue-500/20">
+                        <ExternalLink size={18} className="text-blue-400" />
+                      </div>
+                      <div className="flex-1">
+                        <span className="text-blue-400 font-medium">
+                          Visit Twitter Profile
+                        </span>
+                        <p className="text-gray-400 text-sm">
+                          Check out their latest tweets
+                        </p>
+                      </div>
+                      <ExternalLink
+                        size={16}
+                        className="text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
+                    </a>
+                  </div>
+                )}
 
                 <p className="text-gray-300 mb-8 flex-grow">
                   {activeTeam.description}

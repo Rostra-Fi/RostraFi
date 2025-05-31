@@ -4,6 +4,7 @@ import { HoveredLink, Menu, MenuItem, ProductItem } from "./ui/navbar-menu";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/hooks/reduxHooks";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 function Navbar({ className }: { className?: string }) {
   const [active, setActive] = useState<string | null>(null);
@@ -88,6 +89,9 @@ function Navbar({ className }: { className?: string }) {
             </div>
           </div>
         </MenuItem>
+        <Link href={"/games"}>
+          <MenuItem setActive={setActive} active={active} item="Games" />
+        </Link>
       </Menu>
     </div>
   );

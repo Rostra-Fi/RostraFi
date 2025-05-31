@@ -3,6 +3,7 @@ const UserTeam = require('../models/userTeamModel');
 const { isValidSolanaAddress } = require('../utils/validate');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
+const mongoose = require('mongoose');
 
 exports.getWallet = catchAsync(async (req, res) => {
   const { address } = req.params;
@@ -178,6 +179,50 @@ exports.registerOrRetrieveWallet = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.updateWalletPoints = catchAsync(async (req, res, next) => {
+  const { walletAddress, points, operation } = req.body;
+
+  if (!walletAddress || points === undefined || !operation) {
+    return next(
+      new AppError('Wallet address, points, and operation are required', 400),
+    );
+  }
+
+  if (points <= 0) {
+    return next(new AppError('Points must be a positive number', 400));
+  }
+
+  const wallet = await WalletUser.findOne({ walletAddress });
+
+  if (!wallet) {
+    return next(new AppError('Wallet not found', 404));
+  }
+
+  if (operation === 'add') {
+    await wallet.addPoints(points);
+    return res.status(200).json({
+      success: true,
+      data: wallet,
+      message: `${points} points added successfully`,
+    });
+  } else if (operation === 'deduct') {
+    if (wallet.points < points) {
+      return next(new AppError(400, 'Insufficient points balance'));
+    }
+
+    await wallet.deductPoints(points);
+    return res.status(200).json({
+      success: true,
+      data: wallet,
+      message: `${points} points deducted successfully`,
+    });
+  } else {
+    return next(
+      new AppError('Invalid operation. Must be either "add" or "deduct"', 400),
+    );
+  }
+});
+
 exports.addPoints = catchAsync(async (req, res) => {
   const { walletAddress, points } = req.body;
 
@@ -185,11 +230,7 @@ exports.addPoints = catchAsync(async (req, res) => {
     return next(new AppError('Wallet address and points are required', 400));
   }
 
-  if (!isValidSolanaAddress(walletAddress)) {
-    return next(new AppError('Invalid Solana wallet address', 400));
-  }
-
-  if (typeof points !== 'number' || points <= 0) {
+  if (points <= 0) {
     return next(new AppError('Points must be a positive number', 400));
   }
 
@@ -215,11 +256,7 @@ exports.deductPoints = catchAsync(async (req, res, next) => {
     return next(new AppError('Wallet address and points are required', 400));
   }
 
-  if (!isValidSolanaAddress(walletAddress)) {
-    return next(new AppError('Invalid Solana wallet address', 400));
-  }
-
-  if (typeof points !== 'number' || points <= 0) {
+  if (points <= 0) {
     return next(new AppError('Points must be a positive number', 400));
   }
 
@@ -245,9 +282,9 @@ exports.deductPoints = catchAsync(async (req, res, next) => {
 exports.getWalletPoints = catchAsync(async (req, res, next) => {
   const { address } = req.params;
 
-  if (!isValidSolanaAddress(address)) {
-    return next(new AppError(400, 'Invalid Solana wallet address'));
-  }
+  // if (!isValidSolanaAddress(address)) {
+  //   return next(new AppError(400, 'Invalid Solana wallet address'));
+  // }
 
   const wallet = await WalletUser.findOne({ walletAddress: address });
 
@@ -262,4 +299,49 @@ exports.getWalletPoints = catchAsync(async (req, res, next) => {
       points: wallet.points,
     },
   });
+});
+
+exports.getUserGames = catchAsync(async (req, res, next) => {
+  try {
+    const { walletAddress } = req.params;
+
+    // Find the user first
+    const user = await WalletUser.findOne({ walletAddress });
+    console.log('user-game:', user);
+
+    if (!user) {
+      return next(
+        new ErrorResponse(`User not found with id ${walletAddress}`, 404),
+      );
+    }
+
+    // Initialize empty result object to store all game data
+    const allGames = {
+      candycrush: null,
+      battleship: null,
+      spaceinvaders: null,
+      platformer: null,
+    };
+
+    // Use Promise.all to fetch only the games the user has played
+    await Promise.all(
+      user.games.map(async (gameEntry) => {
+        const gameModel = mongoose.model(gameEntry.gameType);
+        const gameData = await gameModel.findById(gameEntry.gameId);
+        console.log(gameModel);
+        console.log(`Fetched game data for ${gameEntry.gameType}:`, gameData);
+        if (gameData) {
+          allGames[gameEntry.gameType] = gameData;
+        }
+      }),
+    );
+
+    res.status(200).json({
+      success: true,
+      userId: { userId: user.walletAddress, points: user.points },
+      games: allGames,
+    });
+  } catch (error) {
+    next(error);
+  }
 });

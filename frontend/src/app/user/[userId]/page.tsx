@@ -27,6 +27,8 @@ import {
   Loader,
   RefreshCw,
   ArrowRight,
+  Medal,
+  Gamepad2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -52,6 +54,8 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NotificationComponent } from "@/components/Notification";
+import BadgeSystem from "@/components/BadgeSystem";
+import GamesDialog from "@/components/GameDialog";
 
 // Add these interfaces at the top of your file
 interface Team {
@@ -900,11 +904,60 @@ interface UserTournament {
   isOngoing: boolean;
 }
 
+//gamedata
+interface GameData {
+  success: boolean;
+  userId: string;
+  games: {
+    candycrush: {
+      totalPoints: number;
+      currentLevel: number;
+      levels: {
+        levelNumber: number;
+        cleared: boolean;
+        stars: number;
+        pointsEarned: number;
+        maxPoints: number;
+        _id: string;
+      }[];
+    } | null;
+    battleship: {
+      totalPoints: number;
+      totalGames: number;
+      gamesWon: number;
+      gameHistory: {
+        difficulty: string;
+        won: boolean;
+        pointsEarned: number;
+        movesUsed: number;
+        playedAt: string;
+        _id: string;
+      }[];
+    } | null;
+    spaceinvaders: {
+      totalPoints: number;
+      highScore: number;
+      totalGames: number;
+      gameHistory: {
+        score: number;
+        level: number;
+        enemiesDestroyed: number;
+        playedAt: string;
+        _id: string;
+      }[];
+    } | null;
+    platformer: null;
+  };
+}
+
 export default function ProfilePage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: containerRef });
   const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
   const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0.3]);
+  const [badgeCount, setBadgeCount] = useState(0);
+  const [gameData, setGameData] = useState<GameData | null>(null);
+
   const dispatch = useAppDispatch();
   // const { userId } = useParams();
 
@@ -916,6 +969,7 @@ export default function ProfilePage() {
   const [tournamentDialogOpen, setTournamentDialogOpen] = useState(false);
   const [transactionsDialogOpen, setTransactionsDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  const [gamesDialogOpen, setGamesDialogOpen] = useState(false);
 
   const { userCurrentTournament, points, tournaments, userTournaments } =
     useAppSelector((state) => state.user);
@@ -925,10 +979,32 @@ export default function ProfilePage() {
   console.log("userTournaments:", userTournaments);
   console.log("userCurrentTournament:", userCurrentTournament);
 
+  const handleBadgeCountUpdate = (count: number) => {
+    setBadgeCount(count);
+  };
+
+  const fetchGameData = async (walletAddress: string) => {
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:3001/api/v1/walletUser/${walletAddress}/games`
+      );
+      const data = await response.json();
+      console.log("Game data fetched:", data);
+
+      setGameData(data);
+    } catch (error) {
+      console.error("Error fetching game data:", error);
+    }
+  };
+
   useEffect(() => {
     dispatch(userWalletConnect(walletUserId as string));
     dispatch(userCurrentTournaments(walletUserId as string, userId as string));
     // dispatch(fetchUserTournaments(walletUserId as string));
+
+    if (walletUserId) {
+      fetchGameData(walletUserId);
+    }
   }, [userId, walletUserId, dispatch]);
 
   // Function to handle opening tournament dialog
@@ -1110,6 +1186,13 @@ export default function ProfilePage() {
                 <Trophy className="h-4 w-4 text-white/70" />
                 <span>{points || 0} Points</span>
               </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="flex items-center gap-1 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 px-3 py-1 rounded-full border border-yellow-500/30"
+              >
+                <Medal className="h-4 w-4 text-yellow-400" />
+                <span className="text-yellow-400">{badgeCount} Badges</span>
+              </motion.div>
 
               {/* New Transactions Button */}
               <motion.div
@@ -1189,6 +1272,38 @@ export default function ProfilePage() {
                 </WobbleCard>
               </motion.div>
             ))}
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.6, duration: 0.5 }}
+              whileHover={{ y: -5, scale: 1.02 }}
+              className="cursor-pointer"
+              onClick={() => setGamesDialogOpen(true)}
+            >
+              <WobbleCard
+                containerClassName="bg-gradient-to-br from-[#1a1a1a] to-black"
+                className="p-4"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="text-gray-400 text-sm mb-1 flex items-center gap-2">
+                      <Gamepad2 className="h-5 w-5 text-white/70" />
+                      Your Games
+                    </div>
+                    <div className="text-2xl font-bold text-white">
+                      {gameData
+                        ? Object.values(gameData?.games).filter(
+                            (game) => game !== null
+                          ).length
+                        : 0}
+                    </div>
+                  </div>
+                  <div className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">
+                    Click to view
+                  </div>
+                </div>
+              </WobbleCard>
+            </motion.div>
           </div>
         </motion.div>
 
@@ -1208,14 +1323,41 @@ export default function ProfilePage() {
 
           <div className="space-y-8">
             {Array.isArray(userCurrentTournament) &&
+            userCurrentTournament.length > 0 ? (
               userCurrentTournament.map(
                 (tournament: UserCurrentTournament, index: number) => (
                   <TournamentCard key={index} tournament={tournament} />
                 )
-              )}
+              )
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 px-4">
+                <div className="bg-white/5 rounded-full p-6 mb-4">
+                  <Trophy className="h-12 w-12 text-white/30" />
+                </div>
+                <h3 className="text-lg font-semibold text-white/90 mb-2">
+                  No Tournaments Yet
+                </h3>
+                <p className="text-white/60 text-center max-w-md">
+                  You haven't participated in any tournaments yet. Join your
+                  first tournament to start competing!
+                </p>
+              </div>
+            )}
           </div>
         </motion.div>
       </div>
+
+      <BadgeSystem
+        walletAddress={walletUserId as string}
+        userId={userId}
+        onBadgeCountUpdate={handleBadgeCountUpdate}
+      />
+
+      <GamesDialog
+        open={gamesDialogOpen}
+        onOpenChange={setGamesDialogOpen}
+        gameData={gameData}
+      />
 
       {/* Wallet Dialog */}
       <Dialog open={walletDialogOpen} onOpenChange={setWalletDialogOpen}>

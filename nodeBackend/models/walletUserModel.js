@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
+const Badge = require('../models/badge');
+const UserBadge = require('../models/userBadge');
 
 const userWalletSchema = new Schema(
   {
@@ -37,6 +39,34 @@ const userWalletSchema = new Schema(
         },
       },
     ],
+    badges: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'UserBadge',
+      },
+    ],
+
+    games: [
+      {
+        gameType: {
+          type: String,
+          enum: ['candycrush', 'battleship', 'spaceinvaders', 'platformer'],
+        },
+        gameId: {
+          type: mongoose.Schema.Types.ObjectId,
+          refPath: 'games.gameType',
+        },
+      },
+    ],
+
+    totalBadges: {
+      type: Number,
+      default: 0,
+    },
+    lastBadgeEarned: {
+      type: Date,
+      default: null,
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -107,7 +137,11 @@ userWalletSchema.methods.addTournament = function (
   );
 
   if (!alreadyParticipated) {
-    this.tournaments.push(tournamentId);
+    this.tournaments.push({
+      tournamentId: tournamentId,
+      rank: null,
+      prize: 0,
+    });
     this.lastActivity = Date.now();
   }
 
@@ -180,6 +214,105 @@ userWalletSchema.statics.findOrCreateWallet = async function (walletAddress) {
   }
 
   return { wallet, isNewWallet };
+};
+
+userWalletSchema.methods.checkAndAwardBadges = async function (session = null) {
+  // Get the current tournament count (this will include the newly added tournament)
+  const tournamentCount = this.tournaments.length;
+
+  console.log(
+    `Checking badges for user ${this._id} with ${tournamentCount} tournaments`,
+  );
+
+  const badges = await Badge.find({
+    type: 'tournament_participation',
+    isActive: true,
+  }).sort({ requirement: 1 });
+
+  console.log(`Found ${badges.length} tournament participation badges`);
+
+  const newlyEarnedBadges = [];
+
+  for (const badge of badges) {
+    console.log(
+      `Checking badge: ${badge.name}, requirement: ${badge.requirement}, user tournaments: ${tournamentCount}`,
+    );
+
+    if (tournamentCount >= badge.requirement) {
+      console.log(`User qualifies for badge: ${badge.name}`);
+
+      try {
+        // Check if user already has this badge
+        const existingUserBadge = await UserBadge.findOne({
+          userId: this._id,
+          badgeId: badge._id,
+        }).session(session);
+
+        if (existingUserBadge) {
+          console.log(`User already has badge: ${badge.name}`);
+          continue; // Skip if already earned
+        }
+
+        const userBadge = new UserBadge({
+          userId: this._id,
+          badgeId: badge._id,
+          isNewlyEarned: true,
+          isViewed: false,
+        });
+
+        const saveOptions = session ? { session } : {};
+        await userBadge.save(saveOptions);
+
+        // Add to user's badges array
+        this.badges.push(userBadge._id);
+        this.totalBadges += 1;
+        this.lastBadgeEarned = new Date();
+
+        newlyEarnedBadges.push({
+          badge,
+          userBadge,
+          isNew: true,
+        });
+
+        console.log(`Successfully awarded badge: ${badge.name}`);
+      } catch (error) {
+        console.error(`Error awarding badge ${badge.name}:`, error);
+        // Badge already exists (duplicate key error), skip
+        if (error.code !== 11000) {
+          throw error;
+        }
+      }
+    }
+  }
+
+  if (newlyEarnedBadges.length > 0) {
+    const saveOptions = session ? { session } : {};
+    await this.save(saveOptions);
+    console.log(`Saved user with ${newlyEarnedBadges.length} new badges`);
+  }
+
+  return newlyEarnedBadges;
+};
+
+userWalletSchema.methods.getNewBadges = async function () {
+  return await UserBadge.find({
+    userId: this._id,
+    isNewlyEarned: true,
+    isViewed: false,
+  }).populate('badgeId');
+};
+
+userWalletSchema.methods.markBadgesAsViewed = async function (badgeIds = null) {
+  const query = { userId: this._id, isViewed: false };
+
+  if (badgeIds && badgeIds.length > 0) {
+    query._id = { $in: badgeIds };
+  }
+
+  await UserBadge.updateMany(query, {
+    isViewed: true,
+    isNewlyEarned: false,
+  });
 };
 
 const WalletUser = mongoose.model('WalletUser', userWalletSchema);

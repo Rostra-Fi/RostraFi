@@ -728,6 +728,9 @@ exports.participateInTournament = async (req, res) => {
 
       await user.addTournament(tournament._id, session);
 
+      const award = await user.checkAndAwardBadges(session);
+      console.log('Badges awarded:', award);
+
       await session.commitTransaction();
       session.endSession();
 
@@ -735,6 +738,7 @@ exports.participateInTournament = async (req, res) => {
         success: true,
         message: 'Successfully participated in tournament!',
         data: tournament,
+        badges: award,
       });
     } catch (error) {
       await session.abortTransaction();

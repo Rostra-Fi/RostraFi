@@ -24,6 +24,7 @@ export interface Team {
   description: string;
   followers: number;
   points: number;
+  audio: string;
 }
 export interface Section {
   name: string;

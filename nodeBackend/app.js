@@ -20,6 +20,12 @@ const tournamentRouter = require('./routes/tournamentRoutes');
 const voteRouter = require('./routes/voteRoutes');
 const contentRoutes = require('./routes/contentRoutes');
 const dummyDataRoutes = require('./routes/dummyDataRoutes');
+const badgeRoutes = require('./routes/badgeRoutes');
+
+const candyCrushRoutes = require('./routes/candyCrushRoutes');
+const battleshipRoutes = require('./routes/battleshipRoutes');
+const spaceInvadersRoutes = require('./routes/spaceInvadersRoutes');
+const platformerRoutes = require('./routes/platformerRoutes');
 
 const app = express();
 
@@ -76,6 +82,11 @@ app.use('/api/v1/compitition', tournamentRouter);
 app.use('/api/v1/vote', voteRouter);
 app.use('/api/v1/content', contentRoutes);
 app.use('/api/v1/dummy', dummyDataRoutes);
+app.use('/api/v1/badges', badgeRoutes);
+app.use('/api/v1/games/candycrush', candyCrushRoutes);
+app.use('/api/v1/games/battleship', battleshipRoutes);
+app.use('/api/v1/games/spaceinvaders', spaceInvadersRoutes);
+app.use('/api/v1/games/platformer', platformerRoutes);
 
 app.all('*', (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));
