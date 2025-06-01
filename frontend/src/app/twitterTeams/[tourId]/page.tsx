@@ -243,7 +243,7 @@ export default function Page() {
             ))
           )}
 
-          <RulesModel />
+        
           <SelectedTeamsOverview />
         </>
       )}

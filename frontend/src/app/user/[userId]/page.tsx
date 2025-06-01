@@ -1,165 +1,150 @@
-"use client";
-import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
-import {
-  motion,
-  AnimatePresence,
-  useScroll,
-  useTransform,
-} from "framer-motion";
+"use client"
+import { useState, useRef, useEffect } from "react"
+import type React from "react"
+
+import Image from "next/image"
+import { motion, useScroll, useTransform } from "framer-motion"
 import {
   Wallet,
   Trophy,
   Settings,
   TrendingUp,
   Clock,
-  ChevronRight,
   Star,
   Heart,
   MessageSquare,
   Eye,
-  Share2,
   Users,
   BarChart,
   History,
   SwitchCamera,
-  Copy,
   Loader,
   RefreshCw,
   ArrowRight,
   Medal,
   Gamepad2,
-} from "lucide-react";
-import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+  ArrowLeft,
+} from "lucide-react"
+import { Connection, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js"
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { useParams } from "next/navigation";
-import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
-import {
-  fetchUserTournaments,
-  Tournament,
-  userCurrentTournaments,
-  userWalletConnect,
-} from "@/store/userSlice";
-import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { NotificationComponent } from "@/components/Notification";
-import BadgeSystem from "@/components/BadgeSystem";
-import GamesDialog from "@/components/GameDialog";
-import { WalletDialog } from "@/components/WalletDialog";
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { useParams } from "next/navigation"
+import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks"
+import { fetchUserTournaments, userCurrentTournaments, userWalletConnect } from "@/store/userSlice"
+import { cn } from "@/lib/utils"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { NotificationComponent } from "@/components/Notification"
+import BadgeSystem from "@/components/BadgeSystem"
+import GamesDialog from "@/components/GameDialog"
+import { WalletDialog } from "@/components/WalletDialog"
+import { useRouter } from "next/navigation"
 
 // Add these interfaces at the top of your file
 interface Team {
-  _id: string;
-  id: string;
-  name: string;
-  image: string;
-  description?: string;
-  points: number;
-  twitterId: string;
-  createdAt: string;
-  updatedAt: string;
-  audio?: string;
-  followers?: number;
+  _id: string
+  id: string
+  name: string
+  image: string
+  description?: string
+  points: number
+  twitterId: string
+  createdAt: string
+  updatedAt: string
+  audio?: string
+  followers?: number
 }
 
 interface SectionId {
-  _id: string;
-  id: string;
-  name: string;
+  _id: string
+  id: string
+  name: string
 }
 
 interface TournamentSection {
-  _id: string;
-  id: string;
-  name: string;
-  sectionId: SectionId;
-  selectedTeams: Team[];
+  _id: string
+  id: string
+  name: string
+  sectionId: SectionId
+  selectedTeams: Team[]
 }
 
 interface TournamentId {
-  _id: string;
-  id: string;
-  name: string;
-  endDate: string;
-  startDate: string;
-  icon: string;
-  image: string;
-  isActive: boolean;
-  isOngoing: boolean;
-  isRegistrationOpen: boolean;
-  platform: string;
-  prizePool: number;
-  registrationEndDate: string;
+  _id: string
+  id: string
+  name: string
+  endDate: string
+  startDate: string
+  icon: string
+  image: string
+  isActive: boolean
+  isOngoing: boolean
+  isRegistrationOpen: boolean
+  platform: string
+  prizePool: number
+  registrationEndDate: string
 }
 
 interface UserCurrentTournament {
-  _id: string;
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-  isActive: boolean;
-  sections: TournamentSection[];
-  teamName: string;
-  totalFollowers: number;
-  tournamentId: TournamentId;
-  userId: string;
-  walletUserId: string;
-  twitterStats?: TwitterStats1;
-  __v: number;
+  _id: string
+  id: string
+  createdAt: string
+  updatedAt: string
+  isActive: boolean
+  sections: TournamentSection[]
+  teamName: string
+  totalFollowers: number
+  tournamentId: TournamentId
+  userId: string
+  walletUserId: string
+  twitterStats?: TwitterStats1
+  __v: number
 }
 
 interface TwitterStats1 {
-  posts: number;
-  likes: number;
-  comments: number;
-  retweets: number;
-  views: number;
-  recentTweets: Tweet[];
+  posts: number
+  likes: number
+  comments: number
+  retweets: number
+  views: number
+  recentTweets: Tweet[]
 }
 
 interface TwitterStats {
-  viewCount: number;
-  likeCount: number;
-  replyCount: number;
-  retweetCount: number;
-  tweetCount: number;
+  viewCount: number
+  likeCount: number
+  replyCount: number
+  retweetCount: number
+  tweetCount: number
 }
 
 interface Tweet {
-  id: string;
-  content: string;
-  createdAt: string;
-  author: TweetAuthor;
+  id: string
+  content: string
+  createdAt: string
+  author: TweetAuthor
   metrics: {
-    likeCount: number;
-    replyCount: number;
-    retweetCount: number;
-    viewCount: number;
-  };
+    likeCount: number
+    replyCount: number
+    retweetCount: number
+    viewCount: number
+  }
 }
 
 interface TweetAuthor {
-  name: string;
-  image: string;
-  section: string;
+  name: string
+  image: string
+  section: string
 }
 
 interface TwitterData {
-  stats: TwitterStats;
-  tweets: Tweet[];
-  lastUpdated: string;
+  stats: TwitterStats
+  tweets: Tweet[]
+  lastUpdated: string
 }
 
 // WobbleCard component
@@ -168,27 +153,27 @@ const WobbleCard = ({
   containerClassName,
   className,
 }: {
-  children: React.ReactNode;
-  containerClassName?: string;
-  className?: string;
+  children: React.ReactNode
+  containerClassName?: string
+  className?: string
 }) => {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isHovering, setIsHovering] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [isHovering, setIsHovering] = useState(false)
 
   const handleMouseMove = (event: React.MouseEvent<HTMLElement>) => {
-    const { clientX, clientY } = event;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = (clientX - (rect.left + rect.width / 2)) / 20;
-    const y = (clientY - (rect.top + rect.height / 2)) / 20;
-    setMousePosition({ x, y });
-  };
+    const { clientX, clientY } = event
+    const rect = event.currentTarget.getBoundingClientRect()
+    const x = (clientX - (rect.left + rect.width / 2)) / 20
+    const y = (clientY - (rect.top + rect.height / 2)) / 20
+    setMousePosition({ x, y })
+  }
   return (
     <motion.section
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => {
-        setIsHovering(false);
-        setMousePosition({ x: 0, y: 0 });
+        setIsHovering(false)
+        setMousePosition({ x: 0, y: 0 })
       }}
       style={{
         transform: isHovering
@@ -196,10 +181,7 @@ const WobbleCard = ({
           : "translate3d(0px, 0px, 0) scale3d(1, 1, 1)",
         transition: "transform 0.1s ease-out",
       }}
-      className={cn(
-        "mx-auto w-full bg-indigo-800 relative rounded-2xl overflow-hidden",
-        containerClassName
-      )}
+      className={cn("mx-auto w-full bg-indigo-800 relative rounded-2xl overflow-hidden", containerClassName)}
     >
       <div
         className="relative h-full [background-image:radial-gradient(88%_100%_at_top,rgba(255,255,255,0.5),rgba(255,255,255,0))]  sm:mx-0 sm:rounded-2xl overflow-hidden"
@@ -222,8 +204,8 @@ const WobbleCard = ({
         </motion.div>
       </div>
     </motion.section>
-  );
-};
+  )
+}
 
 const Noise = () => {
   return (
@@ -234,78 +216,74 @@ const Noise = () => {
         backgroundSize: "30%",
       }}
     ></div>
-  );
-};
+  )
+}
 
 interface TeamCardProps {
-  team: Team;
+  team: Team
   section: {
-    name: string;
-  };
-  tournament: string; // tournamentId
+    name: string
+  }
+  tournament: string // tournamentId
 }
 
 // TeamCard component
 // Modified TeamCard component with Twitter API integration
 const TeamCard = ({ team, section, tournament }: TeamCardProps) => {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [twitterData, setTwitterData] = useState<TwitterData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [twitterData, setTwitterData] = useState<TwitterData | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
 
   // Function to fetch Twitter data when team card is clicked
   const fetchTwitterData = async () => {
     try {
-      setIsLoading(true);
-      console.log(tournament);
-      console.log(team.twitterId);
+      setIsLoading(true)
+      console.log(tournament)
+      console.log(team.twitterId)
 
       // Get tournamentId and teamId from props
-      const tournamentId = tournament; // Assuming tournament prop contains the tournamentId
-      const twitterId = team.twitterId; // Assuming team has twitterId property
+      const tournamentId = tournament // Assuming tournament prop contains the tournamentId
+      const twitterId = team.twitterId // Assuming team has twitterId property
 
       if (!tournamentId || !twitterId) {
-        console.error("Missing tournamentId or twitterId");
-        return;
+        console.error("Missing tournamentId or twitterId")
+        return
       }
 
       // Make API call to fetch Twitter data
-      const response = await fetch(
-        `http://127.0.0.1:3001/api/v1/userTeams/twitter/${tournamentId}/${twitterId}`
-      );
+      const response = await fetch(`http://127.0.0.1:3001/api/v1/userTeams/twitter/${tournamentId}/${twitterId}`)
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch Twitter data: ${response.status}`);
+        throw new Error(`Failed to fetch Twitter data: ${response.status}`)
       }
 
-      const data = await response.json();
-      console.log(data);
+      const data = await response.json()
+      console.log(data)
 
       if (data.success) {
-        setTwitterData(data.data);
+        setTwitterData(data.data)
       } else {
-        console.error("API returned error:", data.message);
+        console.error("API returned error:", data.message)
       }
     } catch (error) {
-      console.error("Error fetching Twitter data:", error);
+      console.error("Error fetching Twitter data:", error)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   // Handle dialog open - fetch data when opening
   const handleDialogOpen = () => {
-    setIsDialogOpen(true);
-    fetchTwitterData();
-  };
+    setIsDialogOpen(true)
+    fetchTwitterData()
+  }
 
   const sectionColors: { [key: string]: string } = {
-    diamond:
-      "from-blue-900 to-blue-800 bg-blue-500/20 text-blue-300 border-blue-500/30",
-    premium:
-      "from-purple-900 to-purple-800 bg-purple-500/20 text-purple-300 border-purple-500/30",
-  };
+    diamond: "from-blue-900 to-blue-800 bg-blue-500/20 text-blue-300 border-blue-500/30",
+    premium: "from-purple-900 to-purple-800 bg-purple-500/20 text-purple-300 border-purple-500/30",
+  }
 
-  const colorClass = sectionColors[section.name] || "from-gray-900 to-gray-800";
+  const colorClass = sectionColors[section.name] || "from-gray-900 to-gray-800"
 
   return (
     <>
@@ -320,22 +298,14 @@ const TeamCard = ({ team, section, tournament }: TeamCardProps) => {
             >
               <div className="flex h-full">
                 <div className="relative h-full aspect-square overflow-hidden rounded-xl mr-4">
-                  <Image
-                    src={team.image || "/placeholder.svg"}
-                    alt={team.name}
-                    fill
-                    className="object-cover"
-                  />
+                  <Image src={team.image || "/placeholder.svg"} alt={team.name} fill className="object-cover" />
                   <div className="absolute inset-0 bg-black/20" />
                 </div>
                 <div className="flex flex-col justify-between flex-1">
                   <div>
-                    <h3 className="font-bold text-white text-lg">
-                      {team.name}
-                    </h3>
+                    <h3 className="font-bold text-white text-lg">{team.name}</h3>
                     <Badge className="mt-1 bg-white/20 text-white">
-                      {section.name.charAt(0).toUpperCase() +
-                        section.name.slice(1)}
+                      {section.name.charAt(0).toUpperCase() + section.name.slice(1)}
                     </Badge>
                     <p className="text-white/70 text-sm line-clamp-2 mt-1">
                       {team.description || "No description available"}
@@ -343,8 +313,7 @@ const TeamCard = ({ team, section, tournament }: TeamCardProps) => {
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="text-white/90">
-                      <span className="font-semibold">{team.points || 0}</span>{" "}
-                      <span className="text-sm">points</span>
+                      <span className="font-semibold">{team.points || 0}</span> <span className="text-sm">points</span>
                     </div>
                   </div>
                 </div>
@@ -356,10 +325,8 @@ const TeamCard = ({ team, section, tournament }: TeamCardProps) => {
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold flex items-center gap-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={team.image} />
-                <AvatarFallback>
-                  {team.name.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
+                <AvatarImage src={team.image || "/placeholder.svg"} />
+                <AvatarFallback>{team.name.substring(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
               {team.name}
               <Badge
@@ -373,18 +340,12 @@ const TeamCard = ({ team, section, tournament }: TeamCardProps) => {
           </DialogHeader>
           <div className="mt-4 space-y-6">
             <div className="relative rounded-xl overflow-hidden h-56">
-              <Image
-                src={team.image || "/placeholder.svg"}
-                alt={team.name}
-                fill
-                className="object-cover"
-              />
+              <Image src={team.image || "/placeholder.svg"} alt={team.name} fill className="object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
               <div className="absolute bottom-0 left-0 p-4">
                 <h2 className="text-xl font-bold text-white">{team.name}</h2>
                 <p className="text-white/70 text-sm mt-1">
-                  {team.description ||
-                    "A competitive team looking to make its mark."}
+                  {team.description || "A competitive team looking to make its mark."}
                 </p>
               </div>
             </div>
@@ -429,9 +390,7 @@ const TeamCard = ({ team, section, tournament }: TeamCardProps) => {
                       <CardContent className="p-3 flex flex-col items-center justify-center">
                         <div className="text-white/60 mb-1">{stat.icon}</div>
                         <div className="text-lg font-bold">{stat.value}</div>
-                        <div className="text-xs text-white/60">
-                          {stat.label}
-                        </div>
+                        <div className="text-xs text-white/60">{stat.label}</div>
                       </CardContent>
                     </Card>
                   ))}
@@ -451,22 +410,16 @@ const TeamCard = ({ team, section, tournament }: TeamCardProps) => {
                   <div className="flex justify-center p-6">
                     <Loader className="h-8 w-8 text-white animate-spin" />
                   </div>
-                ) : twitterData &&
-                  twitterData.tweets &&
-                  twitterData.tweets.length > 0 ? (
+                ) : twitterData && twitterData.tweets && twitterData.tweets.length > 0 ? (
                   twitterData.tweets.map((tweet, i) => (
                     <Card key={i} className="bg-[#1a1a1a] border-white/10">
                       <CardContent className="p-3">
                         <div className="flex items-center gap-2 mb-2">
                           <Avatar className="h-6 w-6">
-                            <AvatarImage src={team.image} />
-                            <AvatarFallback>
-                              {team.name.substring(0, 2).toUpperCase()}
-                            </AvatarFallback>
+                            <AvatarImage src={team.image || "/placeholder.svg"} />
+                            <AvatarFallback>{team.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
-                          <span className="text-sm font-medium">
-                            {team.name}
-                          </span>
+                          <span className="text-sm font-medium">{team.name}</span>
                           <span className="text-xs text-white/50">
                             {new Date(tweet.createdAt).toLocaleDateString()}
                           </span>
@@ -504,67 +457,62 @@ const TeamCard = ({ team, section, tournament }: TeamCardProps) => {
             {/* Last Updated Info */}
             {twitterData && (
               <div className="text-xs text-white/50 text-right">
-                Last updated:{" "}
-                {new Date(twitterData.lastUpdated).toLocaleString()}
+                Last updated: {new Date(twitterData.lastUpdated).toLocaleString()}
               </div>
             )}
           </div>
         </DialogContent>
       </Dialog>
     </>
-  );
-};
+  )
+}
 
 interface TournamentCardProps {
-  tournament: UserCurrentTournament;
+  tournament: UserCurrentTournament
 }
 
 // Tournament Card component
 const TournamentCard = ({ tournament }: TournamentCardProps) => {
-  const [loading, setLoading] = useState(false);
-  console.log(tournament);
+  const [loading, setLoading] = useState(false)
+  console.log(tournament)
 
-  const endDate = new Date(tournament.tournamentId.endDate);
-  const startDate = new Date(tournament.tournamentId.startDate);
-  const now = new Date();
-  const remainingDays = Math.ceil(
-    (endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const endDate = new Date(tournament.tournamentId.endDate)
+  const startDate = new Date(tournament.tournamentId.startDate)
+  const now = new Date()
+  const remainingDays = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
   const getTimeStatus = () => {
     if (remainingDays <= 0) {
-      return "Ended recently";
+      return "Ended recently"
     } else if (remainingDays === 1) {
-      return "Ends tomorrow";
+      return "Ends tomorrow"
     } else {
-      return `Ends in ${remainingDays} days`;
+      return `Ends in ${remainingDays} days`
     }
-  };
+  }
 
   const getStartTimeStatus = () => {
-    const daysUntilStart = Math.ceil(
-      (startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
     if (now < startDate) {
       if (daysUntilStart <= 0) {
-        return "Starting soon";
+        return "Starting soon"
       } else if (daysUntilStart === 1) {
-        return "Starts tomorrow";
+        return "Starts tomorrow"
       } else {
-        return `Starts in ${daysUntilStart} days`;
+        return `Starts in ${daysUntilStart} days`
       }
     }
-    return null;
-  };
+    return null
+  }
 
   // Combine all teams from all sections
   const allTeams = tournament.sections.flatMap((section) =>
     section.selectedTeams.map((team) => ({
       ...team,
       section: section.sectionId.name,
-    }))
-  );
+    })),
+  )
 
   // Use the Twitter stats provided directly from the backend
   const tweetStats = tournament.twitterStats || {
@@ -574,25 +522,25 @@ const TournamentCard = ({ tournament }: TournamentCardProps) => {
     retweets: 0,
     views: 0,
     recentTweets: [],
-  };
+  }
 
   // Format time since tweet was posted
   const formatTimeSince = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    const date = new Date(dateString)
+    const now = new Date()
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
 
-    if (seconds < 60) return `${seconds}s ago`;
+    if (seconds < 60) return `${seconds}s ago`
 
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) return `${minutes}m ago`
 
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
 
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-  };
+    const days = Math.floor(hours / 24)
+    return `${days}d ago`
+  }
 
   return (
     <Card className="bg-[#111] border-white/10 overflow-hidden">
@@ -608,38 +556,22 @@ const TournamentCard = ({ tournament }: TournamentCardProps) => {
           <div className="absolute top-3 left-3">
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8 border-2 border-white/20">
-                <AvatarImage src={tournament.tournamentId.icon} />
-                <AvatarFallback>
-                  {tournament.tournamentId.platform.substring(0, 1)}
-                </AvatarFallback>
+                <AvatarImage src={tournament.tournamentId.icon || "/placeholder.svg"} />
+                <AvatarFallback>{tournament.tournamentId.platform.substring(0, 1)}</AvatarFallback>
               </Avatar>
-              <Badge className="bg-white/20 backdrop-blur-md text-white">
-                {tournament.tournamentId.platform}
-              </Badge>
+              <Badge className="bg-white/20 backdrop-blur-md text-white">{tournament.tournamentId.platform}</Badge>
             </div>
           </div>
           <div className="absolute bottom-0 left-0 p-4 w-full">
             <div className="flex justify-between items-center">
-              <h3 className="font-bold text-xl text-white">
-                {tournament.tournamentId.name}
-              </h3>
-              <Badge
-                className={
-                  tournament.tournamentId.isOngoing
-                    ? "bg-white text-black"
-                    : "bg-gray-600"
-                }
-              >
+              <h3 className="font-bold text-xl text-white">{tournament.tournamentId.name}</h3>
+              <Badge className={tournament.tournamentId.isOngoing ? "bg-white text-black" : "bg-gray-600"}>
                 {tournament.tournamentId.isOngoing ? "Active" : "Completed"}
               </Badge>
             </div>
             <div className="flex justify-between items-center mt-1">
-              <div className="text-sm text-white/70">
-                {getStartTimeStatus() || getTimeStatus()}
-              </div>
-              <div className="text-sm text-white/70">
-                Prize: {tournament.tournamentId.prizePool} SOL
-              </div>
+              <div className="text-sm text-white/70">{getStartTimeStatus() || getTimeStatus()}</div>
+              <div className="text-sm text-white/70">Prize: {tournament.tournamentId.prizePool} SOL</div>
             </div>
           </div>
         </div>
@@ -652,9 +584,7 @@ const TournamentCard = ({ tournament }: TournamentCardProps) => {
                   <Clock className="h-5 w-5 text-white/70" />
                   <span className="font-medium">Tournament Starts Soon</span>
                 </div>
-                <div className="text-sm text-white/50 mt-2">
-                  Start Date: {startDate.toLocaleDateString()}
-                </div>
+                <div className="text-sm text-white/50 mt-2">Start Date: {startDate.toLocaleDateString()}</div>
               </CardContent>
             </Card>
           )}
@@ -663,9 +593,7 @@ const TournamentCard = ({ tournament }: TournamentCardProps) => {
             <div className="bg-white/10 rounded-full p-1.5">
               <Trophy className="h-4 w-4 text-white" />
             </div>
-            <span className="font-medium">
-              Your Team: {tournament.teamName}
-            </span>
+            <span className="font-medium">Your Team: {tournament.teamName}</span>
           </div>
 
           {/* Tournament Stats */}
@@ -676,9 +604,7 @@ const TournamentCard = ({ tournament }: TournamentCardProps) => {
                   <BarChart className="h-4 w-4 text-white/70" />
                   Tournament Stats
                 </h3>
-                <Badge className="bg-white/10 text-white">
-                  {tournament.tournamentId.name}
-                </Badge>
+                <Badge className="bg-white/10 text-white">{tournament.tournamentId.name}</Badge>
               </div>
 
               {loading ? (
@@ -715,23 +641,17 @@ const TournamentCard = ({ tournament }: TournamentCardProps) => {
                         icon: <Eye className="h-3 w-3" />,
                       },
                     ].map((stat, index) => (
-                      <div
-                        key={index}
-                        className="bg-white/5 rounded-lg p-2 text-center"
-                      >
+                      <div key={index} className="bg-white/5 rounded-lg p-2 text-center">
                         <div className="text-gray-400 text-xs flex items-center justify-center gap-1 mb-1">
                           {stat.icon}
                           {stat.label}
                         </div>
-                        <div className="text-white font-semibold">
-                          {stat.value.toLocaleString()}
-                        </div>
+                        <div className="text-white font-semibold">{stat.value.toLocaleString()}</div>
                       </div>
                     ))}
                   </div>
                   <div className="text-xs text-white/50 mt-2">
-                    Tracking since:{" "}
-                    {new Date(tournament.createdAt).toLocaleDateString()}
+                    Tracking since: {new Date(tournament.createdAt).toLocaleDateString()}
                   </div>
                 </>
               )}
@@ -754,34 +674,20 @@ const TournamentCard = ({ tournament }: TournamentCardProps) => {
                 <div className="space-y-3">
                   {tweetStats.recentTweets.length > 0 ? (
                     tweetStats.recentTweets.map((tweet, i) => (
-                      <Card
-                        key={tweet.id || i}
-                        className="bg-black/30 border-white/5"
-                      >
+                      <Card key={tweet.id || i} className="bg-black/30 border-white/5">
                         <CardContent className="p-3">
                           <div className="flex items-center gap-2 mb-2">
                             <Avatar className="h-6 w-6">
-                              <AvatarImage src={tweet.author.image} />
-                              <AvatarFallback>
-                                {tweet.author.name
-                                  .substring(0, 2)
-                                  .toUpperCase()}
-                              </AvatarFallback>
+                              <AvatarImage src={tweet.author.image || "/placeholder.svg"} />
+                              <AvatarFallback>{tweet.author.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                             </Avatar>
-                            <span className="text-sm font-medium">
-                              {tweet.author.name}
-                            </span>
+                            <span className="text-sm font-medium">{tweet.author.name}</span>
                             <Badge className="text-xs bg-white/10 text-white/80">
-                              {tweet.author.section.charAt(0).toUpperCase() +
-                                tweet.author.section.slice(1)}
+                              {tweet.author.section.charAt(0).toUpperCase() + tweet.author.section.slice(1)}
                             </Badge>
-                            <span className="text-xs text-white/50 ml-auto">
-                              {formatTimeSince(tweet.createdAt)}
-                            </span>
+                            <span className="text-xs text-white/50 ml-auto">{formatTimeSince(tweet.createdAt)}</span>
                           </div>
-                          <p className="text-sm text-white/80">
-                            {tweet.content}
-                          </p>
+                          <p className="text-sm text-white/80">{tweet.content}</p>
                           <div className="flex items-center gap-4 mt-2 text-xs text-white/50">
                             <span className="flex items-center gap-1">
                               <Heart size={12} />
@@ -804,9 +710,7 @@ const TournamentCard = ({ tournament }: TournamentCardProps) => {
                       </Card>
                     ))
                   ) : (
-                    <div className="text-center p-4 text-white/50">
-                      No recent tweets found
-                    </div>
+                    <div className="text-center p-4 text-white/50">No recent tweets found</div>
                   )}
                 </div>
               )}
@@ -832,231 +736,232 @@ const TournamentCard = ({ tournament }: TournamentCardProps) => {
         </div>
       </CardContent>
     </Card>
-  );
-};
+  )
+}
 
 // Define base interfaces for nested objects
 interface TournamentDetails {
-  createdAt: string;
-  endDate: string;
-  icon: string;
-  id: string;
-  image: string;
-  isActive: boolean;
-  isOngoing: boolean;
-  isRegistrationOpen: boolean;
-  name: string;
-  participated: string[];
-  platform: string;
-  pointsForVisit: number;
-  prizePool: number;
-  registrationEndDate: string;
-  registrationTimeLimit: number;
-  startDate: string;
-  timeLimit: number;
-  updatedAt: string;
-  visited: string[];
-  __v: number;
-  _id: string;
+  createdAt: string
+  endDate: string
+  icon: string
+  id: string
+  image: string
+  isActive: boolean
+  isOngoing: boolean
+  isRegistrationOpen: boolean
+  name: string
+  participated: string[]
+  platform: string
+  pointsForVisit: number
+  prizePool: number
+  registrationEndDate: string
+  registrationTimeLimit: number
+  startDate: string
+  timeLimit: number
+  updatedAt: string
+  visited: string[]
+  __v: number
+  _id: string
 }
 
 interface TeamMember {
-  audio?: string;
-  createdAt: string;
-  description: string;
-  followers: number;
-  id: string;
-  image: string;
-  name: string;
-  points: number;
-  twitterId: string;
-  updatedAt: string;
-  __v: number;
-  _id: string;
+  audio?: string
+  createdAt: string
+  description: string
+  followers: number
+  id: string
+  image: string
+  name: string
+  points: number
+  twitterId: string
+  updatedAt: string
+  __v: number
+  _id: string
 }
 
 interface Section {
-  id: string;
-  name: string;
-  sectionId: string;
-  selectedTeams: TeamMember[];
-  _id: string;
+  id: string
+  name: string
+  sectionId: string
+  selectedTeams: TeamMember[]
+  _id: string
 }
 
 interface UserTeam {
-  createdAt: string;
-  id: string;
-  isActive: boolean;
-  sections: Section[];
-  teamName: string;
-  totalFollowers: number;
-  tournamentId: string;
-  updatedAt: string;
-  userId: string;
-  walletUserId: string;
-  __v: number;
-  _id: string;
+  createdAt: string
+  id: string
+  isActive: boolean
+  sections: Section[]
+  teamName: string
+  totalFollowers: number
+  tournamentId: string
+  updatedAt: string
+  userId: string
+  walletUserId: string
+  __v: number
+  _id: string
 }
 
 // Main interface for the tournament data
 interface UserTournament {
-  userTeam: UserTeam;
-  tournamentDetails: TournamentDetails;
-  isActive: boolean;
-  isOngoing: boolean;
+  userTeam: UserTeam
+  tournamentDetails: TournamentDetails
+  isActive: boolean
+  isOngoing: boolean
 }
 
 //gamedata
 interface GameData {
-  success: boolean;
-  userId: string;
+  success: boolean
+  userId: string
   games: {
     candycrush: {
-      totalPoints: number;
-      currentLevel: number;
+      totalPoints: number
+      currentLevel: number
       levels: {
-        levelNumber: number;
-        cleared: boolean;
-        stars: number;
-        pointsEarned: number;
-        maxPoints: number;
-        _id: string;
-      }[];
-    } | null;
+        levelNumber: number
+        cleared: boolean
+        stars: number
+        pointsEarned: number
+        maxPoints: number
+        _id: string
+      }[]
+    } | null
     battleship: {
-      totalPoints: number;
-      totalGames: number;
-      gamesWon: number;
+      totalPoints: number
+      totalGames: number
+      gamesWon: number
       gameHistory: {
-        difficulty: string;
-        won: boolean;
-        pointsEarned: number;
-        movesUsed: number;
-        playedAt: string;
-        _id: string;
-      }[];
-    } | null;
+        difficulty: string
+        won: boolean
+        pointsEarned: number
+        movesUsed: number
+        playedAt: string
+        _id: string
+      }[]
+    } | null
     spaceinvaders: {
-      totalPoints: number;
-      highScore: number;
-      totalGames: number;
+      totalPoints: number
+      highScore: number
+      totalGames: number
       gameHistory: {
-        score: number;
-        level: number;
-        enemiesDestroyed: number;
-        playedAt: string;
-        _id: string;
-      }[];
-    } | null;
-    platformer: null;
-  };
+        score: number
+        level: number
+        enemiesDestroyed: number
+        playedAt: string
+        _id: string
+      }[]
+    } | null
+    platformer: null
+  }
 }
 
 export default function ProfilePage() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: containerRef });
-  const y = useTransform(scrollYProgress, [0, 1], [0, -50]);
-  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0.3]);
-  const [badgeCount, setBadgeCount] = useState(0);
-  const [gameData, setGameData] = useState<GameData | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({ target: containerRef })
+  const y = useTransform(scrollYProgress, [0, 1], [0, -50])
+  const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0.3])
+  const [badgeCount, setBadgeCount] = useState(0)
+  const [gameData, setGameData] = useState<GameData | null>(null)
 
-  const dispatch = useAppDispatch();
+  const dispatch = useAppDispatch()
   // const { userId } = useParams();
 
-  const params = useParams();
-  const userId = params?.userId as string | undefined;
+  const params = useParams()
+  const userId = params?.userId as string | undefined
+  const router = useRouter()
 
   // State for dialog controls
-  const [walletDialogOpen, setWalletDialogOpen] = useState(false);
-  const [tournamentDialogOpen, setTournamentDialogOpen] = useState(false);
-  const [transactionsDialogOpen, setTransactionsDialogOpen] = useState(false);
-  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
-  const [gamesDialogOpen, setGamesDialogOpen] = useState(false);
-  const [balance, setBalance] = useState<string | null>("0");
+  const [walletDialogOpen, setWalletDialogOpen] = useState(false)
+  const [tournamentDialogOpen, setTournamentDialogOpen] = useState(false)
+  const [transactionsDialogOpen, setTransactionsDialogOpen] = useState(false)
+  const [settingsDialogOpen, setSettingsDialogOpen] = useState(false)
+  const [gamesDialogOpen, setGamesDialogOpen] = useState(false)
+  const [balance, setBalance] = useState<string | null>("0")
 
-  const { userCurrentTournament, points, tournaments, userTournaments } =
-    useAppSelector((state) => state.user);
+  const { userCurrentTournament, points, tournaments, userTournaments } = useAppSelector((state) => state.user)
 
-  const typedUserTournaments: UserTournament[] = userTournaments || [];
-  const walletUserId = localStorage.getItem("UserId");
-  console.log("userTournaments:", userTournaments);
-  console.log("userCurrentTournament:", userCurrentTournament);
+  const typedUserTournaments: UserTournament[] = userTournaments || []
+  const walletUserId = localStorage.getItem("UserId")
+  console.log("userTournaments:", userTournaments)
+  console.log("userCurrentTournament:", userCurrentTournament)
 
   const handleBadgeCountUpdate = (count: number) => {
-    setBadgeCount(count);
-  };
+    setBadgeCount(count)
+  }
 
   const fetchWalletBalance = async (address: string) => {
     try {
       // Use the Connection class from @solana/web3.js instead of solana.Connection
-      const connection = new Connection(
-        "https://api.devnet.solana.com",
-        "confirmed"
-      );
+      const connection = new Connection("https://api.devnet.solana.com", "confirmed")
 
-      const publicKey = new PublicKey(address);
-      const balanceInLamports = await connection.getBalance(publicKey);
+      const publicKey = new PublicKey(address)
+      const balanceInLamports = await connection.getBalance(publicKey)
 
-      const balanceInSol = balanceInLamports / LAMPORTS_PER_SOL;
+      const balanceInSol = balanceInLamports / LAMPORTS_PER_SOL
       // console.log("Wallet balance in SOL:", balanceInSol);
-      setBalance(balanceInSol.toFixed(3));
+      setBalance(balanceInSol.toFixed(3))
     } catch (error) {
-      console.error("Error fetching balance:", error);
+      console.error("Error fetching balance:", error)
     }
-  };
+  }
 
   useEffect(() => {
     if (walletUserId) {
-      fetchWalletBalance(walletUserId);
+      fetchWalletBalance(walletUserId)
     }
-  }, []);
+  }, [])
 
   const handleOpenWalletDialog = () => {
-    fetchWalletBalance(walletUserId as string);
-    setWalletDialogOpen(false);
-  };
+    fetchWalletBalance(walletUserId as string)
+    setWalletDialogOpen(false)
+  }
 
   const fetchGameData = async (walletAddress: string) => {
     try {
-      const response = await fetch(
-        `http://127.0.0.1:3001/api/v1/walletUser/${walletAddress}/games`
-      );
-      const data = await response.json();
-      console.log("Game data fetched:", data);
+      const response = await fetch(`http://127.0.0.1:3001/api/v1/walletUser/${walletAddress}/games`)
+      const data = await response.json()
+      console.log("Game data fetched:", data)
 
-      setGameData(data);
+      setGameData(data)
     } catch (error) {
-      console.error("Error fetching game data:", error);
+      console.error("Error fetching game data:", error)
     }
-  };
+  }
 
   useEffect(() => {
-    dispatch(userWalletConnect(walletUserId as string));
-    dispatch(userCurrentTournaments(walletUserId as string, userId as string));
+    dispatch(userWalletConnect(walletUserId as string))
+    dispatch(userCurrentTournaments(walletUserId as string, userId as string))
     // dispatch(fetchUserTournaments(walletUserId as string));
 
     if (walletUserId) {
-      fetchGameData(walletUserId);
+      fetchGameData(walletUserId)
     }
-  }, [userId, walletUserId, dispatch]);
+  }, [userId, walletUserId, dispatch])
 
   // Function to handle opening tournament dialog
   const handleOpenTournamentDialog = () => {
     // Fetch user tournaments data before opening dialog
-    dispatch(fetchUserTournaments(walletUserId as string));
-    setTournamentDialogOpen(true);
-  };
+    dispatch(fetchUserTournaments(walletUserId as string))
+    setTournamentDialogOpen(true)
+  }
 
   return (
-    <div
-      className="min-h-screen bg-black text-white overflow-hidden"
-      ref={containerRef}
-    >
+    <div className="min-h-screen bg-black text-white overflow-hidden" ref={containerRef}>
+      {/* Back Button */}
+      <div className="absolute top-4 left-4 z-50">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => router.push("/")}
+          className="flex items-center gap-2 text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          <span className="hidden sm:inline">Back to Home</span>
+        </Button>
+      </div>
       {/* Animated Background */}
-      <motion.div
-        className="relative h-64 overflow-hidden"
-        style={{ y, opacity }}
-      >
+      <motion.div className="relative h-64 overflow-hidden" style={{ y, opacity }}>
         <div className="absolute inset-0 bg-gradient-to-b from-[#111] to-black">
           {/* Animated Stars/Sparkles */}
           {Array.from({ length: 50 }).map((_, i) => (
@@ -1138,10 +1043,7 @@ export default function ProfilePage() {
                   }}
                 />
                 <Avatar className="h-32 w-32">
-                  <AvatarImage
-                    src="/placeholder.svg?height=128&width=128"
-                    alt="Profile"
-                  />
+                  <AvatarImage src="/placeholder.svg?height=128&width=128" alt="Profile" />
                   <AvatarFallback className="bg-[#111]">CG</AvatarFallback>
                 </Avatar>
               </div>
@@ -1278,25 +1180,18 @@ export default function ProfilePage() {
                 className="cursor-pointer"
                 onClick={stat.onClick}
               >
-                <WobbleCard
-                  containerClassName="bg-gradient-to-br from-[#1a1a1a] to-black"
-                  className="p-4"
-                >
+                <WobbleCard containerClassName="bg-gradient-to-br from-[#1a1a1a] to-black" className="p-4">
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="text-gray-400 text-sm mb-1 flex items-center gap-2">
                         {stat.icon}
                         {stat.title}
                       </div>
-                      <div className="text-2xl font-bold text-white">
-                        {stat.value}
-                      </div>
+                      <div className="text-2xl font-bold text-white">{stat.value}</div>
                     </div>
                     <div
                       className={`text-xs px-2 py-1 rounded-full ${
-                        stat.trendUp
-                          ? "bg-green-500/20 text-green-400"
-                          : "bg-yellow-500/20 text-yellow-400"
+                        stat.trendUp ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"
                       }`}
                     >
                       {stat.trend}
@@ -1313,10 +1208,7 @@ export default function ProfilePage() {
               className="cursor-pointer"
               onClick={() => setGamesDialogOpen(true)}
             >
-              <WobbleCard
-                containerClassName="bg-gradient-to-br from-[#1a1a1a] to-black"
-                className="p-4"
-              >
+              <WobbleCard containerClassName="bg-gradient-to-br from-[#1a1a1a] to-black" className="p-4">
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="text-gray-400 text-sm mb-1 flex items-center gap-2">
@@ -1324,16 +1216,10 @@ export default function ProfilePage() {
                       Your Games
                     </div>
                     <div className="text-2xl font-bold text-white">
-                      {gameData
-                        ? Object.values(gameData?.games).filter(
-                            (game) => game !== null
-                          ).length
-                        : 0}
+                      {gameData ? Object.values(gameData?.games).filter((game) => game !== null).length : 0}
                     </div>
                   </div>
-                  <div className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">
-                    Click to view
-                  </div>
+                  <div className="text-xs px-2 py-1 rounded-full bg-blue-500/20 text-blue-400">Click to view</div>
                 </div>
               </WobbleCard>
             </motion.div>
@@ -1355,24 +1241,18 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-8">
-            {Array.isArray(userCurrentTournament) &&
-            userCurrentTournament.length > 0 ? (
-              userCurrentTournament.map(
-                (tournament: UserCurrentTournament, index: number) => (
-                  <TournamentCard key={index} tournament={tournament} />
-                )
-              )
+            {Array.isArray(userCurrentTournament) && userCurrentTournament.length > 0 ? (
+              userCurrentTournament.map((tournament: UserCurrentTournament, index: number) => (
+                <TournamentCard key={index} tournament={tournament} />
+              ))
             ) : (
               <div className="flex flex-col items-center justify-center py-16 px-4">
                 <div className="bg-white/5 rounded-full p-6 mb-4">
                   <Trophy className="h-12 w-12 text-white/30" />
                 </div>
-                <h3 className="text-lg font-semibold text-white/90 mb-2">
-                  No Tournaments Yet
-                </h3>
+                <h3 className="text-lg font-semibold text-white/90 mb-2">No Tournaments Yet</h3>
                 <p className="text-white/60 text-center max-w-md">
-                  You haven't participated in any tournaments yet. Join your
-                  first tournament to start competing!
+                  You haven't participated in any tournaments yet. Join your first tournament to start competing!
                 </p>
               </div>
             )}
@@ -1380,28 +1260,14 @@ export default function ProfilePage() {
         </motion.div>
       </div>
 
-      <WalletDialog
-        isOpen={walletDialogOpen}
-        onClose={handleOpenWalletDialog}
-      />
+      <WalletDialog isOpen={walletDialogOpen} onClose={handleOpenWalletDialog} />
 
-      <BadgeSystem
-        walletAddress={walletUserId as string}
-        userId={userId}
-        onBadgeCountUpdate={handleBadgeCountUpdate}
-      />
+      <BadgeSystem walletAddress={walletUserId as string} userId={userId} onBadgeCountUpdate={handleBadgeCountUpdate} />
 
-      <GamesDialog
-        open={gamesDialogOpen}
-        onOpenChange={setGamesDialogOpen}
-        gameData={gameData}
-      />
+      <GamesDialog open={gamesDialogOpen} onOpenChange={setGamesDialogOpen} gameData={gameData} />
 
       {/* Tournament Dialog - Updated */}
-      <Dialog
-        open={tournamentDialogOpen}
-        onOpenChange={setTournamentDialogOpen}
-      >
+      <Dialog open={tournamentDialogOpen} onOpenChange={setTournamentDialogOpen}>
         <DialogContent className="bg-[#111] border border-white/10 text-white max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
@@ -1413,19 +1279,14 @@ export default function ProfilePage() {
           {typedUserTournaments && userTournaments.length > 0 ? (
             <div className="space-y-4">
               {typedUserTournaments.map((tournament, index) => (
-                <div
-                  key={index}
-                  className="bg-black/40 rounded-lg p-4 space-y-3"
-                >
+                <div key={index} className="bg-black/40 rounded-lg p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="h-12 w-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                         <Trophy className="h-6 w-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-lg">
-                          {tournament.tournamentDetails.name}
-                        </h3>
+                        <h3 className="font-bold text-lg">{tournament.tournamentDetails.name}</h3>
                         <div className="flex items-center gap-2">
                           {tournament.isActive && tournament.isOngoing ? (
                             <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
@@ -1439,13 +1300,8 @@ export default function ProfilePage() {
                             </span>
                           )}
                           <span className="text-xs text-white/60">
-                            {new Date(
-                              tournament.tournamentDetails.startDate
-                            ).toLocaleDateString()}{" "}
-                            -{" "}
-                            {new Date(
-                              tournament.tournamentDetails.endDate
-                            ).toLocaleDateString()}
+                            {new Date(tournament.tournamentDetails.startDate).toLocaleDateString()} -{" "}
+                            {new Date(tournament.tournamentDetails.endDate).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
@@ -1454,19 +1310,14 @@ export default function ProfilePage() {
 
                   {tournament.userTeam && (
                     <div className="border-t border-white/10 pt-3">
-                      <div className="text-white/60 text-sm mb-2">
-                        Your Team
-                      </div>
+                      <div className="text-white/60 text-sm mb-2">Your Team</div>
                       <div className="flex items-center justify-between bg-black/60 p-3 rounded-lg">
-                        <div className="font-medium">
-                          {tournament.userTeam.teamName}
-                        </div>
+                        <div className="font-medium">{tournament.userTeam.teamName}</div>
                         <div className="flex items-center gap-2">
                           <div className="text-sm text-white/60">
                             {tournament.userTeam.sections.reduce(
-                              (total, section) =>
-                                total + section.selectedTeams.length,
-                              0
+                              (total, section) => total + section.selectedTeams.length,
+                              0,
                             )}{" "}
                             players
                           </div>
@@ -1478,13 +1329,9 @@ export default function ProfilePage() {
 
                   <div className="grid grid-cols-2 gap-3 border-t border-white/10 pt-3">
                     <div className="bg-black/60 p-3 rounded-lg">
-                      <div className="text-white/60 text-xs mb-1">
-                        Current Status
-                      </div>
+                      <div className="text-white/60 text-xs mb-1">Current Status</div>
                       <div className="font-bold">
-                        {tournament.tournamentDetails.isOngoing
-                          ? "Ongoing"
-                          : "Completed"}
+                        {tournament.tournamentDetails.isOngoing ? "Ongoing" : "Completed"}
                       </div>
                     </div>
                   </div>
@@ -1496,22 +1343,15 @@ export default function ProfilePage() {
               <div className="mx-auto w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
                 <Trophy className="h-8 w-8 text-white/40" />
               </div>
-              <h3 className="text-lg font-medium text-white mb-1">
-                No Tournaments
-              </h3>
-              <p className="text-white/60 text-sm">
-                You haven't joined any tournaments yet.
-              </p>
+              <h3 className="text-lg font-medium text-white mb-1">No Tournaments</h3>
+              <p className="text-white/60 text-sm">You haven't joined any tournaments yet.</p>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
       {/* Transactions Dialog */}
-      <Dialog
-        open={transactionsDialogOpen}
-        onOpenChange={setTransactionsDialogOpen}
-      >
+      <Dialog open={transactionsDialogOpen} onOpenChange={setTransactionsDialogOpen}>
         <DialogContent className="bg-[#111] border border-white/10 text-white">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
@@ -1521,10 +1361,7 @@ export default function ProfilePage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="bg-white/5 hover:bg-white/10 border-white/10 text-white flex-1"
-              >
+              <Button variant="outline" className="bg-white/5 hover:bg-white/10 border-white/10 text-white flex-1">
                 All
               </Button>
               <Button variant="ghost" className="text-white/70 flex-1">
@@ -1562,31 +1399,17 @@ export default function ProfilePage() {
                   status: "Completed",
                 },
               ].map((tx, index) => (
-                <div
-                  key={index}
-                  className="bg-black/40 rounded-lg p-3 flex justify-between items-center"
-                >
+                <div key={index} className="bg-black/40 rounded-lg p-3 flex justify-between items-center">
                   <div>
                     <div className="font-medium">{tx.type}</div>
                     <div className="text-xs text-white/60">{tx.date}</div>
                   </div>
-                  <div
-                    className={
-                      tx.amount.startsWith("+")
-                        ? "text-green-400"
-                        : "text-yellow-400"
-                    }
-                  >
-                    {tx.amount}
-                  </div>
+                  <div className={tx.amount.startsWith("+") ? "text-green-400" : "text-yellow-400"}>{tx.amount}</div>
                 </div>
               ))}
             </div>
 
-            <Button
-              variant="outline"
-              className="w-full bg-white/5 hover:bg-white/10 border-white/10 text-white"
-            >
+            <Button variant="outline" className="w-full bg-white/5 hover:bg-white/10 border-white/10 text-white">
               Export Transactions
             </Button>
           </div>
@@ -1607,39 +1430,24 @@ export default function ProfilePage() {
               <Label htmlFor="displayName" className="text-white/70">
                 Display Name
               </Label>
-              <Input
-                id="displayName"
-                defaultValue={`rostera/${userId}`}
-                className="bg-black/40 border-white/10"
-              />
+              <Input id="displayName" defaultValue={`rostera/${userId}`} className="bg-black/40 border-white/10" />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="email" className="text-white/70">
                 Email
               </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="your@email.com"
-                className="bg-black/40 border-white/10"
-              />
+              <Input id="email" type="email" placeholder="your@email.com" className="bg-black/40 border-white/10" />
             </div>
 
             <div className="space-y-2">
               <Label className="text-white/70">Profile Picture</Label>
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage
-                    src="/placeholder.svg?height=64&width=64"
-                    alt="Profile"
-                  />
+                  <AvatarImage src="/placeholder.svg?height=64&width=64" alt="Profile" />
                   <AvatarFallback className="bg-[#111]">CG</AvatarFallback>
                 </Avatar>
-                <Button
-                  variant="outline"
-                  className="bg-white/5 hover:bg-white/10 border-white/10 text-white"
-                >
+                <Button variant="outline" className="bg-white/5 hover:bg-white/10 border-white/10 text-white">
                   Change
                 </Button>
               </div>
@@ -1660,19 +1468,14 @@ export default function ProfilePage() {
             </div>
 
             <div className="flex gap-2 justify-end mt-4">
-              <Button
-                variant="outline"
-                className="bg-white/5 hover:bg-white/10 border-white/10 text-white"
-              >
+              <Button variant="outline" className="bg-white/5 hover:bg-white/10 border-white/10 text-white">
                 Cancel
               </Button>
-              <Button className="bg-white text-black hover:bg-white/90">
-                Save Changes
-              </Button>
+              <Button className="bg-white text-black hover:bg-white/90">Save Changes</Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
     </div>
-  );
+  )
 }

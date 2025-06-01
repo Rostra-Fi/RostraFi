@@ -364,8 +364,8 @@ export function SelectedTeamsOverview() {
                 placeholder="Enter team name"
                 value={teamName}
                 onChange={(e) => setTeamName(e.target.value)}
-                className="w-full border-2 focus:border-blue-500 rounded-lg py-2"
-              />
+                className="w-full border-2 focus:border-blue-500 rounded-lg py-2 text-white placeholder-gray-400 bg-transparent"
+                />
 
               {/* Display total team points */}
               <div className="flex items-center justify-between px-3 py-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">

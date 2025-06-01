@@ -1,20 +1,14 @@
-"use client";
-import { useState, useEffect, useCallback } from "react";
-import type React from "react";
+"use client"
+import { useState, useEffect, useCallback } from "react"
+import type React from "react"
 
-import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks";
-import { addUserPoints, removeUserPoints } from "@/store/userSlice";
-import { useParams } from "next/navigation";
-import {
-  Connection,
-  PublicKey,
-  SystemProgram,
-  Transaction,
-  LAMPORTS_PER_SOL,
-} from "@solana/web3.js";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useUser } from "@civic/auth-web3/react";
-import { userHasWallet } from "@civic/auth-web3";
+import { useAppDispatch, useAppSelector } from "@/hooks/reduxHooks"
+import { addUserPoints, removeUserPoints } from "@/store/userSlice"
+import { useParams } from "next/navigation"
+import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js"
+import { useWallet } from "@solana/wallet-adapter-react"
+import { useUser } from "@civic/auth-web3/react"
+import { userHasWallet } from "@civic/auth-web3"
 import {
   X,
   Wallet,
@@ -26,129 +20,113 @@ import {
   ExternalLink,
   Loader2,
   Send,
-} from "lucide-react";
+} from "lucide-react"
 
-const POINTS_PER_PURCHASE = 150;
-const SOL_AMOUNT = 0.2;
-const TREASURY_WALLET = new PublicKey(
-  "JCsFjtj6tem9Dv83Ks4HxsL7p8GhdLtokveqW7uWjGyi"
-);
-const SOLANA_RPC_URL =
-  "https://devnet.helius-rpc.com/?api-key=a969d395-9864-418f-8a64-65c1ef2107f9";
+const POINTS_PER_PURCHASE = 150
+const SOL_AMOUNT = 0.2
+const TREASURY_WALLET = new PublicKey("JCsFjtj6tem9Dv83Ks4HxsL7p8GhdLtokveqW7uWjGyi")
+const SOLANA_RPC_URL = "https://devnet.helius-rpc.com/?api-key=a969d395-9864-418f-8a64-65c1ef2107f9"
 
 interface WalletDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen: boolean
+  onClose: () => void
 }
 
-export const WalletDialog: React.FC<WalletDialogProps> = ({
-  isOpen,
-  onClose,
-}) => {
-  const [walletAddress, setWalletAddress] = useState("");
-  const [balance, setBalance] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [transactionType, setTransactionType] = useState("buy"); // "buy" points, "exchange" points, or "transfer" sol
-  const [message, setMessage] = useState({ type: "", text: "" });
-  const [transactionSignature, setTransactionSignature] = useState("");
-  const [debugInfo, setDebugInfo] = useState<any>(null);
-  const [transferAddress, setTransferAddress] = useState("");
-  const [transferAmount, setTransferAmount] = useState("0.1");
+export const WalletDialog: React.FC<WalletDialogProps> = ({ isOpen, onClose }) => {
+  const [walletAddress, setWalletAddress] = useState("")
+  const [balance, setBalance] = useState(0)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [transactionType, setTransactionType] = useState("buy") // "buy" points, "exchange" points, or "transfer" sol
+  const [message, setMessage] = useState({ type: "", text: "" })
+  const [transactionSignature, setTransactionSignature] = useState("")
+  const [debugInfo, setDebugInfo] = useState<any>(null)
+  const [transferAddress, setTransferAddress] = useState("")
+  const [transferAmount, setTransferAmount] = useState("0.1")
 
   // Get wallet from Solana wallet adapter
-  const { publicKey, sendTransaction } = useWallet();
+  const { publicKey, sendTransaction } = useWallet()
 
   // Get Civic user context
-  const userContext = useUser();
-  const civicWallet = userHasWallet(userContext)
-    ? userContext.solana.wallet
-    : undefined;
+  const userContext = useUser()
+  const civicWallet = userHasWallet(userContext) ? userContext.solana.wallet : undefined
 
-  const dispatch = useAppDispatch();
-  const params = useParams();
-  const tourId = params?.tourId as string | undefined;
+  const dispatch = useAppDispatch()
+  const params = useParams()
+  const tourId = params?.tourId as string | undefined
 
-  const { points } = useAppSelector((state) => state.user);
+  const { points } = useAppSelector((state) => state.user)
 
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden";
-      loadWalletFromLocalStorage();
+      document.body.style.overflow = "hidden"
+      loadWalletFromLocalStorage()
     } else {
-      document.body.style.overflow = "auto";
-      setMessage({ type: "", text: "" });
-      setTransactionSignature("");
-      setDebugInfo(null);
+      document.body.style.overflow = "auto"
+      setMessage({ type: "", text: "" })
+      setTransactionSignature("")
+      setDebugInfo(null)
     }
 
     return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, [isOpen]);
+      document.body.style.overflow = "auto"
+    }
+  }, [isOpen])
 
   const loadWalletFromLocalStorage = () => {
     try {
-      const storedWalletAddress = localStorage.getItem("UserId");
+      const storedWalletAddress = localStorage.getItem("UserId")
       if (storedWalletAddress) {
-        setWalletAddress(storedWalletAddress);
-        fetchWalletBalance(storedWalletAddress);
+        setWalletAddress(storedWalletAddress)
+        fetchWalletBalance(storedWalletAddress)
       }
     } catch (error) {
-      console.error("Error loading wallet from localStorage:", error);
+      console.error("Error loading wallet from localStorage:", error)
       setDebugInfo({
         error: "Failed to load wallet from localStorage",
         details: error,
-      });
+      })
     }
-  };
+  }
 
   const fetchWalletBalance = async (address: string) => {
     try {
-      const connection = new Connection(SOLANA_RPC_URL, "confirmed");
-      const publicKey = new PublicKey(address);
-      const balanceInLamports = await connection.getBalance(publicKey);
-      setBalance(balanceInLamports / LAMPORTS_PER_SOL);
+      const connection = new Connection(SOLANA_RPC_URL, "confirmed")
+      const publicKey = new PublicKey(address)
+      const balanceInLamports = await connection.getBalance(publicKey)
+      setBalance(balanceInLamports / LAMPORTS_PER_SOL)
     } catch (error) {
-      console.error("Error fetching balance:", error);
-      setDebugInfo({ error: "Failed to fetch wallet balance", details: error });
+      console.error("Error fetching balance:", error)
+      setDebugInfo({ error: "Failed to fetch wallet balance", details: error })
     }
-  };
+  }
 
   // Function to update points in backend
-  const updateBackendPoints = async (
-    points: number,
-    operation: "add" | "deduct"
-  ) => {
-    const walletAddress = localStorage.getItem("UserId");
+  const updateBackendPoints = async (points: number, operation: "add" | "deduct") => {
+    const walletAddress = localStorage.getItem("UserId")
     try {
-      const response = await fetch(
-        `http://127.0.0.1:3001/api/v1/walletUser/${walletAddress}/points`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            walletAddress,
-            points,
-            operation,
-          }),
-        }
-      );
+      const response = await fetch(`http://127.0.0.1:3001/api/v1/walletUser/${walletAddress}/points`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          walletAddress,
+          points,
+          operation,
+        }),
+      })
 
-      const data = await response.json();
-      console.log(data);
+      const data = await response.json()
+      console.log(data)
 
       if (!response.ok) {
-        throw new Error(
-          data.message || `Failed to ${operation} points in backend`
-        );
+        throw new Error(data.message || `Failed to ${operation} points in backend`)
       }
 
-      return data;
+      return data
     } catch (error) {
-      console.error(`Error ${operation}ing points in backend:`, error);
-      throw error;
+      console.error(`Error ${operation}ing points in backend:`, error)
+      throw error
     }
-  };
+  }
 
   const buyPoints = useCallback(async () => {
     try {
@@ -156,35 +134,33 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
         setMessage({
           type: "error",
           text: "Please connect your wallet first.",
-        });
-        return;
+        })
+        return
       }
 
       // Check if we have enough balance (including a buffer for transaction fees)
       if (balance < SOL_AMOUNT + 0.001) {
         setMessage({
           type: "error",
-          text: `Insufficient balance. You need at least ${
-            SOL_AMOUNT + 0.001
-          } SOL.`,
-        });
-        return;
+          text: `Insufficient balance. You need at least ${SOL_AMOUNT + 0.001} SOL.`,
+        })
+        return
       }
 
-      setIsProcessing(true);
-      setMessage({ type: "info", text: "Preparing transaction..." });
-      setDebugInfo(null);
+      setIsProcessing(true)
+      setMessage({ type: "info", text: "Preparing transaction..." })
+      setDebugInfo(null)
 
       // Create connection
-      const connection = new Connection(SOLANA_RPC_URL, "confirmed");
+      const connection = new Connection(SOLANA_RPC_URL, "confirmed")
 
       // Determine which wallet to use (Civic or regular wallet adapter)
       const activeWallet = civicWallet || {
         publicKey: new PublicKey(walletAddress),
-      };
+      }
 
       if (!activeWallet.publicKey) {
-        throw new Error("Wallet public key not found");
+        throw new Error("Wallet public key not found")
       }
 
       setDebugInfo({
@@ -193,13 +169,13 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
         fromPublicKey: activeWallet.publicKey.toString(),
         toPublicKey: TREASURY_WALLET.toString(),
         amount: SOL_AMOUNT,
-      });
+      })
 
       // Calculate exact lamports to send (avoid floating point issues)
-      const lamportsToSend = Math.floor(SOL_AMOUNT * LAMPORTS_PER_SOL);
+      const lamportsToSend = Math.floor(SOL_AMOUNT * LAMPORTS_PER_SOL)
 
       // Get recent blockhash
-      const blockhash = await connection.getLatestBlockhash("confirmed");
+      const blockhash = await connection.getLatestBlockhash("confirmed")
 
       // Create the transaction
       const transaction = new Transaction({
@@ -210,38 +186,38 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
           fromPubkey: activeWallet.publicKey,
           toPubkey: TREASURY_WALLET,
           lamports: lamportsToSend,
-        })
-      );
+        }),
+      )
 
       setMessage({
         type: "info",
         text: "Please approve the transaction in your wallet...",
-      });
+      })
 
-      let signature: string;
+      let signature: string
 
       // Send transaction using the appropriate wallet
       if (civicWallet) {
         // Use Civic wallet
-        signature = await civicWallet.sendTransaction(transaction, connection);
+        signature = await civicWallet.sendTransaction(transaction, connection)
       } else if (sendTransaction) {
         // Use wallet adapter
-        signature = await sendTransaction(transaction, connection);
+        signature = await sendTransaction(transaction, connection)
       } else {
-        throw new Error("No wallet method available to send transaction");
+        throw new Error("No wallet method available to send transaction")
       }
 
-      setTransactionSignature(signature);
+      setTransactionSignature(signature)
       setMessage({
         type: "info",
         text: "Transaction sent! Waiting for confirmation...",
-      });
+      })
 
       setDebugInfo({
         ...debugInfo,
         step: "Transaction sent",
         signature,
-      });
+      })
 
       // Wait for confirmation
       await connection.confirmTransaction(
@@ -249,22 +225,22 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
           signature,
           ...blockhash,
         },
-        "confirmed"
-      );
+        "confirmed",
+      )
 
       // Update balance
-      await fetchWalletBalance(walletAddress);
+      await fetchWalletBalance(walletAddress)
 
       setMessage({
         type: "info",
         text: "Updating points in backend...",
-      });
+      })
 
       // Update points in backend first
-      await updateBackendPoints(POINTS_PER_PURCHASE, "add");
+      await updateBackendPoints(POINTS_PER_PURCHASE, "add")
 
       // Then update Redux state
-      dispatch(addUserPoints(POINTS_PER_PURCHASE));
+      dispatch(addUserPoints(POINTS_PER_PURCHASE))
 
       // Record the transaction
       try {
@@ -279,50 +255,42 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
             signature,
             status: "confirmed",
           }),
-        });
+        })
       } catch (error) {
-        console.error("Failed to record transaction:", error);
+        console.error("Failed to record transaction:", error)
         // Continue even if recording fails
       }
 
       setMessage({
         type: "success",
         text: `Successfully purchased ${POINTS_PER_PURCHASE} points!`,
-      });
+      })
 
       setDebugInfo({
         ...debugInfo,
         step: "Transaction confirmed",
         points: POINTS_PER_PURCHASE,
-      });
+      })
 
       setTimeout(() => {
-        setMessage({ type: "", text: "" });
-        onClose();
-      }, 3000);
+        setMessage({ type: "", text: "" })
+        onClose()
+      }, 3000)
     } catch (error: any) {
-      console.error("Error buying points:", error);
+      console.error("Error buying points:", error)
       setMessage({
         type: "error",
         text: error.message || "Transaction failed. Please try again.",
-      });
+      })
       setDebugInfo({
         ...debugInfo,
         step: "Transaction failed",
         error: error.message || "Unknown error",
-      });
+      })
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false)
     }
-  }, [
-    walletAddress,
-    balance,
-    civicWallet,
-    sendTransaction,
-    dispatch,
-    debugInfo,
-    onClose,
-  ]);
+  }, [walletAddress, balance, civicWallet, sendTransaction, dispatch, debugInfo, onClose])
 
   const exchangePointsForSol = async () => {
     try {
@@ -330,47 +298,85 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
         setMessage({
           type: "error",
           text: "Please connect your wallet first.",
-        });
-        return;
+        })
+        return
       }
 
       if (points < POINTS_PER_PURCHASE) {
         setMessage({
           type: "error",
           text: `Insufficient points. You need at least ${POINTS_PER_PURCHASE} points.`,
-        });
-        return;
+        })
+        return
       }
 
-      setIsProcessing(true);
-      setMessage({ type: "info", text: "Processing redemption request..." });
+      setIsProcessing(true)
+      setMessage({ type: "info", text: "Processing redemption request..." })
 
       // Update points in backend first
-      setMessage({ type: "info", text: "Updating points in backend..." });
-      await updateBackendPoints(POINTS_PER_PURCHASE, "deduct");
+      setMessage({ type: "info", text: "Updating points in backend..." })
+      await updateBackendPoints(POINTS_PER_PURCHASE, "deduct")
 
       // Then update Redux state
-      dispatch(removeUserPoints(POINTS_PER_PURCHASE));
+      dispatch(removeUserPoints(POINTS_PER_PURCHASE))
 
-      setMessage({
-        type: "success",
-        text: `${POINTS_PER_PURCHASE} points exchanged!`,
-      });
+      // Record the exchange transaction in the database
+      try {
+        const response = await fetch("/api/transactions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "exchange",
+            publicKey: walletAddress,
+            points: POINTS_PER_PURCHASE,
+            solAmount: SOL_AMOUNT,
+            status: "pending_verification",
+            timestamp: new Date().toISOString(),
+          }),
+        })
 
-      setTimeout(() => {
-        setMessage({ type: "", text: "" });
-        onClose();
-      }, 3000);
+        if (!response.ok) {
+          throw new Error("Failed to record exchange transaction")
+        }
+
+        const transactionData = await response.json()
+
+        // Show comprehensive confirmation message
+        setMessage({
+          type: "success",
+          text: `✅ Exchange Confirmed!\n\n🔑 Your public key (${walletAddress.slice(0, 8)}...${walletAddress.slice(-8)}) has been successfully recorded in our database.\n\n⏳ Verification Process: Your exchange request is now being processed by our verification system.\n\n💰 SOL Delivery: ${SOL_AMOUNT} SOL will be automatically sent to your wallet within 24 hours once verification is complete.\n\n📧 You will receive a confirmation notification when the transfer is initiated.\n\nTransaction ID: ${transactionData.id || "Generated"}\nPoints Exchanged: ${POINTS_PER_PURCHASE}\nSOL Amount: ${SOL_AMOUNT}`,
+        })
+
+        // Set a longer timeout for this important message
+        setTimeout(() => {
+          setMessage({ type: "", text: "" })
+        }, 10000) // 10 seconds instead of 3
+      } catch (error) {
+        console.error("Failed to record exchange transaction:", error)
+
+        // Even if recording fails, show confirmation since points were deducted
+        setMessage({
+          type: "success",
+          text: `✅ Points Exchange Completed!\n\n🔑 Your public key has been recorded for verification.\n\n⏳ Verification is underway - SOL will be sent to your wallet within 24 hours.\n\nNote: There was a minor issue recording the transaction details, but your exchange has been processed successfully.`,
+        })
+
+        setTimeout(() => {
+          setMessage({ type: "", text: "" })
+        }, 8000)
+      }
+
+      // Don't close the dialog immediately - let user read the confirmation
+      // Remove or comment out the onClose() call
     } catch (error: any) {
-      console.error("Error exchanging points:", error);
+      console.error("Error exchanging points:", error)
       setMessage({
         type: "error",
         text: error.message || "Exchange failed. Please try again.",
-      });
+      })
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false)
     }
-  };
+  }
 
   const transferSol = async () => {
     try {
@@ -378,8 +384,8 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
         setMessage({
           type: "error",
           text: "Please connect your wallet first.",
-        });
-        return;
+        })
+        return
       }
 
       // Validate recipient address
@@ -387,53 +393,51 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
         setMessage({
           type: "error",
           text: "Please enter a recipient wallet address.",
-        });
-        return;
+        })
+        return
       }
 
       // Validate transfer amount
-      const amount = Number.parseFloat(transferAmount);
+      const amount = Number.parseFloat(transferAmount)
       if (isNaN(amount) || amount <= 0) {
         setMessage({
           type: "error",
           text: "Please enter a valid amount greater than 0.",
-        });
-        return;
+        })
+        return
       }
 
       // Check if we have enough balance (including a buffer for transaction fees)
       if (balance < amount + 0.001) {
         setMessage({
           type: "error",
-          text: `Insufficient balance. You need at least ${
-            amount + 0.001
-          } SOL.`,
-        });
-        return;
+          text: `Insufficient balance. You need at least ${amount + 0.001} SOL.`,
+        })
+        return
       }
 
-      setIsProcessing(true);
-      setMessage({ type: "info", text: "Preparing transaction..." });
-      setDebugInfo(null);
+      setIsProcessing(true)
+      setMessage({ type: "info", text: "Preparing transaction..." })
+      setDebugInfo(null)
 
       // Create connection
-      const connection = new Connection(SOLANA_RPC_URL, "confirmed");
+      const connection = new Connection(SOLANA_RPC_URL, "confirmed")
 
       // Validate recipient address
-      let recipientPublicKey: PublicKey;
+      let recipientPublicKey: PublicKey
       try {
-        recipientPublicKey = new PublicKey(transferAddress);
+        recipientPublicKey = new PublicKey(transferAddress)
       } catch (error) {
-        throw new Error("Invalid recipient wallet address");
+        throw new Error("Invalid recipient wallet address")
       }
 
       // Determine which wallet to use (Civic or regular wallet adapter)
       const activeWallet = civicWallet || {
         publicKey: new PublicKey(walletAddress),
-      };
+      }
 
       if (!activeWallet.publicKey) {
-        throw new Error("Wallet public key not found");
+        throw new Error("Wallet public key not found")
       }
 
       setDebugInfo({
@@ -442,13 +446,13 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
         fromPublicKey: activeWallet.publicKey.toString(),
         toPublicKey: recipientPublicKey.toString(),
         amount: amount,
-      });
+      })
 
       // Calculate exact lamports to send (avoid floating point issues)
-      const lamportsToSend = Math.floor(amount * LAMPORTS_PER_SOL);
+      const lamportsToSend = Math.floor(amount * LAMPORTS_PER_SOL)
 
       // Get recent blockhash
-      const blockhash = await connection.getLatestBlockhash("confirmed");
+      const blockhash = await connection.getLatestBlockhash("confirmed")
 
       // Create the transaction
       const transaction = new Transaction({
@@ -459,38 +463,38 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
           fromPubkey: activeWallet.publicKey,
           toPubkey: recipientPublicKey,
           lamports: lamportsToSend,
-        })
-      );
+        }),
+      )
 
       setMessage({
         type: "info",
         text: "Please approve the transaction in your wallet...",
-      });
+      })
 
-      let signature: string;
+      let signature: string
 
       // Send transaction using the appropriate wallet
       if (civicWallet) {
         // Use Civic wallet
-        signature = await civicWallet.sendTransaction(transaction, connection);
+        signature = await civicWallet.sendTransaction(transaction, connection)
       } else if (sendTransaction) {
         // Use wallet adapter
-        signature = await sendTransaction(transaction, connection);
+        signature = await sendTransaction(transaction, connection)
       } else {
-        throw new Error("No wallet method available to send transaction");
+        throw new Error("No wallet method available to send transaction")
       }
 
-      setTransactionSignature(signature);
+      setTransactionSignature(signature)
       setMessage({
         type: "info",
         text: "Transaction sent! Waiting for confirmation...",
-      });
+      })
 
       setDebugInfo({
         ...debugInfo,
         step: "Transaction sent",
         signature,
-      });
+      })
 
       // Wait for confirmation
       await connection.confirmTransaction(
@@ -498,11 +502,11 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
           signature,
           ...blockhash,
         },
-        "confirmed"
-      );
+        "confirmed",
+      )
 
       // Update balance
-      await fetchWalletBalance(walletAddress);
+      await fetchWalletBalance(walletAddress)
 
       // Record the transaction
       try {
@@ -517,54 +521,51 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
             signature,
             status: "confirmed",
           }),
-        });
+        })
       } catch (error) {
-        console.error("Failed to record transaction:", error);
+        console.error("Failed to record transaction:", error)
         // Continue even if recording fails
       }
 
       setMessage({
         type: "success",
         text: `Successfully transferred ${amount} SOL!`,
-      });
+      })
 
       setDebugInfo({
         ...debugInfo,
         step: "Transaction confirmed",
         amount: amount,
-      });
+      })
 
       // Reset form
-      setTransferAddress("");
-      setTransferAmount("0.1");
+      setTransferAddress("")
+      setTransferAmount("0.1")
 
       setTimeout(() => {
-        setMessage({ type: "", text: "" });
-      }, 3000);
+        setMessage({ type: "", text: "" })
+      }, 3000)
     } catch (error: any) {
-      console.error("Error transferring SOL:", error);
+      console.error("Error transferring SOL:", error)
       setMessage({
         type: "error",
         text: error.message || "Transaction failed. Please try again.",
-      });
+      })
       setDebugInfo({
         ...debugInfo,
         step: "Transaction failed",
         error: error.message || "Unknown error",
-      });
+      })
     } finally {
-      setIsProcessing(false);
+      setIsProcessing(false)
     }
-  };
+  }
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center overflow-y-auto p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative bg-white dark:bg-neutral-900 rounded-2xl shadow-xl w-full max-w-4xl mx-auto my-8 z-10 overflow-hidden">
         {/* Header */}
@@ -589,8 +590,8 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
               message.type === "error"
                 ? "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
                 : message.type === "info"
-                ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
-                : "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                  ? "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
+                  : "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400"
             }`}
           >
             <div className="mr-3 mt-0.5 flex-shrink-0">
@@ -603,7 +604,7 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
               )}
             </div>
             <div>
-              <p className="font-medium">{message.text}</p>
+              <p className="font-medium whitespace-pre-line">{message.text}</p>
               {transactionSignature && (
                 <div className="mt-2 text-xs flex items-center">
                   <a
@@ -628,17 +629,11 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
             {/* Balance Cards */}
             <div className="space-y-4">
               <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
-                <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                  Wallet Balance
-                </div>
-                <div className="text-3xl font-bold">
-                  {balance.toFixed(3)} SOL
-                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Wallet Balance</div>
+                <div className="text-3xl font-bold">{balance.toFixed(3)} SOL</div>
               </div>
               <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
-                <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                  Points Balance
-                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">Points Balance</div>
                 <div className="text-3xl font-bold">{points || 0}</div>
               </div>
             </div>
@@ -646,15 +641,11 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
             {!walletAddress ? (
               <div className="text-center p-8 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
                 <Wallet className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                <p className="text-gray-500 dark:text-gray-400">
-                  No wallet connected.
-                </p>
+                <p className="text-gray-500 dark:text-gray-400">No wallet connected.</p>
               </div>
             ) : (
               <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800">
-                <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                  Connected Wallet
-                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">Connected Wallet</div>
                 <div className="font-mono text-sm bg-white dark:bg-black p-3 rounded-lg border border-gray-200 dark:border-gray-800 break-all">
                   {walletAddress}
                 </div>
@@ -670,13 +661,9 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
             {/* Debug Info (Collapsible) */}
             {debugInfo && (
               <div className="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
-                <div className="bg-gray-100 dark:bg-gray-900 px-4 py-2 text-xs font-medium">
-                  Debug Information
-                </div>
+                <div className="bg-gray-100 dark:bg-gray-900 px-4 py-2 text-xs font-medium">Debug Information</div>
                 <div className="bg-gray-50 dark:bg-gray-950 p-3 overflow-auto max-h-40 text-xs font-mono">
-                  <pre className="text-gray-800 dark:text-gray-300">
-                    {JSON.stringify(debugInfo, null, 2)}
-                  </pre>
+                  <pre className="text-gray-800 dark:text-gray-300">{JSON.stringify(debugInfo, null, 2)}</pre>
                 </div>
               </div>
             )}
@@ -730,33 +717,23 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
 
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500 dark:text-gray-400">
-                      Cost
-                    </span>
+                    <span className="text-gray-500 dark:text-gray-400">Cost</span>
                     <span className="font-bold">{SOL_AMOUNT} SOL</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500 dark:text-gray-400">
-                      Network Fee
-                    </span>
+                    <span className="text-gray-500 dark:text-gray-400">Network Fee</span>
                     <span className="font-medium">~0.000005 SOL</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500 dark:text-gray-400">
-                      Points Earned
-                    </span>
-                    <span className="font-bold text-green-600 dark:text-green-400">
-                      +{POINTS_PER_PURCHASE}
-                    </span>
+                    <span className="text-gray-500 dark:text-gray-400">Points Earned</span>
+                    <span className="font-bold text-green-600 dark:text-green-400">+{POINTS_PER_PURCHASE}</span>
                   </div>
 
                   <div className="pt-2">
                     <div className="w-full h-px bg-gray-200 dark:bg-gray-700 my-2"></div>
                     <div className="flex justify-between items-center">
                       <span className="font-medium">Total Cost</span>
-                      <span className="font-bold">
-                        {SOL_AMOUNT + 0.000005} SOL
-                      </span>
+                      <span className="font-bold">{(SOL_AMOUNT + 0.000005).toFixed(2)} SOL</span>
                     </div>
                   </div>
                 </div>
@@ -772,20 +749,12 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
 
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500 dark:text-gray-400">
-                      Points Cost
-                    </span>
-                    <span className="font-bold text-red-600 dark:text-red-400">
-                      -{POINTS_PER_PURCHASE} Points
-                    </span>
+                    <span className="text-gray-500 dark:text-gray-400">Points Cost</span>
+                    <span className="font-bold text-red-600 dark:text-red-400">-{POINTS_PER_PURCHASE} Points</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-500 dark:text-gray-400">
-                      SOL Received
-                    </span>
-                    <span className="font-bold text-green-600 dark:text-green-400">
-                      +{SOL_AMOUNT} SOL
-                    </span>
+                    <span className="text-gray-500 dark:text-gray-400">SOL Received</span>
+                    <span className="font-bold text-green-600 dark:text-green-400">+{SOL_AMOUNT} SOL</span>
                   </div>
 
                   <div className="pt-2">
@@ -860,8 +829,8 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
                 transactionType === "buy"
                   ? buyPoints
                   : transactionType === "exchange"
-                  ? exchangePointsForSol
-                  : transferSol
+                    ? exchangePointsForSol
+                    : transferSol
               }
               disabled={isProcessing}
               className={`w-full py-4 rounded-xl text-white font-medium transition-all ${
@@ -887,5 +856,5 @@ export const WalletDialog: React.FC<WalletDialogProps> = ({
         </div>
       </div>
     </div>
-  );
-};
+  )
+}

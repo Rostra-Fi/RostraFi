@@ -1,4 +1,4 @@
-@tailwind base;
+a@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
@@ -36,15 +36,61 @@
 
 body {
   @apply bg-background text-foreground;
-  background-image: radial-gradient(
-      circle at 20% 30%,
-      rgba(128, 0, 128, 0.15),
-      transparent 40%
-    ),
+  background-image: radial-gradient(circle at 20% 30%, rgba(128, 0, 128, 0.15), transparent 40%),
     radial-gradient(circle at 80% 70%, rgba(255, 0, 128, 0.1), transparent 40%);
 }
 
 /* Custom progress bar styling */
 .progress-indicator {
   @apply bg-gradient-to-r from-purple-500 to-pink-500;
+}
+
+/* Smooth animations */
+* {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #8b5cf6, #ec4899);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, #7c3aed, #db2777);
+}
+
+/* Additional styles for the coming soon page */
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Glassmorphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Text glow effect */
+.text-glow {
+  text-shadow: 0 0 20px rgba(168, 85, 247, 0.5);
 }

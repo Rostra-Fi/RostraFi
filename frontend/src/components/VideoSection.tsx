@@ -4,7 +4,7 @@ import React from "react";
 export const VideoSection = () => {
   return (
     <>
-      <div className="bg-slate-950 min-h-screen flex items-center justify-center p-8 pb-32">
+      <div className="min-h-screen flex items-center justify-center p-8 pb-32 bg-transparent">
         {/* Video Container with White Glow */}
         <div className="relative w-full max-w-5xl">
           {/* White glow effect - increased opacity and reduced blur */}
