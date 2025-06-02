@@ -1,22 +1,22 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
-import { BackgroundContent } from "@/components/background-content"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Bell, Sparkles } from "lucide-react"
-import { useState } from "react"
+import { motion } from "framer-motion";
+import { BackgroundContent } from "@/components/background-content";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Bell, Sparkles } from "lucide-react";
+import { useState } from "react";
 
 export default function ComingSoonPage() {
-  const [email, setEmail] = useState("")
-  const [isSubscribed, setIsSubscribed] = useState(false)
+  const [email, setEmail] = useState("");
+  const [isSubscribed, setIsSubscribed] = useState(false);
 
   const handleNotifyMe = () => {
     if (email) {
-      setIsSubscribed(true)
-      setTimeout(() => setIsSubscribed(false), 3000)
+      setIsSubscribed(true);
+      setTimeout(() => setIsSubscribed(false), 3000);
     }
-  }
+  };
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -48,7 +48,11 @@ export default function ComingSoonPage() {
             <div className="absolute -top-8 left-1/2 -translate-x-1/2">
               <motion.div
                 animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                transition={{
+                  duration: 20,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "linear",
+                }}
                 className="w-16 h-16 border border-purple-500/20 rounded-full flex items-center justify-center"
               >
                 <Sparkles className="w-6 h-6 text-purple-400" />
@@ -79,7 +83,7 @@ export default function ComingSoonPage() {
           </motion.p>
 
           {/* Email Subscription */}
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
@@ -121,7 +125,7 @@ export default function ComingSoonPage() {
                 ✨ You'll be the first to know when we launch!
               </motion.p>
             )}
-          </motion.div>
+          </motion.div> */}
 
           {/* Progress Indicator */}
           <motion.div
@@ -151,7 +155,9 @@ export default function ComingSoonPage() {
             transition={{ duration: 0.8, delay: 1 }}
             className="absolute bottom-8 left-1/2 -translate-x-1/2"
           >
-            <p className="text-gray-600 text-sm font-light">Designed with obsessive attention to detail</p>
+            <p className="text-gray-600 text-sm font-light">
+              Designed with obsessive attention to detail
+            </p>
           </motion.div>
         </div>
       </div>
@@ -179,5 +185,5 @@ export default function ComingSoonPage() {
         ))}
       </div>
     </div>
-  )
+  );
 }

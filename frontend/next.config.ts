@@ -22,6 +22,7 @@ const nextConfig: NextConfig = {
       { hostname: "cdn.pixabay.com" },
       { hostname: "upload.wikimedia.org" },
       { hostname: "pbs.twimg.com" },
+      { hostname: "i.ibb.co" },
       {
         protocol: "https",
         hostname: "**.gstatic.com",

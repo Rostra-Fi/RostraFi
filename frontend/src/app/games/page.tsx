@@ -480,7 +480,7 @@ export default function GamesPage() {
 
       {/* Sticky Header */}
       <header
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+        className={` top-0 left-0 right-0 z-40 transition-all duration-300 ${
           scrolled
             ? "py-3 bg-black/90 backdrop-blur-md border-b-4 border-white"
             : "py-5 bg-transparent"
@@ -521,34 +521,6 @@ export default function GamesPage() {
                   />
                   <span className="text-base font-bold">{points}</span>
                 </div>
-
-                {/* <div className="flex space-x-2">
-                  <motion.button
-                    className="px-3 py-1 bg-green-600 text-white text-sm font-bold rounded-md"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      setShowBuyDialog(true);
-                      playSound("click");
-                    }}
-                    onMouseEnter={() => playSound("hover")}
-                  >
-                    BUY
-                  </motion.button>
-
-                  <motion.button
-                    className="px-3 py-1 bg-red-600 text-white text-sm font-bold rounded-md"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      setShowSellDialog(true);
-                      playSound("click");
-                    }}
-                    onMouseEnter={() => playSound("hover")}
-                  >
-                    SELL
-                  </motion.button>
-                </div> */}
               </div>
             </div>
 
@@ -596,29 +568,6 @@ export default function GamesPage() {
                         <span className="text-base font-bold">
                           POINTS: {points}
                         </span>
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          className="px-3 py-1 bg-green-600 text-white text-sm font-bold rounded-md w-full"
-                          onClick={() => {
-                            setShowBuyDialog(true);
-                            setMenuOpen(false);
-                            playSound("click");
-                          }}
-                        >
-                          BUY POINTS
-                        </button>
-
-                        <button
-                          className="px-3 py-1 bg-red-600 text-white text-sm font-bold rounded-md w-full"
-                          onClick={() => {
-                            setShowSellDialog(true);
-                            setMenuOpen(false);
-                            playSound("click");
-                          }}
-                        >
-                          SELL POINTS
-                        </button>
                       </div>
                     </div>
                   </li>
@@ -724,7 +673,7 @@ export default function GamesPage() {
       </AnimatePresence>
 
       {/* Games Page Content */}
-      <div className="py-28 px-4 relative z-20">
+      <div className="py-4 px-4 relative z-20">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
             <h2 className="text-4xl font-bold flex items-center">
