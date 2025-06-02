@@ -28,14 +28,14 @@ export default function TournamentsList({
         </h2>
       </div>
 
-      <div className="space-y-8">
+      {/* <div className="space-y-8">
         {Array.isArray(userCurrentTournament) &&
           userCurrentTournament.map(
             (tournament: UserCurrentTournament, index: number) => (
               <TournamentCard key={index} tournament={tournament} />
             )
           )}
-      </div>
+      </div> */}
     </motion.div>
   );
 }

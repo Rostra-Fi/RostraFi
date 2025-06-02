@@ -72,14 +72,15 @@ export default function GamesDialog({
   const handleGameClick = (gameKey: string) => {
     router.push("/games");
   };
+
   const games = [
     {
-      key: "candycrush", // Changed from "CandyCrush" to "candycrush"
+      key: "candycrush",
       title: "CANDY CRUSH",
       icon: <Star className="h-6 w-6" />,
       color: "from-pink-500/20 to-purple-500/20",
       borderColor: "border-pink-500/30",
-      data: gameData?.games.candycrush, // Changed from CandyCrush to candycrush
+      data: gameData?.games.candycrush,
       available: true,
     },
     {
@@ -160,14 +161,14 @@ export default function GamesDialog({
               {game.available && game.data ? (
                 <div className="space-y-3">
                   {/* Candy Crush Stats */}
-                  {game.key === "candycrush" && game.data && (
+                  {game.key === "candycrush" && gameData?.games.candycrush && (
                     <>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-300">
                           Current Level
                         </span>
                         <span className="text-sm font-bold">
-                          {game.data.currentLevel}
+                          {gameData.games.candycrush.currentLevel}
                         </span>
                       </div>
                       <div className="flex justify-between">
@@ -175,7 +176,7 @@ export default function GamesDialog({
                           Total Points
                         </span>
                         <span className="text-sm font-bold">
-                          {formatNumber(game.data.totalPoints)}
+                          {formatNumber(gameData.games.candycrush.totalPoints)}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
@@ -185,12 +186,16 @@ export default function GamesDialog({
                             <Star
                               key={i}
                               className={`h-4 w-4 ${
-                                i < (game.data?.levels[0]?.stars || 0)
+                                i <
+                                (gameData.games.candycrush?.levels[0]?.stars ||
+                                  0)
                                   ? "text-yellow-400"
                                   : "text-gray-600"
                               }`}
                               fill={
-                                i < (game.data?.levels[0]?.stars || 0)
+                                i <
+                                (gameData.games.candycrush?.levels[0]?.stars ||
+                                  0)
                                   ? "currentColor"
                                   : "none"
                               }
@@ -202,28 +207,29 @@ export default function GamesDialog({
                   )}
 
                   {/* Battleship Stats */}
-                  {game.key === "battleship" && game.data && (
+                  {game.key === "battleship" && gameData?.games.battleship && (
                     <>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-300">
                           Total Games
                         </span>
                         <span className="text-sm font-bold">
-                          {game.data.totalGames}
+                          {gameData.games.battleship.totalGames}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-300">Games Won</span>
                         <span className="text-sm font-bold">
-                          {game.data.gamesWon}
+                          {gameData.games.battleship.gamesWon}
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-sm text-gray-300">Win Rate</span>
                         <span className="text-sm font-bold">
-                          {game.data.totalGames > 0
+                          {gameData.games.battleship.totalGames > 0
                             ? Math.round(
-                                (game.data.gamesWon / game.data.totalGames) *
+                                (gameData.games.battleship.gamesWon /
+                                  gameData.games.battleship.totalGames) *
                                   100
                               )
                             : 0}
@@ -235,53 +241,58 @@ export default function GamesDialog({
                           Total Points
                         </span>
                         <span className="text-sm font-bold">
-                          {formatNumber(game.data.totalPoints)}
+                          {formatNumber(gameData.games.battleship.totalPoints)}
                         </span>
                       </div>
                     </>
                   )}
 
                   {/* Space Invaders Stats */}
-                  {game.key === "spaceinvaders" && game.data && (
-                    <>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-300">
-                          High Score
-                        </span>
-                        <span className="text-sm font-bold">
-                          {formatNumber(game.data.highScore)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-300">
-                          Total Games
-                        </span>
-                        <span className="text-sm font-bold">
-                          {game.data.totalGames}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-300">
-                          Total Points
-                        </span>
-                        <span className="text-sm font-bold">
-                          {formatNumber(game.data.totalPoints)}
-                        </span>
-                      </div>
-                      {game.data.gameHistory[0] && (
+                  {game.key === "spaceinvaders" &&
+                    gameData?.games.spaceinvaders && (
+                      <>
                         <div className="flex justify-between">
                           <span className="text-sm text-gray-300">
-                            Last Played
+                            High Score
                           </span>
                           <span className="text-sm font-bold">
-                            {new Date(
-                              game.data.gameHistory[0].playedAt
-                            ).toLocaleDateString()}
+                            {formatNumber(
+                              gameData.games.spaceinvaders.highScore
+                            )}
                           </span>
                         </div>
-                      )}
-                    </>
-                  )}
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-300">
+                            Total Games
+                          </span>
+                          <span className="text-sm font-bold">
+                            {gameData.games.spaceinvaders.totalGames}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-300">
+                            Total Points
+                          </span>
+                          <span className="text-sm font-bold">
+                            {formatNumber(
+                              gameData.games.spaceinvaders.totalPoints
+                            )}
+                          </span>
+                        </div>
+                        {gameData.games.spaceinvaders.gameHistory[0] && (
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-300">
+                              Last Played
+                            </span>
+                            <span className="text-sm font-bold">
+                              {new Date(
+                                gameData.games.spaceinvaders.gameHistory[0].playedAt
+                              ).toLocaleDateString()}
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )}
 
                   {/* Play Button */}
                   <div className="pt-2">
