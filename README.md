@@ -12,60 +12,43 @@
 
 ## 🚀 Overview
 
-RostraFi is a gamified platform where users strategically form teams of influencers from **X, TikTok, and Instagram** to compete for virality. Built on Solana's blockchain, it ensures transparent reward distribution and leverages real-time social data. Earn badges, unlock rewards, and grow a community through cross-platform integration and AI-driven insights.
+RostraFi is a gamified platform where users strategically form teams of influencers from **X, TikTok, Instagram and YouTube** to compete for virality. It ensures transparent reward distribution and leverages real-time social data. Earn badges, unlock rewards, and grow a community through cross-platform integration and AI-driven insights. Additionally having Classic Games.
 
 ---
-
-## ❓ The Problem
-
-- **No unified platform** for influencer competitions across social media.
-- **Unfair reward distribution** and lack of trust in manual systems.
-- **Limited insights** into influencer performance beyond raw metrics.
-- **API rate limits** hinder real-time data access (e.g., Twitter/X).
-- **Missed opportunities** to engage users on TikTok/Instagram.
-
----
-
-## 💡 The Solution
 
 ### 🌟 Key Features
+
+- **Gamification**: Earn badges like "Viral Master" or "Trendsetter" and join referral programs for bonus points.
 - **AI-Powered Sentiment Analysis**: NLP tools analyze comments to provide sentiment scores (positive/negative/neutral) for smarter team-building (Under Developmnent).
 - **Solana Escrow System**: Rewards are held in a Rust-based smart contract and distributed automatically based on leaderboard rankings (Under Deployment).
-- **Cross-Platform Launch**: Direct access via Instagram/TikTok links to tap into massive user bases.
-- **Gamification**: Earn badges like "Viral Master" or "Trendsetter" and join referral programs for bonus points.
-
-### 🤝 SonicSVM
-- Integrate RostraFi into SonicSVM’s gaming ecosystem for immersive challenges.
-- Use **Rostra points** or Sonic tokens to enter competitions.
-- Co-branded rewards (e.g., exclusive badges, in-game assets) to drive cross-platform growth.
+- **Games**: Classic Games such as Candy Crush, Battleship, Space Invader, Axe Arcade.
 
 ---
 
-## 🛠 Roadmap
-
-| Status      | Milestone                                  | Goal                                                                 |
-|-------------|--------------------------------------------|----------------------------------------------------------------------|
-| ✅ Ongoing  | **MVP Development**                        | Team-building, betting, and leaderboards (80% complete).            |
-| ⏳ Q1 2025  | **AI Sentiment Integration**               | 90% accuracy in sentiment scoring for influencer posts.             |
-| ⏳ Q1 2025  | **Instagram/TikTok Launch**                | 50% user growth in 3 months via direct link access.                 |
-| ⏳ Q2 2025  | **Referral Program & Badges**              | 30% user acquisition and 25% retention boost through gamification.  |
-| ⏳ Q3 2025     | **SonicSVM**                   | 20% crossover user growth in 6 months.                              |
-
+## 🔍 Demo Videos
 
 ---
+# Game Play Video
 
-## 🔍 What Sets RostraFi Apart?
-1. **First cross-platform influencer competition ecosystem**.
-2. **Transparent, blockchain-backed rewards** via Solana.
-3. **AI-driven insights** for strategic team-building.
-4. **Seamless gaming integration** with SonicSVM.
+## Candy Crush
 
+## Battleship
+
+## Space Invader
+
+## Axe Arcade
 ---
 
 ## 🚦 Getting Started
-1. Explore the MVP: [rostrafi.fun](https://rostrafi.fun).
-2. Check out the codebase: [GitHub Repository](https://github.com/Rostra-Fi/RostraFi).
-3. Watch the demo: [Video Walkthrough](https://x.com/Ayushjhax/status/1900184579803156752).
+1. Explore the Devnet: [rostrafi.fun](https://rostrafi.fun).
+2. Explore the Mainnet: [rostrafi.fun](https://rostrafi.fun).
+3. CandyCrush: https://www.rostrafi.fun/levels-candycrush 
+4. Battleship: https://battleship.rostrafi.fun/
+5. Space Invader: https://spaceinvader.rostrafi.fun/
+6. Axe Arcade: https://axes.rostrafi.fun/
+7. Check out the codebase: [GitHub Repository](https://github.com/Rostra-Fi/RostraFi).
+8. Watch the demo: [Video Walkthrough](https://x.com/Ayushjhax/status/1900184579803156752).
+9. Users: 
 
 ---
 
@@ -73,7 +56,3 @@ RostraFi is a gamified platform where users strategically form teams of influenc
 - **Report issues** or suggest features on [GitHub](https://github.com/Rostra-Fi/RostraFi/issues).
 - **Join the community**: Follow [@RostraFi](https://x.com/RostraFi) for updates.
 - **Partner with us**: Email `rostrafi@gmail.com` for collaborations.
-
----
-
-**Powered by Sonic. Built for the viral era.** 🌍✨
