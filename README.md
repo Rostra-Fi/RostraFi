@@ -1,12 +1,12 @@
-# RostraFi
+x# RostraFi
 
 **Build influencer teams, compete for virality, and earn rewards in a blockchain-powered ecosystem.**
 
 [![Excalidraw](https://img.shields.io/badge/Excalidraw-Diagram-green)](https://excalidraw.com/#json=uEOWgLwwqzrTE6Sncm_6d,_RVQtjxvT7bYJ08HubGpQA)
 
-[![MVP Under Development](https://img.shields.io/badge/MVP-80%25%20Complete-yellow)](https://rostrafi.fun)
+[![MVP ](https://img.shields.io/badge/MVP-80%25%20Complete-yellow)](https://rostrafi.fun)
 [![GitHub](https://img.shields.io/badge/GitHub-Open--Source-blue)](https://github.com/Rostra-Fi/RostraFi)
-[![Demo Video](https://img.shields.io/badge/Demo-Video-red)](https://x.com/Ayushjhax/status/1900184579803156752)
+[![Demo Video](https://img.shields.io/badge/Demo-Video-red)](https://x.com/Ayushjhax/status/1931672879701106871)
 
 ---
 
@@ -29,13 +29,13 @@ RostraFi is a gamified platform where users strategically form teams of influenc
 ## 🚦 Getting Started
 1. Explore the Devnet: [rostrafi.fun](https://rostrafi.fun).
 2. Explore the Mainnet: [https://www.mainnet.rostrafi.fun](https://www.mainnet.rostrafi.fun/).
-3. CandyCrush: https://www.rostrafi.fun/levels-candycrush 
-4. Battleship: https://battleship.rostrafi.fun/
-5. Space Invader: https://spaceinvader.rostrafi.fun/
-6. Axe Arcade: https://axes.rostrafi.fun/
+3. CandyCrush: [Candy Crush](https://www.rostrafi.fun/levels-candycrush) 
+4. Battleship: (Battleship)[https://battleship.rostrafi.fun/]
+5. Space Invader: (Space Invader)[https://spaceinvader.rostrafi.fun/]
+6. Axe Arcade: (Axe Arcade)[https://axes.rostrafi.fun/]
 7. Check out the codebase: [GitHub Repository](https://github.com/Rostra-Fi/RostraFi).
-8. Watch the demo: [Video Walkthrough](https://x.com/Ayushjhax/status/1900184579803156752).
-9. Users: 
+8. Watch the demo: [Video Walkthrough](https://x.com/Ayushjhax/status/1931672879701106871).
+9. Users: [Twitter Link](https://x.com/Ayushjhax/status/1931779552600076475)
 
 ---
 
