@@ -23,25 +23,12 @@ RostraFi is a gamified platform where users strategically form teams of influenc
 - **Solana Escrow System**: Rewards are held in a Rust-based smart contract and distributed automatically based on leaderboard rankings (Under Deployment).
 - **Games**: Classic Games such as Candy Crush, Battleship, Space Invader, Axe Arcade.
 
----
 
-## 🔍 Demo Videos
-
----
-# Game Play Video
-
-## Candy Crush
-
-## Battleship
-
-## Space Invader
-
-## Axe Arcade
 ---
 
 ## 🚦 Getting Started
 1. Explore the Devnet: [rostrafi.fun](https://rostrafi.fun).
-2. Explore the Mainnet: [rostrafi.fun](https://rostrafi.fun).
+2. Explore the Mainnet: [https://www.mainnet.rostrafi.fun](https://www.mainnet.rostrafi.fun/).
 3. CandyCrush: https://www.rostrafi.fun/levels-candycrush 
 4. Battleship: https://battleship.rostrafi.fun/
 5. Space Invader: https://spaceinvader.rostrafi.fun/
